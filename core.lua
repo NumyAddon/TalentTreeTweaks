@@ -26,16 +26,44 @@ function Main:AlreadyAdded(textLine, tooltip)
     end
 end
 
-function Main:AddItemToTooltip(name, value, tooltip)
-    local text = "|cFFEE6161"..name.."|r " .. (value or 'nil')
+function Main:AddItemToTooltip(idName, value, tooltip)
+    if value == nil then
+        return
+    end
+    local text = "|cFFEE6161" .. idName .. "|r " .. value
     if(not self:AlreadyAdded(text, tooltip)) then
         tooltip:AddLine(text)
     end
     tooltip:Show()
 end
 
-EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", function(self, button, tooltip)
-    self:AddItemToTooltip('NodeId', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
+function Main:AddGenericTraitButtonTooltips(button, tooltip)
     self:AddItemToTooltip('EntryId', button:GetEntryID(), tooltip)
     self:AddItemToTooltip('SpellId', button:GetSpellID(), tooltip)
+    self:AddItemToTooltip('DefinitionId', button.GetDefinitionID and button:GetDefinitionID() or nil, tooltip)
+end
+
+EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", function(self, button, tooltip)
+    self:AddItemToTooltip('NodeId', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
+    self:AddGenericTraitButtonTooltips(button, tooltip)
+end, Main)
+
+EventRegistry:RegisterCallback("ProfessionSpecs.SpecPerkEntered", function(self, perkId)
+    local tooltip = GameTooltip
+    if not tooltip:IsShown() then return end
+    local button = tooltip:GetOwner()
+    if not button or button.perkID ~= perkId then return end
+
+    self:AddItemToTooltip('Perk NodeId', perkId, tooltip)
+    self:AddGenericTraitButtonTooltips(button, tooltip)
+end, Main)
+
+EventRegistry:RegisterCallback("ProfessionSpecs.SpecPathEntered", function(self, nodeId)
+    local tooltip = GameTooltip
+    if not tooltip:IsShown() then return end
+    local button = tooltip:GetOwner()
+    if not button or not button.nodeInfo or button.nodeInfo.ID ~= nodeId then return end
+
+    self:AddItemToTooltip('Path NodeId', nodeId, tooltip)
+    self:AddGenericTraitButtonTooltips(button, tooltip)
 end, Main)
