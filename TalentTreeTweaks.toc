@@ -10,3 +10,4 @@ libs\embeds.xml
 
 core.lua
 modules\tooltipIds.lua
+modules\exportInspectedBuild.lua
