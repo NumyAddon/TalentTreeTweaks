@@ -30,14 +30,14 @@ local defaultDb = {
     talentTooltip = {
         enabled = true,
         nodeId = true,
-        entryId = false,
+        entryId = true,
         definitionId = false,
         spellId = true,
     },
     professionTooltip = {
         enabled = true,
         nodeId = true,
-        entryId = false,
+        entryId = true,
         definitionId = false,
         spellId = true,
     },
