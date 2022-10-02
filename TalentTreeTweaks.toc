@@ -11,3 +11,4 @@ libs\embeds.xml
 core.lua
 modules\tooltipIds.lua
 modules\exportInspectedBuild.lua
+modules\shiftClickToLinkSpells.lua
