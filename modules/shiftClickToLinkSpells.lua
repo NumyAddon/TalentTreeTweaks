@@ -4,16 +4,12 @@ local Main = TTT.Main;
 
 local Module = Main:NewModule('LinkSpells');
 
-function Module:OnInitialize()
+function Module:OnEnable()
     EventRegistry:RegisterCallback('TalentButton.OnClick', self.OnButtonClick, self);
 end
 
-function Module:OnEnable()
-    self.enabled = true
-end
-
 function Module:OnDisable()
-    self.enabled = false
+    EventRegistry:UnregisterCallback('TalentButton.OnClick', self);
 end
 
 function Module:GetDescription()
@@ -29,7 +25,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:OnButtonClick(buttonFrame, mouseButton)
-    if not self.enabled or mouseButton ~= 'LeftButton' or not IsModifiedClick('CHATLINK') then
+    if mouseButton ~= 'LeftButton' or not IsModifiedClick('CHATLINK') then
         return;
     end
     local spellId = buttonFrame:GetSpellID();

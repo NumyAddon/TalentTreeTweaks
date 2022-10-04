@@ -4,18 +4,16 @@ local Main = TTT.Main;
 
 local Module = Main:NewModule('TooltipIds');
 
-function Module:OnInitialize()
+function Module:OnEnable()
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
     EventRegistry:RegisterCallback("ProfessionSpecs.SpecPerkEntered", self.OnProfessionPerkEntered, self)
     EventRegistry:RegisterCallback("ProfessionSpecs.SpecPathEntered", self.OnProfessionPathEntered, self)
 end
 
-function Module:OnEnable()
-    self.enabled = true
-end
-
 function Module:OnDisable()
-    self.enabled = false
+    EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
+    EventRegistry:UnregisterCallback("ProfessionSpecs.SpecPerkEntered", self)
+    EventRegistry:UnregisterCallback("ProfessionSpecs.SpecPathEntered", self)
 end
 
 function Module:GetDescription()
@@ -26,24 +24,24 @@ function Module:GetName()
     return 'Tooltip IDs'
 end
 
-local defaultDb = {
-    talentTooltip = {
-        enabled = true,
-        nodeId = true,
-        entryId = true,
-        definitionId = false,
-        spellId = true,
-    },
-    professionTooltip = {
-        enabled = true,
-        nodeId = true,
-        entryId = true,
-        definitionId = false,
-        spellId = true,
-    },
-}
 
 function Module:GetOptions(defaultOptionsTable, db)
+    local defaultDb = {
+        talentTooltip = {
+            enabled = true,
+            nodeId = true,
+            entryId = true,
+            definitionId = false,
+            spellId = true,
+        },
+        professionTooltip = {
+            enabled = true,
+            nodeId = true,
+            entryId = true,
+            definitionId = false,
+            spellId = true,
+        },
+    }
     self.db = db;
     for k, v in pairs(defaultDb) do
         if db[k] == nil then
@@ -135,7 +133,7 @@ function Module:AddGenericTraitButtonTooltips(button, tooltip, settings)
 end
 
 function Module:OnTalentTooltipCreated(button, tooltip)
-    if not self.enabled or not self.db.talentTooltip.enabled then return end
+    if not self.db.talentTooltip.enabled then return end
     local settings = self.db.talentTooltip
     if settings.nodeId then
         self:AddItemToTooltip('NodeId', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
@@ -144,7 +142,7 @@ function Module:OnTalentTooltipCreated(button, tooltip)
 end
 
 function Module:OnProfessionPerkEntered(perkId)
-    if not self.enabled or not self.db.professionTooltip.enabled then return end
+    if not self.db.professionTooltip.enabled then return end
 
     local tooltip = GameTooltip
     if not tooltip:IsShown() then return end
@@ -159,7 +157,7 @@ function Module:OnProfessionPerkEntered(perkId)
 end
 
 function Module:OnProfessionPathEntered(nodeId)
-    if not self.enabled or not self.db.professionTooltip.enabled then return end
+    if not self.db.professionTooltip.enabled then return end
 
     local tooltip = GameTooltip
     if not tooltip:IsShown() then return end
