@@ -16,6 +16,8 @@ function Main:OnInitialize()
     self.version = GetAddOnMetadata(name, "Version") or "";
     self:InitDefaults();
     for moduleName, module in self:IterateModules() do
+        --- @type TalentTreeTweaks_Module
+        local module = module;
         if self.db.modules[moduleName] == false then
             module:Disable();
         end
@@ -85,6 +87,7 @@ function Main:InitConfig()
                 order = 2,
                 type = 'description',
                 name = function(info)
+                    --- @type TalentTreeTweaks_Module
                     local module = Main:GetModule(info[#info - 1]);
                     return module.GetDescription and module:GetDescription() or '';
                 end,
@@ -103,6 +106,8 @@ function Main:InitConfig()
         },
     };
     for moduleName, module in self:IterateModules() do
+        --- @type TalentTreeTweaks_Module
+        local module = module;
         local copy = CopyTable(defaultModuleOptions);
         self.db.moduleDb[moduleName] = self.db.moduleDb[moduleName] or {};
         local moduleOptions = module.GetOptions and module:GetOptions(copy, self.db.moduleDb[moduleName]) or copy;
@@ -117,8 +122,7 @@ function Main:InitConfig()
 end
 
 function Main:OpenConfig()
-    InterfaceOptionsFrame_OpenToCategory(self.configCategory);
-    InterfaceOptionsFrame_OpenToCategory(self.configCategory);
+    Settings.OpenToCategory(self.configCategory);
 end
 
 function Main:SetModuleState(moduleName, enabled)
