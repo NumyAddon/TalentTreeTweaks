@@ -49,13 +49,13 @@ end
 
 function Module:SetupHook(addon)
     if addon == 'Blizzard_ClassTalentUI' and ClassTalentFrame and ClassTalentFrame.TalentsTab and ClassTalentFrame.TalentsTab.textSearch then
-        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetExactSearchMatchDescription', function(...) return self:GetExactSearchMatchDescriptionHook(...) end, true);
-        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetSearchMatchTypeForEntry', function(...) return self:GetSearchMatchTypeForEntryHook(...) end, true);
+        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
+        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
     end
 
     if addon == 'TalentTreeViewer' and TalentViewer_DF and TalentViewer_DF.Talents and TalentViewer_DF.Talents.textSearch then
-        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetExactSearchMatchDescription', function(...) return self:GetExactSearchMatchDescriptionHook(...) end, true);
-        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetSearchMatchTypeForEntry', function(...) return self:GetSearchMatchTypeForEntryHook(...) end, true);
+        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
+        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
     end
 end
 

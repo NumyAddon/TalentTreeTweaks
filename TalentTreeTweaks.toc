@@ -13,3 +13,4 @@ modules\tooltipIds.lua
 modules\exportInspectedBuild.lua
 modules\debugNodeInfo.lua
 modules\searchForIds.lua
+modules\scaleTalentFrame.lua
