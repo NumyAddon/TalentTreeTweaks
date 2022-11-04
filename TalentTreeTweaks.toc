@@ -15,3 +15,4 @@ modules\debugNodeInfo.lua
 modules\searchForIds.lua
 modules\scaleTalentFrame.lua
 modules\respecButtonsInTreeUI.lua
+modules\highlightCascadeRepurchable.lua
