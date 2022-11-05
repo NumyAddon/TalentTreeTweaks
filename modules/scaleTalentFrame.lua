@@ -4,25 +4,19 @@ local Main = TTT.Main;
 
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0', 'AceEvent-3.0');
 
+local ADDON_NAME_TALENT_TREE_VIEWER = 'TalentTreeViewer';
+local ADDON_NAME_BLIZZARD_CLASS_TALENT_UI = 'Blizzard_ClassTalentUI';
+
 function Module:OnEnable()
     if self.blizzMoveEnabled then return end
 
-    local registerEvent = false
-    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
-        self:SetupHook('Blizzard_ClassTalentUI');
-    else
-        registerEvent = true;
+    if IsAddOnLoaded(ADDON_NAME_BLIZZARD_CLASS_TALENT_UI) then
+        self:SetupHook(ADDON_NAME_BLIZZARD_CLASS_TALENT_UI);
     end
-    if GetAddOnEnableState(UnitName('player'), 'TalentTreeViewer') == 2 then
-        if IsAddOnLoaded('TalentTreeViewer') then
-            self:SetupHook('TalentTreeViewer');
-        else
-            registerEvent = true;
-        end
+    if IsAddOnLoaded(ADDON_NAME_TALENT_TREE_VIEWER) then
+        self:SetupHook(ADDON_NAME_TALENT_TREE_VIEWER);
     end
-    if registerEvent then
-        self:RegisterEvent('ADDON_LOADED');
-    end
+    self:RegisterEvent('ADDON_LOADED');
 end
 
 function Module:OnDisable()
@@ -58,50 +52,44 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:ADDON_LOADED(_, addon)
-    if addon == 'Blizzard_ClassTalentUI' or addon == 'TalentTreeViewer' then
+    if addon == ADDON_NAME_BLIZZARD_CLASS_TALENT_UI or addon == ADDON_NAME_TALENT_TREE_VIEWER then
         self:SetupHook(addon);
     end
 end
 
 function Module:SetupHook(addon)
-    if addon == 'Blizzard_ClassTalentUI' then
-        if self.db.scale == nil then
-            self.db.scale = ClassTalentFrame:GetScale();
-        end
-
-        self:HookScript(ClassTalentFrame, 'OnMouseWheel', 'OnMouseWheelBlizzard');
-        self:HookScript(ClassTalentFrame.TalentsTab.ButtonsParent, 'OnMouseWheel', 'OnMouseWheelBlizzard');
-
-        ClassTalentFrame:SetScale(self.db.scale);
+    local settingKey, frame, buttonsParent
+    if addon == ADDON_NAME_BLIZZARD_CLASS_TALENT_UI then
+        settingKey = 'scale'
+        frame = ClassTalentFrame
+        buttonsParent = frame.TalentsTab.ButtonsParent
     end
-    if addon == 'TalentTreeViewer' then
-        if self.db.viewerScale == nil then
-            self.db.viewerScale = TalentViewer_DF:GetScale();
-        end
-
-        self:HookScript(TalentViewer_DF, 'OnMouseWheel', 'OnMouseWheelTalentTreeViewer');
-        self:HookScript(TalentViewer_DF.Talents.ButtonsParent, 'OnMouseWheel', 'OnMouseWheelTalentTreeViewer');
-
-        TalentViewer_DF:SetScale(self.db.viewerScale);
+    if addon == ADDON_NAME_TALENT_TREE_VIEWER then
+        settingKey = 'viewerScale'
+        frame = TalentViewer_DF
+        buttonsParent = frame.Talents.ButtonsParent
     end
+    if self.db[settingKey] == nil then
+        self.db[settingKey] = frame:GetScale();
+    end
+
+    self:HookScript(frame, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
+    self:HookScript(buttonsParent, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
+    self:HookScript(frame, 'OnShow', function() self:OnShow(frame, settingKey); end);
+
+    frame:SetScale(self.db[settingKey]);
 end
 
-function Module:OnMouseWheelBlizzard(_, delta)
-    if not IsControlKeyDown() then return end
-
-    local scale = self.db.scale or 1;
-    scale = scale + delta * 0.05;
-    scale = math.max(0.5, math.min(2, scale));
-    self.db.scale = scale;
-    ClassTalentFrame:SetScale(scale);
+function Module:OnShow(frame, settingKey)
+    frame:SetScale(self.db[settingKey]);
 end
 
-function Module:OnMouseWheelTalentTreeViewer(_, delta)
+function Module:OnMouseWheel(frame, delta, settingKey)
     if not IsControlKeyDown() then return end
 
-    local scale = self.db.viewerScale or 1;
+    local scale = self.db[settingKey] or 1;
     scale = scale + delta * 0.05;
     scale = math.max(0.5, math.min(2, scale));
-    self.db.viewerScale = scale;
-    TalentViewer_DF:SetScale(scale);
+    self.db[settingKey] = scale;
+    frame:SetScale(scale);
 end
