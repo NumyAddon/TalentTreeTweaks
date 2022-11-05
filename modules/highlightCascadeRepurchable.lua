@@ -17,7 +17,6 @@ end
 
 function Module:OnDisable()
     self.enabled = false;
-    self:UnhookAll();
     if(self.buttonTextures) then
         for _, texture in pairs(self.buttonTextures) do
             texture:Hide();
@@ -91,6 +90,9 @@ end
 
 function Module:SetupHook()
     ClassTalentFrame.TalentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
+    for talentButton in ClassTalentFrame.TalentsTab:EnumerateAllTalentButtons() do
+        self:OnTalentButtonAcquired(talentButton);
+    end
 end
 
 function Module:UpdateColors()
@@ -120,7 +122,8 @@ function Module:OnTalentButtonAcquired(button)
         texture:AddMaskTexture(mask);
 
         texture:Hide();
-        hooksecurefunc(button, 'UpdateNonStateVisuals', UpdateNonStateVisualsHook)
+        hooksecurefunc(button, 'UpdateNonStateVisuals', UpdateNonStateVisualsHook);
     end
+    UpdateNonStateVisualsHook(button);
 end
 
