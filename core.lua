@@ -139,3 +139,7 @@ function Main:IsModuleEnabled(moduleName)
 
     return module and module:IsEnabled() or false;
 end
+
+function Main:IsTalentTreeViewerEnabled()
+    return GetAddOnEnableState(UnitName('player'), 'TalentTreeViewer') == 2;
+end
