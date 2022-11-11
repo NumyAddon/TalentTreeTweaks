@@ -73,9 +73,9 @@ function Module:SetupHook(addon)
         self.db[settingKey] = frame:GetScale();
     end
 
-    self:HookScript(frame, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
-    self:HookScript(buttonsParent, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
-    self:HookScript(frame, 'OnShow', function() self:OnShow(frame, settingKey); end);
+    self:SecureHookScript(frame, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
+    self:SecureHookScript(buttonsParent, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
+    self:SecureHookScript(frame, 'OnShow', function() self:OnShow(frame, settingKey); end);
 
     frame:SetScale(self.db[settingKey]);
 end
