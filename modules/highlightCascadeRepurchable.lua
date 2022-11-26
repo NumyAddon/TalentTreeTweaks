@@ -2,17 +2,15 @@ local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
 
-local Module = Main:NewModule('HighlightCascadeRepurchable', 'AceEvent-3.0');
+local Module = Main:NewModule('HighlightCascadeRepurchable');
 Module.enabled = false;
 
 function Module:OnEnable()
     self.enabled = true;
     self.buttonTextures = self.buttonTextures or {};
-    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
+    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
         self:SetupHook();
-    else
-        self:RegisterEvent('ADDON_LOADED');
-    end
+    end);
 end
 
 function Module:OnDisable()
@@ -81,13 +79,6 @@ function Module:GetOptions(defaultOptionsTable, db)
     return defaultOptionsTable;
 end
 
-function Module:ADDON_LOADED(_, addonName)
-    if addonName == 'Blizzard_ClassTalentUI' then
-        self:UnregisterEvent('ADDON_LOADED');
-        self:SetupHook();
-    end
-end
-
 function Module:SetupHook()
     ClassTalentFrame.TalentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
     for talentButton in ClassTalentFrame.TalentsTab:EnumerateAllTalentButtons() do
@@ -115,12 +106,7 @@ function Module:OnTalentButtonAcquired(button)
         texture:SetAllPoints(button);
         texture:SetTexture('Interface/Tooltips/UI-Tooltip-Background');
         texture:SetVertexColor(self.db.color.r, self.db.color.g, self.db.color.b, self.db.color.a);
-
-        local mask = button:CreateMaskTexture();
-        mask:SetAllPoints(texture);
-        mask:SetTexture('Interface/CHARACTERFRAME/TempPortraitAlphaMask');
-        texture:AddMaskTexture(mask);
-
+        texture:AddMaskTexture(button.IconMask);
         texture:Hide();
         hooksecurefunc(button, 'UpdateNonStateVisuals', UpdateNonStateVisualsHook);
     end
