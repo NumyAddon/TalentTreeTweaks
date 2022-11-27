@@ -17,3 +17,4 @@ modules\scaleTalentFrame.lua
 modules\respecButtonsInTreeUI.lua
 modules\highlightCascadeRepurchable.lua
 modules\clickableExportStringsInChat.lua
+modules\inspectDiff.lua
