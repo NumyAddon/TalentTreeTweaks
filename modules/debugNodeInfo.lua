@@ -26,6 +26,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         viragDevTool = true,
         luaBrowser = true,
         slashDump = false,
+        addButtonToTable = true,
     }
     self.db = db;
     for k, v in pairs(defaultDb) do
@@ -46,6 +47,14 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.extraDescription = {
         type = 'description',
         name = 'You can toggle any of the following on/off to enable/disable the integration with that debug tool.',
+        order = increment(),
+    };
+    defaultOptionsTable.args.addButtonToTable = {
+        type = 'toggle',
+        name = 'Add the button to NodeInfo table when dumped',
+        desc = 'Adds a _button property to the nodeInfo table, which is a reference to the talent button.',
+        get = get,
+        set = set,
         order = increment(),
     };
     defaultOptionsTable.args.tinspect = {
@@ -90,7 +99,11 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
     if mouseButton ~= 'LeftButton' or not IsControlKeyDown() then
         return;
     end
-    local nodeInfo = buttonFrame.nodeInfo
+    local nodeInfo = buttonFrame.nodeInfo or buttonFrame.GetNodeInfo and buttonFrame:GetNodeInfo() or {};
+    if self.db.addButtonToTable then
+        nodeInfo = Mixin({}, nodeInfo);
+        nodeInfo._button = buttonFrame;
+    end
 
     if self.db.tinspect then
         UIParentLoadAddOn("Blizzard_DebugTools");
@@ -98,7 +111,7 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
     end
 
     if self.db.viragDevTool and ViragDevTool_AddData then
-        ViragDevTool_AddData(nodeInfo, 'NodeInfo ID ' .. nodeInfo.ID);
+        ViragDevTool_AddData(nodeInfo, 'NodeInfo ID ' .. (nodeInfo.ID or 'nil'));
     end
 
     if self.db.luaBrowser and SlashCmdList.LuaBrowser then
