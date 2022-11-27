@@ -7,7 +7,7 @@ local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 local LTT = LibStub('LibTalentTree-1.0');
 
 function Module:OnInitialize()
-    Module.gateInfo = {};
+    self.gateInfo = {};
 end
 
 function Module:OnEnable()
@@ -31,18 +31,18 @@ function Module:GetName()
     return 'Always Show Gates';
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    return defaultOptionsTable;
-end
-
 function Module:SetupHook()
-    self:SecureHook(ClassTalentFrame.TalentsTab, 'RefreshGates');
-    ClassTalentFrame.TalentsTab:RefreshGates();
+    local talentFrame = ClassTalentFrame.TalentsTab;
+    -- We have to create our own gatePool, because otherwise we will cause massive taint issues
+    -- when acquiring a gate from the pool. Using our own pool causes no such issues
+    self.gatePool = self.gatePool or CreateFramePool("FRAME", talentFrame.ButtonsParent, "TalentFrameGateTemplate");
+    self:SecureHook(talentFrame, 'RefreshGates');
+    self:RefreshGates();
 end
 
 function Module:RefreshGates()
     local talentFrame = ClassTalentFrame.TalentsTab;
-    talentFrame.gatePool:ReleaseAll();
+    self.gatePool:ReleaseAll();
 
     if not talentFrame.talentTreeInfo or not talentFrame.talentTreeInfo.gates then
         return;
@@ -51,18 +51,13 @@ function Module:RefreshGates()
     for i, gateInfo in ipairs(talentFrame.talentTreeInfo.gates) do
         local firstButton = talentFrame:GetTalentButtonByNodeID(gateInfo.topLeftNodeID);
         local condInfo = talentFrame:GetAndCacheCondInfo(gateInfo.conditionID);
-        if firstButton and firstButton:IsVisible() then
-            local gate = talentFrame.gatePool:Acquire();
+        if firstButton and firstButton:IsVisible() and condInfo.isMet then
+            local gate = self.gatePool:Acquire();
             condInfo = self:EnrichConditionInfo(condInfo);
             gate:Init(talentFrame, firstButton, condInfo);
             talentFrame:AnchorGate(gate, firstButton);
             gate:Show();
-
-            if condInfo.isMet then
-                gate:SetAlpha(0.4);
-            else
-                gate:SetAlpha(1);
-            end
+            gate:SetAlpha(0.4);
 
             talentFrame:OnGateDisplayed(gate, firstButton, condInfo);
         end
