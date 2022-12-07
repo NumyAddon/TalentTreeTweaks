@@ -6,9 +6,12 @@
 ## X-Curse-Project-ID: 678792
 ## SavedVariables: TalentTreeTweaksDB
 
+TaintLess.xml
 libs\embeds.xml
 
 core.lua
+SharedUtil.lua
+
 modules\tooltipIds.lua
 modules\exportInspectedBuild.lua
 modules\debugNodeInfo.lua

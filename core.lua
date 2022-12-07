@@ -15,6 +15,7 @@ function Main:OnInitialize()
     self.db = TalentTreeTweaksDB;
     self.version = GetAddOnMetadata(name, "Version") or "";
     self:InitDefaults();
+    TTT.Util:OnInitialize();
     for moduleName, module in self:IterateModules() do
         --- @type TalentTreeTweaks_Module
         local module = module;

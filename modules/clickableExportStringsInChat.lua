@@ -1,11 +1,15 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
 local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
 Module.bitWidthSpecID = 16;
 Module.bitWidthRanksPurchased = 6;
+
+local LTT = Util.LibTalentTree;
 
 local events = {
     CHAT_MSG_BATTLEGROUND = true,
@@ -27,21 +31,6 @@ local events = {
     CHAT_MSG_WHISPER = true,
     CHAT_MSG_WHISPER_INFORM = true,
     CHAT_MSG_YELL = true,
-}
-local classTreeMap = {
-    [1] = 850,
-    [2] = 790,
-    [3] = 774,
-    [4] = 852,
-    [5] = 795,
-    [6] = 750,
-    [7] = 786,
-    [8] = 658,
-    [9] = 720,
-    [10] = 781,
-    [11] = 793,
-    [12] = 854,
-    [13] = 701,
 };
 local specToClassMap = {
     [71] = 1,
@@ -103,33 +92,6 @@ local LOADOUT_SERIALIZATION_VERSION;
 function Module:OnInitialize()
     self.debug = false;
     LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
-
-    self.dialogName = 'TalentTreeTweaksClickableBuildsDialog';
-    StaticPopupDialogs['TalentTreeTweaksClickableBuildsDialog'] = {
-        text = 'CTRL-C to copy',
-        button1 = CLOSE,
-        OnShow = function(dialog, data)
-            local function HidePopup()
-                dialog:Hide();
-            end
-            dialog.editBox:SetScript('OnEscapePressed', HidePopup);
-            dialog.editBox:SetScript('OnEnterPressed', HidePopup);
-            dialog.editBox:SetScript('OnKeyUp', function(_, key)
-                if IsControlKeyDown() and key == 'C' then
-                    HidePopup();
-                end
-            end);
-            dialog.editBox:SetMaxLetters(0);
-            dialog.editBox:SetText(data);
-            dialog.editBox:HighlightText();
-        end,
-        hasEditBox = true,
-        editBoxWidth = 240,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-        preferredIndex = 3,
-    };
 end
 
 function Module:OnEnable()
@@ -166,9 +128,8 @@ function Module:GetOptions(defaultOptionsTable, db)
         desc = 'Shows an example of a clickable link in chat.',
         func = function()
             LoadAddOn('Blizzard_ClassTalentUI');
-            local t = ClassTalentFrame.TalentsTab;
-            t:UpdateTreeInfo();
-            local exportString = t:GetLoadoutExportString();
+            local talentTab = ClassTalentFrame.TalentsTab;
+            local exportString = Util:GetLoadoutExportString(talentTab);
             print(select(2, self:Filter(_, _, exportString)));
         end,
     };
@@ -184,9 +145,9 @@ end
 
 function Module:SetItemRef(link)
     local linkType, addon, exportString = string.split(":", link)
-    if linkType == "garrmission" and addon == "LTT" then
+    if linkType == "garrmission" and addon == "TTT" then
         if IsShiftKeyDown() then
-            StaticPopup_Show(self.dialogName, nil, nil, exportString);
+            Util:CopyText(exportString);
             return;
         end
         if Main:IsTalentTreeViewerEnabled() and not IsControlKeyDown() then
@@ -224,21 +185,23 @@ end
 function Module:Filter(_, _, message, ...)
     for word in message:gmatch('[A-Za-z0-9+/=]+') do
         -- if the word is a valid export string
-        local valid, specID = self:ParseImportString(word);
+        local valid, specID, requiredLevel = self:ParseImportString(word);
         if valid then
+            self:DebugPrint("Valid import string, specID:", specID);
             -- replace the word with a clickable link
             local class = specToClassMap[specID];
             local classColor = RAID_CLASS_COLORS[select(2, GetClassInfo(class))];
             local specName = select(2, GetSpecializationInfoByID(specID));
             message = message:gsub(
-                word,
+                word:gsub('%+', '%%+'),
                 string.format(
-                    '|Hgarrmission:LTT:%s|h%s|h',
+                    '|Hgarrmission:TTT:%s|h%s|h',
                     word,
                     NORMAL_FONT_COLOR:WrapTextInColorCode(
                         string.format(
-                            '[Talent Tree Build (%s)]',
-                                classColor:WrapTextInColorCode(specName)
+                        '[Talent Tree Build (%s lvl %d)]',
+                            classColor:WrapTextInColorCode(specName),
+                            requiredLevel
                         )
                     )
                 )
@@ -253,7 +216,7 @@ function Module:ParseImportString(importText)
     local importStream = ExportUtil.MakeImportDataStream(importText);
 
     local headerValid, serializationVersion, specID, treeHash = self:ReadLoadoutHeader(importStream);
-    self:DebugPrint(serializationVersion, specID)
+    self:DebugPrint('serialization version:', serializationVersion, 'specID:', specID)
 
     if(not headerValid) then
         self:DebugPrint("Invalid header");
@@ -270,18 +233,19 @@ function Module:ParseImportString(importText)
         return false;
     end
 
-    local treeID = specID and specToClassMap[specID] and classTreeMap[specToClassMap[specID]];
+    local treeID = specID and specToClassMap[specID] and LTT:GetClassTreeId(specToClassMap[specID]);
     if (not treeID) then
         self:DebugPrint("Invalid tree ID");
         return false;
     end
 
-    if (not self:ValidateLoadoutContent(importStream, treeID)) then
+    local valid, pointsSpent = self:ValidateLoadoutContent(importStream, treeID);
+    if (not valid) then
         self:DebugPrint("Invalid loadout content");
         return false;
     end
 
-    return true, specID;
+    return true, specID, pointsSpent;
 end
 
 
@@ -304,6 +268,7 @@ end
 
 function Module:ValidateLoadoutContent(importStream, treeID)
     local treeNodes = C_Traits.GetTreeNodes(treeID);
+    local classPointsSpent, specPointsSpent = 0, 0;
     for i = 1, #treeNodes do
         local nodeSelectedValue = importStream:ExtractValue(1)
         if nodeSelectedValue == nil then
@@ -317,12 +282,18 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                 self:DebugPrint("Invalid is partially ranked value", i);
                 return false
             end
+
+            local nodeInfo = LTT:GetLibNodeInfo(treeID, treeNodes[i]);
+            local isClassNode = nodeInfo and nodeInfo.isClassNode;
+            local pointsSpent = nodeInfo and nodeInfo.maxRanks or 1;
+
             if(isPartiallyRankedValue == 1) then
                 local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
                 if partialRanksPurchased == nil then
                     self:DebugPrint("Invalid partial ranks purchased value", i);
                     return false
                 end
+                pointsSpent = partialRanksPurchased;
             end
 
             local isChoiceNodeValue = importStream:ExtractValue(1);
@@ -338,6 +309,12 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                     return false
                 end
             end
+
+            if(isClassNode) then
+                classPointsSpent = classPointsSpent + pointsSpent;
+            else
+                specPointsSpent = specPointsSpent + pointsSpent;
+            end
         end
     end
 
@@ -345,7 +322,9 @@ function Module:ValidateLoadoutContent(importStream, treeID)
         ViragDevTool_AddData(importStream, "importStream");
     end
 
-    return importStream.currentIndex == #importStream.dataValues;
+    local requiredLevel = math.max(10, 8 + (classPointsSpent * 2), 9 + (specPointsSpent * 2));
+
+    return importStream.currentIndex == #importStream.dataValues, requiredLevel;
 end
 
 function Module:IsHashPossiblyValid(treeHash)
