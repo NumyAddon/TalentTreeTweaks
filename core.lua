@@ -71,17 +71,36 @@ function Main:InitConfig()
             }
         }
     };
+    local function GetFormattedModuleName(moduleName, disabledSuffix)
+        --- @type TalentTreeTweaks_Module
+        local module = self:GetModule(moduleName);
+
+        local prettyName = module.GetName and module:GetName() or moduleName;
+        if not self:IsModuleEnabled(moduleName) then
+            return RED_FONT_COLOR:WrapTextInColorCode(prettyName .. (disabledSuffix or ''));
+        end
+        return prettyName;
+    end
+
     local defaultModuleOptions = {
         type = 'group',
         name = function(info)
-            return info[#info - 1];
+            local moduleName = info[#info];
+            return GetFormattedModuleName(moduleName);
+        end,
+        desc = function(info)
+            local moduleName = info[#info];
+            if not self:IsModuleEnabled(moduleName) then
+                return RED_FONT_COLOR:WrapTextInColorCode('Disabled');
+            end
         end,
         args = {
             name = {
                 order = 1,
                 type = 'header',
                 name = function(info)
-                    return info.options.args.modules.args[info[#info - 1]].name;
+                    local moduleName = info[#info - 1];
+                    return GetFormattedModuleName(moduleName);
                 end,
             },
             description = {
@@ -89,7 +108,7 @@ function Main:InitConfig()
                 type = 'description',
                 name = function(info)
                     --- @type TalentTreeTweaks_Module
-                    local module = Main:GetModule(info[#info - 1]);
+                    local module = self:GetModule(info[#info - 1]);
                     return module.GetDescription and module:GetDescription() or '';
                 end,
                 hidden = function(info)
@@ -101,8 +120,8 @@ function Main:InitConfig()
                 name = 'Enable',
                 desc = 'Enable this module',
                 type = 'toggle',
-                get = function(info) return Main:IsModuleEnabled(info[#info - 1]); end,
-                set = function(info, enabled) Main:SetModuleState(info[#info - 1], enabled); end,
+                get = function(info) return self:IsModuleEnabled(info[#info - 1]); end,
+                set = function(info, enabled) self:SetModuleState(info[#info - 1], enabled); end,
             },
         },
     };
@@ -112,7 +131,6 @@ function Main:InitConfig()
         local copy = CopyTable(defaultModuleOptions);
         self.db.moduleDb[moduleName] = self.db.moduleDb[moduleName] or {};
         local moduleOptions = module.GetOptions and module:GetOptions(copy, self.db.moduleDb[moduleName]) or copy;
-        moduleOptions.name = module.GetName and module:GetName() or moduleName;
         moduleOptions.order = increment();
         self.options.args.modules.args[moduleName] = moduleOptions;
     end
