@@ -29,12 +29,6 @@ function Module:GetName()
     return 'Export When Inspecting'
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    self.db = db;
-
-    return defaultOptionsTable;
-end
-
 function Module:ADDON_LOADED(_, addon)
     if addon == 'Blizzard_ClassTalentUI' then
         self:SetupHook();
@@ -45,7 +39,10 @@ end
 function Module:SetupHook()
     self:SecureHook(ClassTalentFrame.TalentsTab, 'UpdateInspecting', function() Module:UpdateExportButton(); end);
 
-    if self.exportButton then return; end
+    if self.exportButton then
+        Module:UpdateExportButton();
+        return;
+    end
     self.exportButton = CreateFrame('Button', nil, ClassTalentFrame.TalentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
     local button = self.exportButton;
     button:SetSize(100, 40);
@@ -57,6 +54,7 @@ function Module:SetupHook()
         local exportString = Util:GetLoadoutExportString(ClassTalentFrame.TalentsTab);
         Util:CopyText(exportString);
     end);
+    Module:UpdateExportButton();
 end
 
 function Module:UpdateExportButton()

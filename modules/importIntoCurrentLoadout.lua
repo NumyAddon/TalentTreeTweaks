@@ -66,27 +66,22 @@ end
 function Module:SetupHook()
     local dialog = ClassTalentLoadoutImportDialog;
     self:CreateCheckbox(dialog);
+    self:CreateAcceptButton(dialog);
     self.checkbox:SetChecked(self.db.defaultCheckboxState);
     self:OnCheckboxClick(self.checkbox);
-
-    self:RawHookScript(dialog.AcceptButton, 'OnClick', function(acceptButton, button, down)
-        local importString = dialog.ImportControl:GetText();
-
-        if self.checkbox:GetChecked() then
-            if self:ImportLoadout(importString) then
-                ClassTalentLoadoutImportDialog:OnCancel();
-            end
-        else
-            self.hooks[acceptButton].OnClick(acceptButton, button, down);
-        end
-    end);
 end
 
 function Module:OnCheckboxClick(checkbox)
     local dialog = checkbox:GetParent();
     dialog.NameControl:SetShown(not checkbox:GetChecked());
     dialog.NameControl:SetText(checkbox:GetChecked() and 'TalentTreeTweaks' or '');
-    dialog:UpdateAcceptButtonEnabledState();
+    self.acceptButton:SetShown(checkbox:GetChecked());
+    dialog.AcceptButton:SetShown(not checkbox:GetChecked());
+    if checkbox:GetChecked() then
+        self.acceptButton:SetEnabled(dialog.ImportControl:HasText());
+    else
+        dialog:UpdateAcceptButtonEnabledState();
+    end
 end
 
 function Module:CreateCheckbox(dialog)
@@ -95,13 +90,14 @@ function Module:CreateCheckbox(dialog)
         return
     end
 
+    local text = string.format('Import into current loadout (click "%s" afterwards)', TALENT_FRAME_APPLY_BUTTON_TEXT);
     local checkbox = CreateFrame('CheckButton', nil, dialog, 'UICheckButtonTemplate');
     checkbox:SetPoint('TOPLEFT', dialog.NameControl, 'BOTTOMLEFT', 0, 5);
     checkbox:SetSize(24, 24);
     checkbox:SetScript('OnClick', function(cb) self:OnCheckboxClick(cb); end);
     checkbox:SetScript('OnEnter', function(self)
         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT');
-        GameTooltip:SetText('Import into current loadout');
+        GameTooltip:SetText(text);
         GameTooltip:AddLine('If checked, the imported build will be imported into the currently selected loadout.', 1, 1, 1);
         GameTooltip:Show();
     end);
@@ -110,10 +106,31 @@ function Module:CreateCheckbox(dialog)
     end);
     checkbox.text = checkbox:CreateFontString(nil, 'ARTWORK', 'GameFontNormal');
     checkbox.text:SetPoint('LEFT', checkbox, 'RIGHT', 0, 1);
-    checkbox.text:SetText('Import into current loadout');
+    checkbox.text:SetText(text);
     checkbox:SetHitRectInsets(-10, -checkbox.text:GetStringWidth(), -5, 0);
 
     self.checkbox = checkbox;
+end
+
+function Module:CreateAcceptButton(dialog)
+    self:SecureHook(dialog, 'OnTextChanged', function() self.acceptButton:SetEnabled(dialog.ImportControl:HasText()); end)
+    if self.acceptButton then
+        self.acceptButton:Show();
+        return
+    end
+
+    local acceptButton = CreateFrame('Button', nil, dialog, 'ClassTalentLoadoutDialogButtonTemplate');
+    acceptButton:SetPoint('BOTTOMRIGHT', dialog.ContentArea, 'BOTTOM', -5, 0);
+    acceptButton:SetText(HUD_CLASS_TALENTS_IMPORT_LOADOUT_ACCEPT_BUTTON.."2");
+    acceptButton.disabledTooltip = HUD_CLASS_TALENTS_IMPORT_ERROR_IMPORT_STRING_AND_NAME;
+    acceptButton:SetScript('OnClick', function()
+        local importString = dialog.ImportControl:GetText();
+        if self:ImportLoadout(importString) then
+            ClassTalentLoadoutImportDialog:OnCancel();
+        end
+    end);
+
+    self.acceptButton = acceptButton;
 end
 
 function Module:GetTreeID()
@@ -155,8 +172,11 @@ function Module:DoImport(loadoutEntryInfo)
         end
     end
 
-    -- just simulate pressing Apply Changes, this will be the cleanest user experience in the end
-    ClassTalentFrame.TalentsTab:ApplyConfig();
+    --[[
+    don't apply changes, the talent tree UI just... doesn't like it :( the user will just have to do this themselves
+    it will result in taint if we simulate a click on the "Apply" button, and making a secure click, using the click
+    from the "Import" button, is just way more effort than it's worth
+    --]]
 
     return true;
 end
