@@ -45,7 +45,17 @@ end
 
 function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
-    defaultOptionsTable.args.importIntoCurrentLoadoutCheckedByDefault = {
+    local defaults = {
+        defaultCheckboxState = false,
+        unlockImportButton = true,
+    };
+    for k, v in pairs(defaults) do
+        if db[k] == nil then
+            db[k] = v;
+        end
+    end
+
+    defaultOptionsTable.args.defaultCheckboxState = {
         type = 'toggle',
         name = 'Import into current loadout by default',
         desc = 'When enabled, the "Import into current loadout" checkbox will be checked by default.',
@@ -59,6 +69,19 @@ function Module:GetOptions(defaultOptionsTable, db)
             end
         end,
     };
+    defaultOptionsTable.args.unlockImportButton = {
+        type = 'toggle',
+        name = 'Unlocks the import button, even if at max loadouts',
+        desc = 'When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout',
+        width = 'double',
+        get = function() return db.unlockImportButton; end,
+        set = function(_, value)
+            db.unlockImportButton = value;
+            if self.checkbox then
+                self:OnUnlockImportButtonValueChanged();
+            end
+        end,
+    };
 
     return defaultOptionsTable;
 end
@@ -69,6 +92,26 @@ function Module:SetupHook()
     self:CreateAcceptButton(dialog);
     self.checkbox:SetChecked(self.db.defaultCheckboxState);
     self:OnCheckboxClick(self.checkbox);
+
+    self.disabledCallback = function() return false; end;
+    self:OnUnlockImportButtonValueChanged();
+end
+
+function Module:OnUnlockImportButtonValueChanged()
+    local dropdown = ClassTalentFrame.TalentsTab.LoadoutDropDown;
+    for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
+        if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_IMPORT then
+            if not self.oldDisabledCallback then
+                self.oldDisabledCallback = sentinelInfo.disabledCallback;
+            end
+            if self.db.unlockImportButton then
+                sentinelInfo.disabledCallback = self.disabledCallback;
+            elseif sentinelInfo.disabledCallback ~= self.oldDisabledCallback then
+                sentinelInfo.disabledCallback = self.oldDisabledCallback;
+            end
+            break;
+        end
+    end
 end
 
 function Module:OnCheckboxClick(checkbox)
