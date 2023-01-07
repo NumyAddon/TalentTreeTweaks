@@ -81,7 +81,13 @@ end
 
 function Module:SetActionBarHighlights(talentButton, shown)
     local spellID = talentButton:GetSpellID();
-    if spellID and not talentButton:IsMissingFromActionBar() then
+    if (
+        spellID
+        and (
+            talentButton.IsMissingFromActionBar and not talentButton:IsMissingFromActionBar()
+            or talentButton.GetActionBarStatus and talentButton:GetActionBarStatus() == TalentButtonUtil.ActionBarStatus.NotMissing
+        )
+    ) then
         self:HandleBlizzardActionButtonHighlights(shown and spellID);
         self:HandleLibActionButtonHighlights(shown and spellID);
     end
