@@ -48,6 +48,26 @@ function Module:SetupHook()
 
     -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's the ideal place to check for taint
     self:SecureHook(ClassTalentFrame.TalentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:CheckShareButton(dropdown, selectionID) end);
+
+    -- ToggleTalentFrame starts of with a ClassTalentFrame:SetInspecting call, which has a high likelihood of tainting execution
+    self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
+    self:SecureHook('HideUIPanel', 'OnHideUIPanel')
+end
+
+function Module:OnShowUIPanel(frame)
+    if frame ~= ClassTalentFrame then return end
+    if (frame.IsShown and not frame:IsShown()) then
+        -- if possible, force show the frame, ignoring the INTERFACE_ACTION_BLOCKED message
+        frame:Show()
+    end
+end
+
+function Module:OnHideUIPanel(frame)
+    if frame ~= ClassTalentFrame then return end
+    if (frame.IsShown and frame:IsShown()) then
+        -- if possible, force hide the frame, ignoring the INTERFACE_ACTION_BLOCKED message
+        frame:Hide()
+    end
 end
 
 function Module:OnShowSelections()
