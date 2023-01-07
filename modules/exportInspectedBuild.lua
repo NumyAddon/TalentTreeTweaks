@@ -1,3 +1,5 @@
+if select(4, GetBuildInfo()) >= 100005 then return end -- blizzard added their own version of this in 10.0.5
+
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
