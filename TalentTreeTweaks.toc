@@ -25,3 +25,4 @@ modules\alwaysShowGates.lua
 modules\importIntoCurrentLoadout.lua
 modules\reduceTaint.lua
 modules\unlockRestrictions.lua
+modules\changeBackground.lua
