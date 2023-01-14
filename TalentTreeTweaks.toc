@@ -26,3 +26,4 @@ modules\importIntoCurrentLoadout.lua
 modules\reduceTaint.lua
 modules\unlockRestrictions.lua
 modules\changeBackground.lua
+modules\miscFixes.lua
