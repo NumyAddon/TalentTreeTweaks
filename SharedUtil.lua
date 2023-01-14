@@ -41,9 +41,9 @@ function Util:CopyText(text)
 end
 
 local LOADOUT_SERIALIZATION_VERSION = 1;
-function Util:GetLoadoutExportString(talentsTab)
+function Util:GetLoadoutExportString(talentsTab, configIDOverride)
     local exportStream = ExportUtil.MakeExportDataStream();
-    local configID = talentsTab:GetConfigID();
+    local configID = configIDOverride or talentsTab:GetConfigID();
     local currentSpecID = talentsTab:GetSpecID();
     local treeID = LTT:GetClassTreeId(talentsTab:GetClassID())
 

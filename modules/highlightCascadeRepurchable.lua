@@ -20,6 +20,9 @@ function Module:OnDisable()
             texture:Hide();
         end
     end
+    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
+        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+    end
 end
 
 function Module:GetDescription()
