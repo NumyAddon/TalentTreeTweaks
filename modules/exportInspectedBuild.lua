@@ -67,6 +67,9 @@ function Module:SetupHook()
 end
 
 function Module:OnSetSelectionOptions(dropdown)
+    if self:IsHooked(dropdown, 'tooltipTranslation') then
+        self:Unhook(dropdown, 'tooltipTranslation');
+    end
     self:RawHook(dropdown, 'tooltipTranslation', function(configID)
         return
             self.hooks[dropdown].tooltipTranslation(configID)
