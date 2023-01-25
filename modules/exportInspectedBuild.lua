@@ -79,6 +79,9 @@ function Module:OnSetSelectionOptions(dropdown)
 end
 
 function Module:UpdateExportButton()
+    if not self.exportButton then
+        return;
+    end
     local talentsTab = ClassTalentFrame.TalentsTab;
     if not talentsTab:IsInspecting() then
         self.exportButton:Hide();
