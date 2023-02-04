@@ -164,7 +164,7 @@ function Module:CreateAcceptButton(dialog)
 
     local acceptButton = CreateFrame('Button', nil, dialog, 'ClassTalentLoadoutDialogButtonTemplate');
     acceptButton:SetPoint('BOTTOMRIGHT', dialog.ContentArea, 'BOTTOM', -5, 0);
-    acceptButton:SetText(HUD_CLASS_TALENTS_IMPORT_LOADOUT_ACCEPT_BUTTON.."2");
+    acceptButton:SetText(HUD_CLASS_TALENTS_IMPORT_LOADOUT_ACCEPT_BUTTON);
     acceptButton.disabledTooltip = HUD_CLASS_TALENTS_IMPORT_ERROR_IMPORT_STRING_AND_NAME;
     acceptButton:SetScript('OnClick', function()
         local importString = dialog.ImportControl:GetText();
