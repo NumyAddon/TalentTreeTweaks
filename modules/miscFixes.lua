@@ -12,10 +12,6 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
-    end
 end
 
 function Module:GetDescription()
@@ -30,7 +26,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
 
     local defaults = {
-        fixButtonMouseOver = true,
+        dropdownUpdateOnLoadConfigFix = true,
     }
     for k, v in pairs(defaults) do
         if db[k] == nil then
@@ -42,14 +38,13 @@ function Module:GetOptions(defaultOptionsTable, db)
         return self.db[info[#info]];
     end
     local set = function(info, value)
-        self.db[info[#info]] = value;
-        self:UpdateButtonHooks();
+        self:UpdateSetting(info[#info], value);
     end
 
-    defaultOptionsTable.args.fixButtonMouseOver = {
+    defaultOptionsTable.args.dropdownUpdateOnLoadConfigFix = {
         type = 'toggle',
-        name = 'Fix talent tooltips showing up incorrectly',
-        desc = 'Prevents the tooltip from showing when the button is underneath another frame.',
+        name = 'Fix issue with the loadout dropdown not updating',
+        desc = 'Macros and certain addons that change loadouts, cause the dropdown to not update properly in some situations. This fixes that.',
         get = get,
         set = set,
         order = 10,
@@ -58,38 +53,37 @@ function Module:GetOptions(defaultOptionsTable, db)
     return defaultOptionsTable;
 end
 
-function Module:SetupHook()
-    local talentsTab = ClassTalentFrame.TalentsTab;
-
-    talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
-    self:UpdateButtonHooks();
-end
-
-function Module:UpdateButtonHooks()
-    if not ClassTalentFrame or not ClassTalentFrame.TalentsTab then return; end
-
-    local talentsTab = ClassTalentFrame.TalentsTab;
-    for talentButton in talentsTab:EnumerateAllTalentButtons() do
-        self:OnTalentButtonAcquired(talentButton);
-    end
-end
-
-function Module:OnButtonUpdateMouseOverInfo(talentButton)
-    --- The original function checks if the mouse is over the button, but the more intuitive behavior is to check if
-    --- the button is the mouse's focus. This is especially important when the button is underneath another frame.
-    --- We also check if the current tooltip is owned by the button, just to update the tooltip if it's already showing.
-    if GetMouseFocus() == talentButton or GameTooltip:GetOwner() == talentButton then
-        talentButton:OnEnter();
-    end
-end
-
-function Module:OnTalentButtonAcquired(talentButton)
-    if self.db.fixButtonMouseOver then
-        if not self:IsHooked(talentButton, 'UpdateMouseOverInfo') then
-            self:RawHook(talentButton, 'UpdateMouseOverInfo', 'OnButtonUpdateMouseOverInfo', true);
+function Module:UpdateSetting(key, value)
+    self.db[key] = value;
+    if key == 'dropdownUpdateOnLoadConfigFix' then
+        if value then
+            self:SetupDropDownUpdateHook();
+        else
+            self:UnhookDropDownUpdateHook();
         end
-    else
-        self:Unhook(talentButton, 'UpdateMouseOverInfo');
     end
 end
 
+function Module:SetupHook()
+    if self.db.dropdownUpdateOnLoadConfigFix then
+        self:SetupDropDownUpdateHook();
+    end
+end
+
+function Module:SetupDropDownUpdateHook()
+    local talentsTab = ClassTalentFrame.TalentsTab;
+
+    self:SecureHook(talentsTab, 'CheckUpdateLastSelectedConfigID', function(frame, configID)
+        if
+            frame:IsInspecting() or not configID or configID == C_ClassTalents.GetActiveConfigID()
+        then
+            return;
+        end
+
+        frame.LoadoutDropDown:SetSelectionID(configID);
+    end)
+end
+
+function Module:UnhookDropDownUpdateHook()
+    self:Unhook(ClassTalentFrame.TalentsTab, 'CheckUpdateLastSelectedConfigID');
+end
