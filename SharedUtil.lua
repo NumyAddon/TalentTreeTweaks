@@ -10,7 +10,7 @@ Util.LibTalentTree = LTT;
 function Util:OnInitialize()
     self.dialogName = 'TalentTreeTweaksCopyTextDialog';
     StaticPopupDialogs['TalentTreeTweaksCopyTextDialog'] = {
-        text = 'CTRL-C to copy',
+        text = 'CTRL-C to copy %s',
         button1 = CLOSE,
         OnShow = function(dialog, data)
             local function HidePopup()
@@ -36,8 +36,8 @@ function Util:OnInitialize()
     };
 end
 
-function Util:CopyText(text)
-    StaticPopup_Show(self.dialogName, nil, nil, text);
+function Util:CopyText(text, optionalTitleSuffix)
+    StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
 end
 
 local LOADOUT_SERIALIZATION_VERSION = 1;

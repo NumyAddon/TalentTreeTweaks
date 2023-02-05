@@ -78,7 +78,7 @@ end
 
 local function replacedShareButtonCallback()
     local exportString = ClassTalentFrame.TalentsTab:GetLoadoutExportString();
-    Util:CopyText(exportString);
+    Util:CopyText(exportString, 'Talent Loadout String');
 end
 
 local skipHook = false;

@@ -42,7 +42,7 @@ function Module:SetupHook()
     local dropdown = talentsTab.LoadoutDropDown
     dropdown:SetRightClickCallback(function(configID)
         local exportString = Util:GetLoadoutExportString(talentsTab, configID);
-        Util:CopyText(exportString);
+        Util:CopyText(exportString, 'Talent Loadout String');
     end);
     self:SecureHook(dropdown, 'SetSelectionOptions', 'OnSetSelectionOptions');
     Module:OnSetSelectionOptions(dropdown)
@@ -61,7 +61,7 @@ function Module:SetupHook()
     button:Show();
     button:SetScript('OnClick', function()
         local exportString = Util:GetLoadoutExportString(talentsTab);
-        Util:CopyText(exportString);
+        Util:CopyText(exportString, 'Talent Loadout String');
     end);
     Module:UpdateExportButton();
 end

@@ -1,0 +1,116 @@
+local _, TTT = ...;
+--- @type TalentTreeTweaks_Main
+local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
+
+local Module = Main:NewModule('CopyTalentButtonInfo', 'AceHook-3.0', 'AceEvent-3.0');
+
+function Module:OnInitialize()
+    self.bindingButton = CreateFrame('Button', 'TalentTreeTweaks_CopyTalentButtonInfoButton');
+    self.bindingButton:SetScript('OnClick', function()
+        if self.textToCopy then
+            Util:CopyText(self.textToCopy, 'SpellID');
+        end
+    end);
+end
+
+function Module:OnEnable()
+    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+        self:SetupHook();
+    end);
+    self:RegisterEvent('PLAYER_REGEN_DISABLED');
+    self:RegisterEvent('PLAYER_REGEN_ENABLED');
+    EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
+end
+
+function Module:OnDisable()
+    self.textToCopy = nil;
+    self:DisableBinding();
+    self:UnhookAll();
+
+    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
+        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+    end
+    EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
+end
+
+function Module:GetDescription()
+    return 'Allows you to press CTRL-C to copy the spellID of a talent, while hovering over it.';
+end
+
+function Module:GetName()
+    return 'Copy SpellID on hover';
+end
+
+function Module:SetupHook()
+    local talentsTab = ClassTalentFrame.TalentsTab;
+
+    talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
+    for talentButton in talentsTab:EnumerateAllTalentButtons() do
+        self:OnTalentButtonAcquired(talentButton);
+    end
+    self:SecureHook(ClassTalentFrame.TalentsTab, 'ShowSelections', 'OnShowSelections');
+end
+
+function Module:EnableBinding()
+    if not InCombatLockdown() then
+        SetOverrideBinding(
+            self.bindingButton,
+            true,
+            'CTRL-C',
+            string.format('CLICK %s:LeftButton', self.bindingButton:GetName())
+        );
+    end
+end
+
+function Module:DisableBinding()
+    if not InCombatLockdown() then
+        ClearOverrideBindings(self.bindingButton);
+    end
+end
+
+function Module:PLAYER_REGEN_DISABLED()
+    if self.textToCopy then
+        self:DisableBinding();
+    end
+end
+
+function Module:PLAYER_REGEN_ENABLED()
+    if self.textToCopy then
+        self:EnableBinding();
+    end
+end
+
+function Module:OnTalentButtonEnter(talentButton)
+    self.textToCopy = talentButton:GetSpellID();
+    self:EnableBinding();
+end
+
+function Module:OnTalentButtonLeave()
+    self.textToCopy = nil;
+    self:DisableBinding();
+end
+
+function Module:OnTalentButtonAcquired(talentButton)
+    if self:IsHooked(talentButton, 'OnEnter') then
+        return;
+    end
+    self:HookScript(talentButton, 'OnEnter', 'OnTalentButtonEnter');
+    self:HookScript(talentButton, 'OnLeave', 'OnTalentButtonLeave');
+end
+
+function Module:OnShowSelections(talentsTab)
+    for _, button in pairs(talentsTab.SelectionChoiceFrame.selectionFrameArray) do
+        self:OnTalentButtonAcquired(button);
+    end
+end
+
+function Module:OnTalentTooltipCreated(_, tooltip)
+    local text = '|cFF00FF00CTRL-C to copy spellID|r';
+    if InCombatLockdown() then
+        text = text .. '|cFFFF0000 blocked in combat|r';
+    end
+    tooltip:AddLine(text);
+    tooltip:Show();
+end

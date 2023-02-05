@@ -147,7 +147,7 @@ function Module:SetItemRef(link)
     local linkType, addon, exportString = string.split(":", link)
     if linkType == "garrmission" and addon == "TTT" then
         if IsShiftKeyDown() then
-            Util:CopyText(exportString);
+            Util:CopyText(exportString, 'Talent Loadout String');
             return;
         end
         if Main:IsTalentTreeViewerEnabled() and not IsControlKeyDown() then
