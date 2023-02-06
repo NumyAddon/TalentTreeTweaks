@@ -12,6 +12,9 @@ libs\embeds.xml
 core.lua
 SharedUtil.lua
 
+modules\reduceTaint.lua
+modules\dropdownReplacement.xml
+
 modules\tooltipIds.lua
 modules\exportInspectedBuild.lua
 modules\debugNodeInfo.lua
@@ -23,7 +26,6 @@ modules\clickableExportStringsInChat.lua
 modules\inspectDiff.lua
 modules\alwaysShowGates.lua
 modules\importIntoCurrentLoadout.lua
-modules\reduceTaint.lua
 modules\unlockRestrictions.lua
 modules\changeBackground.lua
 modules\miscFixes.lua

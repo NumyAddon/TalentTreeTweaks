@@ -1,26 +1,18 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
-local Module = Main:NewModule('SearchForIds', 'AceHook-3.0', 'AceEvent-3.0');
+local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
 function Module:OnEnable()
-    local registerEvent = false
-    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
+    Util:OnClassTalentUILoad(function()
         self:SetupHook('Blizzard_ClassTalentUI');
-    else
-        registerEvent = true;
-    end
-    if GetAddOnEnableState(UnitName('player'), 'TalentTreeViewer') == 2 then
-        if IsAddOnLoaded('TalentTreeViewer') then
-            self:SetupHook('TalentTreeViewer');
-        else
-            registerEvent = true;
-        end
-    end
-    if registerEvent then
-        self:RegisterEvent('ADDON_LOADED');
-    end
+    end);
+    EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
+        self:SetupHook('TalentTreeViewer');
+    end)
 end
 
 function Module:OnDisable()
@@ -39,12 +31,6 @@ function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
 
     return defaultOptionsTable;
-end
-
-function Module:ADDON_LOADED(_, addon)
-    if addon == 'Blizzard_ClassTalentUI' or addon == 'TalentTreeViewer' then
-        self:SetupHook(addon);
-    end
 end
 
 function Module:SetupHook(addon)

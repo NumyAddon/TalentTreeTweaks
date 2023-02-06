@@ -1,6 +1,8 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
 local Module = Main:NewModule('ImportIntoCurrentLoadout', 'AceHook-3.0');
 
@@ -21,7 +23,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end

@@ -8,7 +8,7 @@ local Module = Main:NewModule('ChangeBackground', 'AceHook-3.0', 'AceEvent-3.0')
 Module.originalAlpha = {}
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupDefaultUI();
     end);
     EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()

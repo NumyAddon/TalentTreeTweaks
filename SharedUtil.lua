@@ -34,6 +34,47 @@ function Util:OnInitialize()
         hideOnEscape = true,
         preferredIndex = 3,
     };
+    self:ResetRegistry();
+end
+
+function Util:ResetRegistry()
+    self.classTalentUILoadCallbacks = {
+        minPriority = 1,
+        maxPriority = 1,
+        registered = false,
+    };
+end
+
+--- @param callback function
+--- @param priority number - lower numbers are called first
+function Util:OnClassTalentUILoad(callback, priority)
+    local actualPriority = priority or 10;
+    local registry = self.classTalentUILoadCallbacks;
+    registry[actualPriority] = registry[actualPriority] or {};
+    table.insert(registry[actualPriority], callback);
+    registry.minPriority = math.min(registry.minPriority, actualPriority);
+    registry.maxPriority = math.max(registry.maxPriority, actualPriority);
+
+    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
+        self:RunOnLoadCallbacks()
+    elseif not registry.registered then
+        registry.registered = true;
+        EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+            self:RunOnLoadCallbacks()
+        end);
+    end
+end
+
+function Util:RunOnLoadCallbacks()
+    local registry = self.classTalentUILoadCallbacks;
+    for priority = registry.minPriority, registry.maxPriority do
+        if registry[priority] then
+            for _, callback in ipairs(registry[priority]) do
+                callback();
+            end
+        end
+    end
+    self:ResetRegistry();
 end
 
 function Util:CopyText(text, optionalTitleSuffix)

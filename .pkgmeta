@@ -10,3 +10,4 @@ externals:
     libs/LibTalentTree-1.0:
         url: https://github.com/Numynum/LibTalentTree-1.0
         curse-slug: libtalenttree
+    libs/LibUIDropDownMenu: https://repos.curseforge.com/wow/libuidropdownmenu/trunk/LibUIDropDownMenu

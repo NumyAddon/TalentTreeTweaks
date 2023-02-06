@@ -9,7 +9,7 @@ local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
 Module.shouldShowExportButton = select(4, GetBuildInfo()) < 100005 -- blizzard added their own version of this in 10.0.5
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -41,6 +41,7 @@ function Module:SetupHook()
 
     local dropdown = talentsTab.LoadoutDropDown
     dropdown:SetRightClickCallback(function(configID)
+        if not C_Traits.GetConfigInfo(configID) then return; end
         local exportString = Util:GetLoadoutExportString(talentsTab, configID);
         Util:CopyText(exportString, 'Talent Loadout String');
     end);

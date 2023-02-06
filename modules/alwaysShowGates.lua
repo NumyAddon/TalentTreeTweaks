@@ -1,6 +1,8 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 --- @type LibTalentTree
@@ -11,7 +13,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end

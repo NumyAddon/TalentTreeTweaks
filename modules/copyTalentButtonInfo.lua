@@ -16,7 +16,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
     self:RegisterEvent('PLAYER_REGEN_DISABLED');

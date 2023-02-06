@@ -1,15 +1,15 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnEnable()
-    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
-    else
-        self:RegisterEvent('ADDON_LOADED');
-    end
+    end);
 end
 
 function Module:OnDisable()

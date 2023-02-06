@@ -1,12 +1,14 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
 
 local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
 function Module:OnEnable()
     self.blizzardButtonTextures = self.blizzardButtonTextures or {};
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupBlizzardHook();
     end);
 
