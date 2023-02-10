@@ -19,6 +19,9 @@ function Module:OnEnable()
     Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
+    EventUtil.ContinueOnAddOnLoaded('Blizzard_GenericTraitUI', function()
+        self:SetupGenericTalentsHook();
+    end);
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
@@ -31,6 +34,9 @@ function Module:OnDisable()
 
     if ClassTalentFrame and ClassTalentFrame.TalentsTab then
         ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+    end
+    if GenericTraitFrame then
+        GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
     end
     EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
 end
@@ -51,6 +57,15 @@ function Module:SetupHook()
         self:OnTalentButtonAcquired(talentButton);
     end
     self:SecureHook(ClassTalentFrame.TalentsTab, 'ShowSelections', 'OnShowSelections');
+end
+
+function Module:SetupGenericTalentsHook()
+    local genericTalentsFrame = GenericTraitFrame;
+    genericTalentsFrame:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
+    for talentButton in genericTalentsFrame:EnumerateAllTalentButtons() do
+        self:OnTalentButtonAcquired(talentButton);
+    end
+    self:SecureHook(genericTalentsFrame, 'ShowSelections', 'OnShowSelections');
 end
 
 function Module:EnableBinding()
