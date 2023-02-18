@@ -152,7 +152,9 @@ function Module:PurchaseTalents()
             break;
         end
     end
-    self:ReportPurchases(purchasedEntries);
+    if #purchasedEntries > 0 and C_Traits.CommitConfig(self.configID) then
+        self:ReportPurchases(purchasedEntries);
+    end
 
     self.purchasing = false;
 end
