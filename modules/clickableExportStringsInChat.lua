@@ -184,8 +184,15 @@ end
 
 function Module:Filter(_, _, message, ...)
     for word in message:gmatch('[A-Za-z0-9+/=]+') do
-        -- if the word is a valid export string
-        local valid, specID, requiredLevel = self:ParseImportString(word);
+        local valid, specID, requiredLevel = false;
+        if word:len() > 42 and word:len() < 68 then
+            -- druid currently uses 64 characters, and DH uses 47
+            -- the number of characters roughly corresponds to the number of talents in the class overall
+            valid = true;
+        end
+        if valid then
+            valid, specID, requiredLevel = self:ParseImportString(word);
+        end
         if valid then
             self:DebugPrint("Valid import string, specID:", specID);
             -- replace the word with a clickable link
@@ -266,8 +273,16 @@ function Module:ReadLoadoutHeader(importStream)
     return true, serializationVersion, specID, treeHash;
 end
 
+local nodeCache = {};
+local function GetTreeNodes(treeID)
+    if not nodeCache[treeID] then
+        nodeCache[treeID] = C_Traits.GetTreeNodes(treeID);
+    end
+    return nodeCache[treeID];
+end
+
 function Module:ValidateLoadoutContent(importStream, treeID)
-    local treeNodes = C_Traits.GetTreeNodes(treeID);
+    local treeNodes = GetTreeNodes(treeID);
     local classPointsSpent, specPointsSpent = 0, 0;
     for i = 1, #treeNodes do
         local nodeSelectedValue = importStream:ExtractValue(1)
@@ -316,10 +331,6 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                 specPointsSpent = specPointsSpent + pointsSpent;
             end
         end
-    end
-
-    if self.debug and ViragDevTool_AddData then
-        ViragDevTool_AddData(importStream, "importStream");
     end
 
     local requiredLevel = math.max(10, 8 + (classPointsSpent * 2), 9 + (specPointsSpent * 2));
