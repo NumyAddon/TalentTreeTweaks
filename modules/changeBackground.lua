@@ -122,9 +122,15 @@ function Module:UpdateBackground(resetAlpha)
         self:TrySetAlpha(talentViewerFrame.BlackBG, alpha);
         self:TrySetAlpha(TalentViewer_DFBg, alpha);
     end
-    if TalentLoadoutManager and TalentLoadoutManager.SideBarModule and TalentLoadoutManager.SideBarModule.SideBar then
-        local sideBar = TalentLoadoutManager.SideBarModule.SideBar;
-        self:TrySetAlpha(sideBar.Background, alpha);
+    if TalentLoadoutManager then
+        if TalentLoadoutManager.SideBarModule and TalentLoadoutManager.SideBarModule.SideBar then
+            local sideBar = TalentLoadoutManager.SideBarModule.SideBar;
+            self:TrySetAlpha(sideBar.Background, alpha);
+        end
+        if TalentLoadoutManager.TTVSideBarModule and TalentLoadoutManager.TTVSideBarModule.SideBar then
+            local sideBar = TalentLoadoutManager.TTVSideBarModule.SideBar;
+            self:TrySetAlpha(sideBar.Background, alpha);
+        end
     end
 
     if self.alphaSlider then
