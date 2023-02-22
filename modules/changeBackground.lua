@@ -139,6 +139,11 @@ function Module:SetupDefaultUI()
     self:UpdateBackground();
     self.alphaSlider = self.alphaSlider or self:CreateSlider(ClassTalentFrame.TalentsTab);
     self.alphaSlider:SetShown(self.db.showAlphaInUI);
+
+    RunNextFrame(function()
+        -- give time for other addons that hook into Default UI to load up
+        self:UpdateBackground();
+    end);
 end
 
 function Module:SetupTTVUI()
@@ -146,6 +151,11 @@ function Module:SetupTTVUI()
     local xOffset = 25;
     self.viewerAlphaSlider = self.viewerAlphaSlider or self:CreateSlider(TalentViewer:GetTalentFrame(), xOffset);
     self.viewerAlphaSlider:SetShown(self.db.showAlphaInViewerUI);
+
+    RunNextFrame(function()
+        -- give time for other addons that hook into TTV UI to load up
+        self:UpdateBackground();
+    end);
 end
 
 function Module:CreateSlider(talentFrame, xOffset)

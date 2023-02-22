@@ -91,9 +91,9 @@ function Util:GetLoadoutExportString(talentsTab, configIDOverride)
     -- write header
     exportStream:AddValue(talentsTab.bitWidthHeaderVersion, LOADOUT_SERIALIZATION_VERSION);
     exportStream:AddValue(talentsTab.bitWidthSpecID, currentSpecID);
-    -- treeHash is a 128bit hash, passed as an array of 16, 8-bit values
-    -- empty tree hash will disable validation on import
-    exportStream:AddValue(8 * 16, 0);
+    for _, hashVal in ipairs(C_Traits.GetTreeHash(treeID)) do
+        exportStream:AddValue(8, hashVal);
+    end
 
     talentsTab:WriteLoadoutContent(exportStream, configID, treeID);
 

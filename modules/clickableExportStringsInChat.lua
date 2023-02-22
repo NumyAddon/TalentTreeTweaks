@@ -185,9 +185,11 @@ end
 function Module:Filter(_, _, message, ...)
     for word in message:gmatch('[A-Za-z0-9+/=]+') do
         local valid, specID, requiredLevel = false;
-        if word:len() > 42 and word:len() < 68 then
-            -- druid currently uses 64 characters, and DH uses 47
-            -- the number of characters roughly corresponds to the number of talents in the class overall
+        if word:len() > 40 and word:len() < 120 then
+            --- A druid with lots of options picked, uses 103 characters
+            --- and an empty DH uses 47
+            --- the number of characters roughly corresponds to the number of talents in the class overall
+            --- and is increased for the talents picked, and whether they are choice nodes, or partially purchased nodes
             valid = true;
         end
         if valid then
@@ -235,14 +237,14 @@ function Module:ParseImportString(importText)
         return false;
     end
 
-    if(not self:IsHashPossiblyValid(treeHash)) then
-        self:DebugPrint("Invalid tree hash");
-        return false;
-    end
-
     local treeID = specID and specToClassMap[specID] and LTT:GetClassTreeId(specToClassMap[specID]);
     if (not treeID) then
         self:DebugPrint("Invalid tree ID");
+        return false;
+    end
+
+    if(not self:IsHashValid(treeHash, treeID)) then
+        self:DebugPrint("Invalid tree hash");
         return false;
     end
 
@@ -279,6 +281,14 @@ local function GetTreeNodes(treeID)
         nodeCache[treeID] = C_Traits.GetTreeNodes(treeID);
     end
     return nodeCache[treeID];
+end
+
+local treeHashCache = {}
+local function GetTreeHash(treeID)
+    if not treeHashCache[treeID] then
+        treeHashCache[treeID] = C_Traits.GetTreeHash(treeID);
+    end
+    return treeHashCache[treeID];
 end
 
 function Module:ValidateLoadoutContent(importStream, treeID)
@@ -338,12 +348,17 @@ function Module:ValidateLoadoutContent(importStream, treeID)
     return importStream.currentIndex == #importStream.dataValues, requiredLevel;
 end
 
-function Module:IsHashPossiblyValid(treeHash)
+function Module:IsHashValid(treeHash, treeID)
     if not #treeHash == 16 then
         return false;
     end
+    local expectedHash = GetTreeHash(treeID);
+    local allZero = true;
     for i, value in ipairs(treeHash) do
-        if not (value >= 0 and value <= 255) then
+        if value ~= 0 then
+            allZero = false;
+        end
+        if not allZero and value ~= expectedHash[i] then
             return false;
         end
     end
