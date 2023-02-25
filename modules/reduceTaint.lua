@@ -43,6 +43,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
     local defaults = {
         replaceDropDown = true,
+        disableMultiActionBarShowHide = true,
     };
     for k, v in pairs(defaults) do
         if db[k] == nil then
@@ -50,21 +51,27 @@ function Module:GetOptions(defaultOptionsTable, db)
         end
     end
 
+    local counter = CreateCounter(10);
+
+    local get = function(info)
+        return self.db[info[#info]];
+    end
+    local set = function(info, value)
+        self.db[info[#info]] = value;
+    end
     defaultOptionsTable.args.extra_info = {
         type = 'description',
-        name = 'You have to reload your UI after disabling this module, for it to be disabled.',
+        name = 'You have to reload your UI after disabling this module, for some of the change to take effect.',
         order = 5,
     };
     defaultOptionsTable.args.replaceDropDown = {
         type = 'toggle',
         name = 'Replace Loadout Dropdown',
         desc = 'Replace the loadout dropdown, to avoid tainting the edit mode dropdown.',
-        order = 10,
-        get = function()
-            return self.db.replaceDropDown;
-        end,
-        set = function(_, value)
-            self.db.replaceDropDown = value;
+        order = counter(),
+        get = get,
+        set = function(info, value)
+            set(info, value);
             if value then
                 self:EnableDropDownReplacement();
             else
@@ -72,6 +79,17 @@ function Module:GetOptions(defaultOptionsTable, db)
             end
         end,
     };
+    defaultOptionsTable.args.disableMultiActionBarShowHide = {
+        type = 'toggle',
+        name = 'Disable MultiActionBar_ShowAllGrids on Show',
+        desc = 'Disables the MultiActionBar_ShowAllGrids function, which can cause nasty taint issues.',
+        order = counter(),
+        get = get,
+        set = function(info, value)
+            set(info, value);
+            self:HandleMultiActionBarTaint();
+        end,
+    }
 
     return defaultOptionsTable;
 end
@@ -93,6 +111,32 @@ function Module:SetupHook()
     -- ToggleTalentFrame starts of with a ClassTalentFrame:SetInspecting call, which has a high likelihood of tainting execution
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
     self:SecureHook('HideUIPanel', 'OnHideUIPanel')
+
+    self:HandleMultiActionBarTaint();
+end
+
+local nop = function() end;
+local function makeFEnvReplacement(original, functionsToNop)
+    local fEnv = {};
+    setmetatable(fEnv, { __index = function(t, k)
+        if functionsToNop[k] then
+            return nop;
+        end
+        return original[k];
+    end});
+    return fEnv;
+end
+function Module:HandleMultiActionBarTaint()
+    if self.db.disableMultiActionBarShowHide then
+        self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(ClassTalentFrame.OnShow);
+        self.originalOnHideFEnv = self.originalOnHideFEnv or getfenv(ClassTalentFrame.OnHide);
+
+        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = true }));
+        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = true }));
+    elseif self.originalOnShowFEnv and self.originalOnHideFEnv then
+        setfenv(ClassTalentFrame.OnShow, self.originalOnShowFEnv);
+        setfenv(ClassTalentFrame.OnHide, self.originalOnHideFEnv);
+    end
 end
 
 function Module:EnableDropDownReplacement()
