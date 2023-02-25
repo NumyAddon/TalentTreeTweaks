@@ -111,10 +111,12 @@ end
 
 function Module:UpdateBackground(resetAlpha)
     local alpha = resetAlpha and 1 or self.db.alpha;
-    self:TrySetAlpha(ClassTalentFrame.TalentsTab.Background, alpha);
-    self:TrySetAlpha(ClassTalentFrame.TalentsTab.BlackBG, alpha);
-    self:TrySetAlpha(ClassTalentFrame.Center, alpha); -- ElvUI background
-    self:TrySetAlpha(ClassTalentFrameBg, alpha);
+    if ClassTalentFrame then
+        self:TrySetAlpha(ClassTalentFrame.TalentsTab.Background, alpha);
+        self:TrySetAlpha(ClassTalentFrame.TalentsTab.BlackBG, alpha);
+        self:TrySetAlpha(ClassTalentFrame.Center, alpha); -- ElvUI background
+        self:TrySetAlpha(ClassTalentFrameBg, alpha);
+    end
 
     if TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame() then
         local talentViewerFrame = TalentViewer:GetTalentFrame();
