@@ -105,8 +105,8 @@ function Module:SetupHook()
     end
     self:SecureHook(ClassTalentFrame.TalentsTab, 'ShowSelections', 'OnShowSelections');
 
-    -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's the ideal place to check for taint
-    self:SecureHook(ClassTalentFrame.TalentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:CheckShareButton(dropdown, selectionID) end);
+    -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
+    self:SecureHook(ClassTalentFrame.TalentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
 
     -- ToggleTalentFrame starts of with a ClassTalentFrame:SetInspecting call, which has a high likelihood of tainting execution
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
@@ -210,16 +210,13 @@ local function replacedShareButtonCallback()
 end
 
 local skipHook = false;
-function Module:CheckShareButton(dropdown, selectionID)
+function Module:ReplaceShareButton(dropdown, selectionID)
     if skipHook then return; end
 
     skipHook = true;
     local _, sentinelInfo = dropdown:GetSentinelKeyInfoFromSelectionID(selectionID);
     skipHook = false;
-    if sentinelInfo and sentinelInfo.text == TALENT_FRAME_DROP_DOWN_EXPORT then
-        -- actually.. we can't properly test for taint here, since there's a lot of things in the callback that could be tainted
-        -- and we're not able to check if the current execution path is tainted either. So we'll just assume that we're tainted
-        -- and replace the callback.
+    if sentinelInfo and (sentinelInfo.text == TALENT_FRAME_DROP_DOWN_EXPORT or sentinelInfo.text == TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD) then
         local callback = sentinelInfo.callback;
         if callback then
             sentinelInfo.callback = replacedShareButtonCallback;
