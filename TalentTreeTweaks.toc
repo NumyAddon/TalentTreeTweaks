@@ -30,5 +30,6 @@ modules\unlockRestrictions.lua
 modules\changeBackground.lua
 modules\miscFixes.lua
 modules\copyTalentButtonInfo.lua
+modules\reduceSpam.lua
 
 modules\autoPurchaseDragonRidingTalents.lua
