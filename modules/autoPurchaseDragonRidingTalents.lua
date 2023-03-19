@@ -75,6 +75,7 @@ function Module:SPELLS_CHANGED()
     self.talentsLoaded = true;
 
     self.configID = C_Traits.GetConfigIDBySystemID(DRAGONRIDING_TRAIT_SYSTEM_ID);
+    if not self.configID then return end
     local configInfo = C_Traits.GetConfigInfo(self.configID);
     self.treeID = configInfo and configInfo.treeIDs and configInfo.treeIDs[1];
 
@@ -97,6 +98,7 @@ function Module:GetCurrencyInfo()
 end
 
 function Module:PurchaseTalents()
+    if not self.configID then return; end
     if self.purchasing or self.disabledByRefund then
         -- Already purchasing or disabled by refund
         return;
