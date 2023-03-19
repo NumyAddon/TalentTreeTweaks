@@ -33,57 +33,19 @@ local events = {
     CHAT_MSG_YELL = true,
 };
 local specToClassMap = {
-    [71] = 1,
-    [72] = 1,
-    [73] = 1,
-    [1446] = 1,
-    [65] = 2,
-    [66] = 2,
-    [70] = 2,
-    [1451] = 2,
-    [253] = 3,
-    [254] = 3,
-    [255] = 3,
-    [1448] = 3,
-    [259] = 4,
-    [260] = 4,
-    [261] = 4,
-    [1453] = 4,
-    [256] = 5,
-    [257] = 5,
-    [258] = 5,
-    [1452] = 5,
-    [250] = 6,
-    [251] = 6,
-    [252] = 6,
-    [1455] = 6,
-    [262] = 7,
-    [263] = 7,
-    [264] = 7,
-    [1444] = 7,
-    [62] = 8,
-    [63] = 8,
-    [64] = 8,
-    [1449] = 8,
-    [265] = 9,
-    [266] = 9,
-    [267] = 9,
-    [1454] = 9,
-    [268] = 10,
-    [270] = 10,
-    [269] = 10,
-    [1450] = 10,
-    [102] = 11,
-    [103] = 11,
-    [104] = 11,
-    [105] = 11,
-    [1447] = 11,
-    [577] = 12,
-    [581] = 12,
-    [1456] = 12,
-    [1467] = 13,
-    [1468] = 13,
-    [1465] = 13,
+    [71] = 1, [72] = 1, [73] = 1, [1446] = 1,
+    [65] = 2, [66] = 2, [70] = 2, [1451] = 2,
+    [253] = 3, [254] = 3, [255] = 3, [1448] = 3,
+    [259] = 4, [260] = 4, [261] = 4, [1453] = 4,
+    [256] = 5, [257] = 5, [258] = 5, [1452] = 5,
+    [250] = 6, [251] = 6, [252] = 6, [1455] = 6,
+    [262] = 7, [263] = 7, [264] = 7, [1444] = 7,
+    [62] = 8, [63] = 8, [64] = 8, [1449] = 8,
+    [265] = 9, [266] = 9, [267] = 9, [1454] = 9,
+    [268] = 10, [270] = 10, [269] = 10, [1450] = 10,
+    [102] = 11, [103] = 11, [104] = 11, [105] = 11, [1447] = 11,
+    [577] = 12, [581] = 12, [1456] = 12,
+    [1467] = 13, [1468] = 13, [1465] = 13,
 }
 
 local function Filter(...) return Module:Filter(...) end
@@ -91,6 +53,7 @@ local function Filter(...) return Module:Filter(...) end
 local LOADOUT_SERIALIZATION_VERSION;
 function Module:OnInitialize()
     self.debug = false;
+    self.talentBuildLinksSupported = (select(4,GetBuildInfo())) >= 100100; -- added in 10.1.0
     LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
 end
 
@@ -98,23 +61,28 @@ function Module:OnEnable()
     for event in pairs(events) do
         ChatFrame_AddMessageEventFilter(event, Filter)
     end
-    self:SecureHook('SetItemRef')
+    self:SecureHook('SetItemRef');
+    for i = 1, NUM_CHAT_WINDOWS do
+        local frame = _G["ChatFrame" .. i];
+        self:SecureHookScript(frame, "OnHyperlinkEnter");
+        self:SecureHookScript(frame, "OnHyperlinkLeave");
+    end
 end
 
 function Module:OnDisable()
     for event in pairs(events) do
-        ChatFrame_RemoveMessageEventFilter(event, Filter)
+        ChatFrame_RemoveMessageEventFilter(event, Filter);
     end
-    self:UnhookAll()
+    self:UnhookAll();
 end
 
 function Module:GetDescription()
-    return [[Attempts to turn loadout export strings found in chat, into clickable links.
+    local description = "Attempts to turn loadout export strings found in chat, into clickable links. You can use modifiers, to copy the link, import it as a loadout, open it in Talent Tree Viewer (if installed) etc."
+    if self.talentBuildLinksSupported then
+        description = description .. "\nDefault talent links are also extended to allow this behaviour.";
+    end
 
-Shift+Click to copy the export string to your clipboard.
-
-Opens in TalentTreeViewer if installed. Ctrl+Click to import as loadout instead.
-    ]]
+    return description;
 end
 
 function Module:GetName()
@@ -143,33 +111,108 @@ function Module:DebugPrint(...)
     end
 end
 
-function Module:SetItemRef(link)
-    local linkType, addon, exportString = string.split(":", link)
-    if linkType == "garrmission" and addon == "TTT" then
-        if IsShiftKeyDown() then
+function Module:WrapTooltipTextInColor(clickText, action)
+    return ("|cffeda55f%s|r %s"):format(clickText, (action));
+end
+
+function Module:OnHyperlinkEnter(chatFrame, link)
+    local linkType, addon, specID, level, exportString = string.split(":", link)
+    if not (linkType == "garrmission" and addon == "TalentTreeTweaks") then return end
+    specID = tonumber(specID);
+    level = tonumber(level);
+
+    local talentViewerEnabled = Main:IsTalentTreeViewerEnabled();
+    local classID = specToClassMap[specID];
+    local className, classFileName = GetClassInfo(classID);
+    local classColor = RAID_CLASS_COLORS[classFileName];
+    local specName = select(2, GetSpecializationInfoByID(specID));
+    local prettyLinkText = classColor:WrapTextInColorCode(("%s %s (lvl %d)"):format(specName, className, level));
+
+    local click = "Click:";
+    local altClick = "ALT + " .. click;
+    local ctrlClick = "CTRL + " .. click;
+    local shiftClick = "Shift + " .. click;
+    local shiftLeftClick = "Shift + Left-" .. click;
+    local shiftRightClick = "Shift + Right-" .. click;
+
+    local actionCopyLink = "Copy Link";
+    local actionImportLoadout = "Import Loadout";
+
+    self.showingTooltip = true;
+    GameTooltip:SetOwner(chatFrame, "ANCHOR_CURSOR");
+    GameTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks - %s"):format(prettyLinkText)));
+    if talentViewerEnabled then
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, "Open in Talent Tree Viewer"))
+        if self.talentBuildLinksSupported then
+            GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, "Open loadout in default Inspect UI"))
+        end
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
+    elseif self.talentBuildLinksSupported then
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, "Open loadout in default Inspect UI"))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
+    else
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, actionImportLoadout))
+    end
+    if self.talentBuildLinksSupported then
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, "Link in chat"))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLink))
+    else
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftClick, actionCopyLink))
+    end
+    GameTooltip:Show();
+end
+
+function Module:OnHyperlinkLeave()
+    if not self.showingTooltip then return end
+    GameTooltip:Hide();
+end
+
+function Module:SetItemRef(link, text, button)
+    local linkType, addon, specID, level, exportString = string.split(":", link)
+    if not (linkType == "garrmission" and addon == "TalentTreeTweaks") then return end
+
+    if IsShiftKeyDown() then
+        if "LeftButton" == button and self.talentBuildLinksSupported then
+            local fixedLink = GetFixedLink(text:gsub('garrmission:TalentTreeTweaks', 'talentbuild'));
+            ChatEdit_InsertLink(fixedLink);
+            return;
+        else
             Util:CopyText(exportString, 'Talent Loadout String');
             return;
         end
-        if Main:IsTalentTreeViewerEnabled() and not IsControlKeyDown() then
-            self:OpenInTalentTreeViewer(exportString)
+    end
+    if IsControlKeyDown() then
+        self:OpenInImportUI(exportString);
+    elseif IsAltKeyDown() and self.talentBuildLinksSupported then
+        self:OpenInDefaultUI(level, exportString);
+    else
+        if Main:IsTalentTreeViewerEnabled() then
+            self:OpenInTalentTreeViewer(level, exportString);
+        elseif self.talentBuildLinksSupported then
+            self:OpenInDefaultUI(level, exportString);
         else
-            self:OpenInDefaultTalentUI(exportString)
+            self:OpenInImportUI(exportString);
         end
     end
 end
 
-function Module:OpenInTalentTreeViewer(exportString)
+function Module:OpenInTalentTreeViewer(level, exportString)
     LoadAddOn('TalentTreeViewer');
     if not TalentViewer or not TalentViewer.ImportLoadout then
-        self:OpenInDefaultTalentUI(exportString);
-        print('Error opening in TalentTreeViewer. Showing default blizzard import UI instead.');
+        if not self.talentBuildLinksSupported then
+            self:OpenInImportUI(exportString);
+            print('Error opening in TalentTreeViewer. Showing default Blizzard import UI instead.');
+        else
+            self:OpenInDefaultUI(level, exportString);
+            print('Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.');
+        end
 
         return;
     end
     TalentViewer:ImportLoadout(exportString);
 end
 
-function Module:OpenInDefaultTalentUI(exportString)
+function Module:OpenInImportUI(exportString)
     LoadAddOn('Blizzard_ClassTalentUI');
     if not ClassTalentFrame:IsShown() then
         ToggleTalentFrame();
@@ -182,46 +225,97 @@ function Module:OpenInDefaultTalentUI(exportString)
     ClassTalentLoadoutImportDialog.ImportControl:GetEditBox():SetAutoFocus(true);
 end
 
-function Module:Filter(_, _, message, ...)
-    for word in message:gmatch('[A-Za-z0-9+/=]+') do
-        local valid, specID, requiredLevel = false;
-        if word:len() > 40 and word:len() < 120 then
-            --- A druid with lots of options picked, uses 103 characters
-            --- and an empty DH uses 47
-            --- the number of characters roughly corresponds to the number of talents in the class overall
-            --- and is increased for the talents picked, and whether they are choice nodes, or partially purchased nodes
-            valid = true;
-        end
-        if valid then
-            valid, specID, requiredLevel = self:ParseImportString(word);
-        end
-        if valid then
-            self:DebugPrint("Valid import string, specID:", specID);
-            -- replace the word with a clickable link
-            local class = specToClassMap[specID];
-            local classColor = RAID_CLASS_COLORS[select(2, GetClassInfo(class))];
-            local specName = select(2, GetSpecializationInfoByID(specID));
-            message = message:gsub(
-                word:gsub('%+', '%%+'),
-                string.format(
-                    '|Hgarrmission:TTT:%s|h%s|h',
-                    word,
-                    NORMAL_FONT_COLOR:WrapTextInColorCode(
-                        string.format(
-                        '[Talent Tree Build (%s lvl %d)]',
-                            classColor:WrapTextInColorCode(specName),
-                            requiredLevel
-                        )
-                    )
-                )
-            );
-        end
-    end
+function Module:OpenInDefaultUI(level, exportString)
+    ClassTalentFrame_LoadUI();
 
-    return false, message, ...
+    if not ClassTalentFrame or not ClassTalentFrame.SetInspectString then return end
+    ClassTalentFrame:SetInspectString(exportString, level);
+    if not ClassTalentFrame:IsShown() then
+        ShowUIPanel(ClassTalentFrame);
+    end
 end
 
+local function replaceSubString(str, sStart, sEnd, replacement)
+    return string.sub(str, 1, sStart-1) .. replacement .. string.sub(str, sEnd+1)
+end
+
+function Module:Filter(_, _, message, ...)
+    local importStringPattern = '([A-Za-z0-9+/=]+)';
+    local prefixPattern = '|Htalentbuild:(%d+):(%d+):$';
+
+    local specID, requiredLevel;
+    local toReplace = {};
+
+    local sStart, sEnd, importString = message:find(importStringPattern);
+    while (sStart) do
+        local lStart, lEnd;
+        lStart, lEnd, specID, requiredLevel = message:sub(1, sStart-1):find(prefixPattern);
+
+        if lStart then
+            --- coming from a talentbuild link, don't validate it, just blindly accept, and rewrite the link
+            table.insert(toReplace, {
+                rStart = lStart,
+                rEnd = sEnd + 2, -- string.len('|h')
+                specID = specID,
+                level = requiredLevel,
+                importString = importString,
+                wrapInLink = false,
+            });
+        else
+            local valid = false;
+            if importString:len() > 40 and importString:len() < 120 then
+                --- A druid with lots of options picked, uses 103 characters
+                --- and an empty DH uses 47
+                --- the number of characters roughly corresponds to the number of talents in the class overall
+                --- and is increased for the talents picked, and whether they are choice nodes, or partially purchased nodes
+                valid = true;
+            end
+            if valid then
+                valid, specID, requiredLevel = self:ParseImportString(importString);
+            end
+            if valid then
+                self:DebugPrint("Valid import string, specID:", specID);
+
+                table.insert(toReplace, {
+                    rStart = sStart,
+                    rEnd = sEnd,
+                    specID = specID,
+                    level = requiredLevel,
+                    importString = importString,
+                    wrapInLink = true,
+                });
+            end
+        end
+
+        sStart, sEnd, importString = message:find(importStringPattern, sEnd+1);
+    end
+
+    for i = #toReplace, 1, -1 do
+        local item = toReplace[i];
+        local replacement = string.format(
+                '|Hgarrmission:TalentTreeTweaks:%d:%d:%s|h',
+                item.specID,
+                item.level,
+                item.importString
+        );
+        if item.wrapInLink then
+            local classID = specToClassMap[item.specID];
+            local className, classFileName = GetClassInfo(classID);
+            local classColor = RAID_CLASS_COLORS[classFileName];
+            local specName = select(2, GetSpecializationInfoByID(item.specID));
+            local linkTextFormat = ('[%s]|h'):format(TALENT_BUILD_CHAT_LINK_TEXT or 'Talents: %s %s')
+            replacement = classColor:WrapTextInColorCode(replacement .. linkTextFormat:format(specName, className));
+        end
+        message = replaceSubString(message, item.rStart, item.rEnd, replacement);
+    end
+
+    return false, message, ...;
+end
+
+
+local validStringsCache = {};
 function Module:ParseImportString(importText)
+    if validStringsCache[importText] then return unpack(validStringsCache[importText]); end
     local importStream = ExportUtil.MakeImportDataStream(importText);
 
     local headerValid, serializationVersion, specID, treeHash = self:ReadLoadoutHeader(importStream);
@@ -253,6 +347,8 @@ function Module:ParseImportString(importText)
         self:DebugPrint("Invalid loadout content");
         return false;
     end
+
+    validStringsCache[importText] = {true, specID, pointsSpent};
 
     return true, specID, pointsSpent;
 end
