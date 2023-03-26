@@ -6,8 +6,6 @@ local Util = TTT.Util;
 
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
 
-Module.shouldShowExportButton = select(4, GetBuildInfo()) < 100005 -- blizzard added their own version of this in 10.0.5
-
 function Module:OnEnable()
     Util:OnClassTalentUILoad(function()
         self:SetupHook();
@@ -16,19 +14,13 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if(self.exportButton) then
-        self.exportButton:Hide();
-    end
     if ClassTalentFrame and ClassTalentFrame.TalentsTab then
         ClassTalentFrame.TalentsTab.LoadoutDropDown:SetRightClickCallback(nil);
     end
 end
 
 function Module:GetDescription()
-    local description = self.shouldShowExportButton and 'Adds an export button when inspecting another player.\n' or '';
-    description = description .. 'Adds a right-click option to the loadout dropdown to export your build.';
-
-    return description;
+    return 'Adds a right-click option to the loadout dropdown to export your build.';
 end
 
 function Module:GetName()
@@ -37,57 +29,46 @@ end
 
 function Module:SetupHook()
     local talentsTab = ClassTalentFrame.TalentsTab;
-    self:SecureHook(talentsTab, 'UpdateInspecting', function() Module:UpdateExportButton(); end);
 
-    local dropdown = talentsTab.LoadoutDropDown
+    local dropdown = talentsTab.LoadoutDropDown;
     dropdown:SetRightClickCallback(function(configID)
         if not C_Traits.GetConfigInfo(configID) then return; end
         local exportString = Util:GetLoadoutExportString(talentsTab, configID);
         Util:CopyText(exportString, 'Talent Loadout String');
     end);
-    self:SecureHook(dropdown, 'SetSelectionOptions', 'OnSetSelectionOptions');
-    Module:OnSetSelectionOptions(dropdown)
-
-    if not self.shouldShowExportButton then return; end
-    if self.exportButton then
-        Module:UpdateExportButton();
-        return;
-    end
-    self.exportButton = CreateFrame('Button', nil, talentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
-    local button = self.exportButton;
-    button:SetSize(100, 40);
-    button:SetText('Export');
-    button:ClearAllPoints();
-    button:SetPoint('CENTER', talentsTab.BottomBar, 'CENTER', 0, 0);
-    button:Show();
-    button:SetScript('OnClick', function()
-        local exportString = Util:GetLoadoutExportString(talentsTab);
-        Util:CopyText(exportString, 'Talent Loadout String');
-    end);
-    Module:UpdateExportButton();
+    self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
+    self:HookCustomSetupCallback(dropdown.DropDownControl);
 end
 
-function Module:OnSetSelectionOptions(dropdown)
-    if self:IsHooked(dropdown, 'tooltipTranslation') then
-        self:Unhook(dropdown, 'tooltipTranslation');
+function Module:HookCustomSetupCallback(dropdownControl)
+    if not self:IsHooked(dropdownControl, 'customSetupCallback') then
+        self:SecureHook(dropdownControl, 'customSetupCallback', function(info)
+            local originalFuncOnEnter = info.funcOnEnter;
+            local originalFuncOnLeave = info.funcOnLeave;
+            info.funcOnEnter = function(dropdownButton, ...)
+                self:LoadoutDropdownOnEnter(dropdownButton);
+                if(originalFuncOnEnter) then originalFuncOnEnter(dropdownButton, ...); end
+            end
+            info.funcOnLeave = function(dropdownButton, ...)
+                self:LoadoutDropdownOnLeave(dropdownButton);
+                if(originalFuncOnLeave) then originalFuncOnLeave(dropdownButton, ...); end
+            end
+        end);
     end
-    self:RawHook(dropdown, 'tooltipTranslation', function(configID)
-        return
-            self.hooks[dropdown].tooltipTranslation(configID)
-            or 'Right-click to share';
-    end, true);
-    dropdown:UpdateSelectionOptions();
 end
 
-function Module:UpdateExportButton()
-    if not self.exportButton then
-        return;
-    end
-    local talentsTab = ClassTalentFrame.TalentsTab;
-    if not talentsTab:IsInspecting() then
-        self.exportButton:Hide();
-        return;
-    end
+function Module:LoadoutDropdownOnEnter(dropdownButton)
+    if not C_Traits.GetConfigInfo(dropdownButton.value) then return; end
 
-    self.exportButton:Show();
+    if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
+        self.tooltipShown = true;
+        GameTooltip:SetOwner(dropdownButton, "ANCHOR_RIGHT");
+    end
+    GameTooltip:AddLine("Right-click to share");
+    GameTooltip:Show();
+end
+
+function Module:LoadoutDropdownOnLeave(dropdownButton)
+    if self.tooltipShown then GameTooltip:Hide(); end
+    self.tooltipShown = false
 end
