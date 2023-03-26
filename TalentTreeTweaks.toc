@@ -31,5 +31,6 @@ modules\changeBackground.lua
 modules\miscFixes.lua
 modules\copyTalentButtonInfo.lua
 modules\reduceSpam.lua
+modules\miniTreeInTooltip.lua
 
 modules\autoPurchaseDragonRidingTalents.lua
