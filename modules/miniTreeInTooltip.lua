@@ -73,7 +73,8 @@ end
 
 function Module:LoadoutDropdownOnEnter(dropdownButton)
     local configID = dropdownButton.value
-    if not C_Traits.GetConfigInfo(configID) then return; end
+    local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+    if not ok or not configInfo then return; end
     local exportString = Util:GetLoadoutExportString(ClassTalentFrame.TalentsTab, configID);
 
     if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
@@ -146,7 +147,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     local classID = errorOrClassID;
     local treeID = LTT:GetClassTreeId(classID);
 
-    local container = self.container;
+    local container = self:GetOrCreateContainer();
     container:Reset();
 
     local dots = {};
@@ -261,4 +262,13 @@ function Module:CreateContainer()
     container:Init();
 
     return container;
+end
+
+--- @return TalentTreeTweaks_TreeInMinimapContainerMixin
+function Module:GetOrCreateContainer()
+    if not self.container then
+        self.container = self:CreateContainer();
+    end
+
+    return self.container;
 end

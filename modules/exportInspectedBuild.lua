@@ -32,7 +32,8 @@ function Module:SetupHook()
 
     local dropdown = talentsTab.LoadoutDropDown;
     dropdown:SetRightClickCallback(function(configID)
-        if not C_Traits.GetConfigInfo(configID) then return; end
+        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+        if not ok or not configInfo then return; end
         local exportString = Util:GetLoadoutExportString(talentsTab, configID);
         Util:CopyText(exportString, 'Talent Loadout String');
     end);
@@ -58,7 +59,8 @@ function Module:HookCustomSetupCallback(dropdownControl)
 end
 
 function Module:LoadoutDropdownOnEnter(dropdownButton)
-    if not C_Traits.GetConfigInfo(dropdownButton.value) then return; end
+    local ok, configInfo = pcall(C_Traits.GetConfigInfo, dropdownButton.value);
+    if not ok or not configInfo then return; end
 
     if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
         self.tooltipShown = true;
