@@ -17,11 +17,16 @@ end
 
 function Module:OnEnable()
     Util:OnClassTalentUILoad(function()
-        self:SetupHook();
+        self:SetupHook(ClassTalentFrame.TalentsTab);
     end);
     EventUtil.ContinueOnAddOnLoaded('Blizzard_GenericTraitUI', function()
-        self:SetupGenericTalentsHook();
+        self:SetupHook(GenericTraitFrame);
     end);
+    EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
+        local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
+        if not talentsTab then return; end
+        self:SetupHook(talentsTab);
+    end)
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
@@ -49,23 +54,12 @@ function Module:GetName()
     return 'Copy SpellID on hover';
 end
 
-function Module:SetupHook()
-    local talentsTab = ClassTalentFrame.TalentsTab;
-
+function Module:SetupHook(talentsTab)
     talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
     for talentButton in talentsTab:EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);
     end
-    self:SecureHook(ClassTalentFrame.TalentsTab, 'ShowSelections', 'OnShowSelections');
-end
-
-function Module:SetupGenericTalentsHook()
-    local genericTalentsFrame = GenericTraitFrame;
-    genericTalentsFrame:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
-    for talentButton in genericTalentsFrame:EnumerateAllTalentButtons() do
-        self:OnTalentButtonAcquired(talentButton);
-    end
-    self:SecureHook(genericTalentsFrame, 'ShowSelections', 'OnShowSelections');
+    self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
 end
 
 function Module:EnableBinding()
