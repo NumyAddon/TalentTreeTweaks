@@ -281,11 +281,18 @@ function Module:ConvertToImportLoadoutEntryInfo(treeID, loadoutContent)
 
         if (indexInfo.isNodeSelected) then
             local treeNode = C_Traits.GetNodeInfo(configID, treeNodeID);
+            local isChoiceNode = treeNode.type == Enum.TraitNodeType.Selection;
+            local choiceNodeSelection = indexInfo.isChoiceNode and indexInfo.choiceNodeSelection or nil;
+            if indexInfo.isNodeSelected and isChoiceNode ~= indexInfo.isChoiceNode then
+                -- guard against corrupt import strings
+                print("Import string is corrupt, node type mismatch at nodeID", treeNodeID, ". First option will be selected.");
+                choiceNodeSelection = 1;
+            end
             local result = {};
             result.nodeID = treeNode.ID;
             result.ranksPurchased = indexInfo.isPartiallyRanked and indexInfo.partialRanksPurchased or treeNode.maxRanks;
             -- minor change from default UI, only add in case of choice nodes
-            result.selectionEntryID = indexInfo.isChoiceNode and treeNode.entryIDs[indexInfo.choiceNodeSelection] or nil;
+            result.selectionEntryID = indexInfo.isNodeSelected and isChoiceNode and treeNode.entryIDs[choiceNodeSelection] or nil;
             results[count] = result;
             count = count + 1;
         end
