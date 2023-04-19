@@ -232,9 +232,12 @@ function Module:Filter(_, _, message, ...)
     local toReplace = {};
 
     local sStart, sEnd, importString = message:find(importStringPattern);
+    local prefixExistsSomewhere = sStart and message:find(prefixPattern);
     while (sStart) do
         local lStart, lEnd;
-        lStart, lEnd, specID, requiredLevel = message:sub(1, sStart-1):find(prefixPattern);
+        if prefixExistsSomewhere then
+            lStart, lEnd, specID, requiredLevel = message:sub(1, sStart-1):find(prefixPattern);
+        end
 
         if lStart then
             --- coming from a talentbuild link, don't validate it, just blindly accept, and rewrite the link
@@ -378,14 +381,14 @@ function Module:ValidateLoadoutContent(importStream, treeID)
     for i = 1, #treeNodes do
         local nodeSelectedValue = importStream:ExtractValue(1)
         if nodeSelectedValue == nil then
-            self:DebugPrint("Invalid node selected value", i);
+            self:DebugPrint("Invalid nodeSelected value", i);
             return false
         end
 
         if(nodeSelectedValue == 1) then
             local isPartiallyRankedValue = importStream:ExtractValue(1);
             if isPartiallyRankedValue == nil then
-                self:DebugPrint("Invalid is partially ranked value", i);
+                self:DebugPrint("Invalid isPartiallyRanked value", i);
                 return false
             end
 
@@ -396,7 +399,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
             if(isPartiallyRankedValue == 1) then
                 local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
                 if partialRanksPurchased == nil then
-                    self:DebugPrint("Invalid partial ranks purchased value", i);
+                    self:DebugPrint("Invalid partialRanksPurchased value", i);
                     return false
                 end
                 pointsSpent = partialRanksPurchased;
@@ -404,14 +407,14 @@ function Module:ValidateLoadoutContent(importStream, treeID)
 
             local isChoiceNodeValue = importStream:ExtractValue(1);
             if isChoiceNodeValue == nil then
-                self:DebugPrint("Invalid is choice node value", i);
+                self:DebugPrint("Invalid isChoiceNode value", i);
                 return false
             end
             if(isChoiceNodeValue == 1) then
                 local choiceNodeSelection = importStream:ExtractValue(2);
                 -- 0-indexed, so only 0 and 1 are valid
                 if choiceNodeSelection == nil or choiceNodeSelection > 1 then
-                    self:DebugPrint("Invalid choice node selection value", i, choiceNodeSelection);
+                    self:DebugPrint("Invalid choiceNodeSelection value", i, choiceNodeSelection);
                     return false
                 end
             end
@@ -426,7 +429,9 @@ function Module:ValidateLoadoutContent(importStream, treeID)
 
     local requiredLevel = math.max(10, 8 + (classPointsSpent * 2), 9 + (specPointsSpent * 2));
 
-    return importStream.currentIndex == #importStream.dataValues, requiredLevel;
+    local indexValuesDiff = importStream.currentIndex - #importStream.dataValues
+
+    return indexValuesDiff == 0 or indexValuesDiff == 1, requiredLevel;
 end
 
 function Module:IsHashValid(treeHash, treeID)
