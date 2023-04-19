@@ -99,20 +99,32 @@ function Module:SetupHook()
         self:EnableDropDownReplacement();
     end
 
-    ClassTalentFrame.TalentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
-    for talentButton in ClassTalentFrame.TalentsTab:EnumerateAllTalentButtons() do
+    local talentsTab = ClassTalentFrame.TalentsTab;
+    talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
+    for talentButton in talentsTab:EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);
     end
-    self:SecureHook(ClassTalentFrame.TalentsTab, 'ShowSelections', 'OnShowSelections');
+    self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
 
     -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
-    self:SecureHook(ClassTalentFrame.TalentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
+    self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
 
     -- ToggleTalentFrame starts of with a ClassTalentFrame:SetInspecting call, which has a high likelihood of tainting execution
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
     self:SecureHook('HideUIPanel', 'OnHideUIPanel')
 
+    self:ReplaceCopyLoadoutButton(talentsTab);
+
     self:HandleMultiActionBarTaint();
+end
+
+function Module:ReplaceCopyLoadoutButton(talentsTab)
+    talentsTab.InspectCopyButton:SetOnClickHandler(function()
+        local loadoutString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
+        if loadoutString ~= '' then
+            Util:CopyText(loadoutString, 'Inspected Build');
+        end
+    end);
 end
 
 local nop = function() end;
