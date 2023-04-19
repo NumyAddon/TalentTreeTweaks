@@ -30,6 +30,10 @@ function Module:OnEnable()
         self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
         self:HookCustomSetupCallback(dropdown.DropDownControl);
     end)
+
+    EventUtil.ContinueOnAddOnLoaded("Blizzard_InspectUI", function()
+        self:HookInspectTalentsButton();
+    end)
 end
 
 function Module:OnDisable()
@@ -69,6 +73,22 @@ function Module:HookCustomSetupCallback(dropdownControl)
             end
         end);
     end
+end
+
+function Module:HookInspectTalentsButton()
+    local button = InspectPaperDollItemsFrame.InspectTalents;
+    self:SecureHookScript(button, "OnEnter", function()
+        if not C_Traits.HasValidInspectData() then return; end
+        local inspectUnit = InspectFrame.unit;
+        local loadoutString = C_Traits.GenerateInspectImportString(inspectUnit);
+        if not loadoutString then return; end
+
+        if not GameTooltip:IsShown() or GameTooltip:GetOwner() ~= button then
+            GameTooltip:SetOwner(button, "ANCHOR_RIGHT");
+        end
+        self:AddBuildToTooltip(GameTooltip, loadoutString);
+        GameTooltip:Show();
+    end);
 end
 
 function Module:LoadoutDropdownOnEnter(dropdownButton)
