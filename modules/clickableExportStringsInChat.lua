@@ -232,7 +232,7 @@ function Module:Filter(_, _, message, ...)
     local toReplace = {};
 
     local sStart, sEnd, importString = message:find(importStringPattern);
-    local prefixExistsSomewhere = sStart and message:find(prefixPattern);
+    local prefixExistsSomewhere = sStart and message:find(prefixPattern:gsub('%$', ''));
     while (sStart) do
         local lStart, lEnd;
         if prefixExistsSomewhere then
