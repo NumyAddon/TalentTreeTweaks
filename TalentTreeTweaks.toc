@@ -1,6 +1,7 @@
 ## Interface: @toc-version-retail@
 ## Title: Talent Tree Tweaks
 ## Author: Numy
+## IconTexture: 982414
 ## Notes: Various improvements and addition to the Dragonflight talent tree UI
 ## Version: @project-version@
 ## X-Curse-Project-ID: 678792
