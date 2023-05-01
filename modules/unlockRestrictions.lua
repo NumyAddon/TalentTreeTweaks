@@ -8,14 +8,22 @@ local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
     [ERR_TALENT_FAILED_IN_COMBAT] = true,
 };
+Module.textsToUnlock = {
+    [TALENT_FRAME_DROP_DOWN_EXPORT] = true,
+    [TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD] = true,
+    [TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK] = true,
+};
+
 
 function Module:OnEnable()
+    self.enabled = true;
     Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end
 
 function Module:OnDisable()
+    self.enabled = false;
     self:UnhookAll();
 end
 
@@ -73,16 +81,12 @@ end
 function Module:UpdateShareButton()
     local dropdown = ClassTalentFrame.TalentsTab.LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
-        if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_EXPORT then
-            if not self.oldExportDisabledCallback then
-                self.oldExportDisabledCallback = sentinelInfo.disabledCallback;
-            end
-            if self.db.unlockShareButton then
-                sentinelInfo.disabledCallback = function() return false; end;
-            elseif sentinelInfo.disabledCallback ~= self.oldExportDisabledCallback then
-                sentinelInfo.disabledCallback = self.oldExportDisabledCallback;
-            end
-            break
+        if self.textsToUnlock[sentinelInfo.text] then
+            self.textsToUnlock[sentinelInfo.text] = nil;
+            local oldDisabledCallback = sentinelInfo.disabledCallback;
+            sentinelInfo.disabledCallback = function(...)
+                return not ((self.enabled and self.db.unlockShareButton) or not oldDisabledCallback(...));
+            end;
         end
     end
 end
