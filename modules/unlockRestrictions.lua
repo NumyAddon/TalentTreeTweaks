@@ -8,12 +8,18 @@ local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
     [ERR_TALENT_FAILED_IN_COMBAT] = true,
 };
-Module.textsToUnlock = {
-    [TALENT_FRAME_DROP_DOWN_EXPORT] = true,
-    [TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD] = true,
-    [TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK] = true,
-};
+Module.textsToUnlock = {};
 
+function Module:OnInitialize()
+    local texts = {
+        TALENT_FRAME_DROP_DOWN_EXPORT,
+        TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD,
+        TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK,
+    };
+    for _, text in pairs(texts) do
+        self.textsToUnlock[text] = true;
+    end
+end
 
 function Module:OnEnable()
     self.enabled = true;

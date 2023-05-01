@@ -108,7 +108,7 @@ function Module:MakeLinkButton(talentsTab)
         end
 
         local specName = talentsTab:GetSpecName();
-        local className = talentsTab:GetClassName()
+        local className = talentsTab:GetClassName();
         local specID = talentsTab:GetSpecID();
         local classColor = RAID_CLASS_COLORS[select(2, GetClassInfo(talentsTab:GetClassID()))];
         local level = LEVEL_CAP;
