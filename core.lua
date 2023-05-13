@@ -9,11 +9,13 @@ if not _G.TTT then _G.TTT = TTT; end
 local Main = LibStub('AceAddon-3.0'):NewAddon(name, 'AceConsole-3.0', 'AceHook-3.0', 'AceEvent-3.0');
 if not Main then return; end
 TTT.Main = Main;
+TTT.L = LibStub('AceLocale-3.0'):GetLocale(name);
+local L = TTT.L;
 
 function Main:OnInitialize()
     TalentTreeTweaksDB = TalentTreeTweaksDB or {};
     self.db = TalentTreeTweaksDB;
-    self.version = GetAddOnMetadata(name, "Version") or "";
+    self.version = C_AddOns.GetAddOnMetadata(name, "Version") or "";
     self:InitDefaults();
     TTT.Util:OnInitialize();
     for moduleName, module in self:IterateModules() do
@@ -48,24 +50,24 @@ function Main:InitConfig()
     self.options = {
         type = 'group',
         name = 'Talent Tree Tweaks',
-        desc = 'Various tweaks and improvements to the talent tree UI',
+        desc = L['Various tweaks and improvements to the talent tree UI'],
         childGroups = 'tab',
         args = {
             version = {
                 order = increment(),
                 type = 'description',
-                name = 'Version: ' .. self.version,
+                name = string.format(L['Version: %s'], self.version),
             },
             modules = {
                 order = increment(),
                 type = 'group',
-                name = 'Modules',
+                name = L['Modules'],
                 childGroups = 'tree',
                 args = {
                     desc = {
                         order = increment(),
                         type = 'description',
-                        name = 'This addon consists of a number of modules, each of which can be enabled or disabled, to fine-tune your experience.',
+                        name = L['This addon consists of a number of modules, each of which can be enabled or disabled, to fine-tune your experience.'],
                     },
                 },
             }
@@ -91,7 +93,7 @@ function Main:InitConfig()
         desc = function(info)
             local moduleName = info[#info];
             if not self:IsModuleEnabled(moduleName) then
-                return RED_FONT_COLOR:WrapTextInColorCode('Disabled');
+                return RED_FONT_COLOR:WrapTextInColorCode(ADDON_DISABLED);
             end
         end,
         args = {
@@ -117,8 +119,8 @@ function Main:InitConfig()
             },
             enable = {
                 order = 3,
-                name = 'Enable',
-                desc = 'Enable this module',
+                name = ENABLE,
+                desc = L['Enable this module'],
                 type = 'toggle',
                 get = function(info) return self:IsModuleEnabled(info[#info - 1]); end,
                 set = function(info, enabled) self:SetModuleState(info[#info - 1], enabled); end,

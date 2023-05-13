@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
@@ -17,11 +18,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Adds a few fixes for minor issues.';
+    return L['Adds a few fixes for minor issues.'];
 end
 
 function Module:GetName()
-    return 'Misc Fixes';
+    return L['Misc Fixes'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -45,8 +46,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.dropdownUpdateOnLoadConfigFix = {
         type = 'toggle',
-        name = 'Fix issue with the loadout dropdown not updating',
-        desc = 'Macros and certain addons that change loadouts, cause the dropdown to not update properly in some situations. This fixes that.',
+        name = L['Fix issue with the loadout dropdown not updating'],
+        desc = L['Macros and certain addons that change loadouts, cause the dropdown to not update properly in some situations. This fixes that.'],
         get = get,
         set = set,
         order = 10,

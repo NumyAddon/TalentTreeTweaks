@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
@@ -10,6 +11,16 @@ local LTT = Util.LibTalentTree;
 
 function Module:OnInitialize()
     self.debug = false;
+end
+
+function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, configID)
+    if not exportString and configID then
+        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+        if not ok or not configInfo then return; end
+        return false -- not yet supported, WIP
+        -- exportString = Util:GetLoadoutExportString(nil, configID);
+    end
+    Module:AddBuildToTooltip(tooltip, exportString);
 end
 
 function Module:OnEnable()
@@ -41,11 +52,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return "Adds a mini tree in various tooltips for Talent Tree Builds"
+    return L["Adds a mini tree in various tooltips for Talent Tree Builds"];
 end
 
 function Module:GetName()
-    return "Mini Tree in Tooltips";
+    return L["Mini Tree in Tooltips"];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)

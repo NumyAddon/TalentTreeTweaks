@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
@@ -38,7 +39,6 @@ local function Filter(...) return Module:Filter(...) end
 local LOADOUT_SERIALIZATION_VERSION;
 function Module:OnInitialize()
     self.debug = false;
-    self.talentBuildLinksSupported = (select(4,GetBuildInfo())) >= 100100; -- added in 10.1.0
     LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
 end
 
@@ -62,23 +62,18 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    local description = "Attempts to turn loadout export strings found in chat, into clickable links. You can use modifiers, to copy the link, import it as a loadout, open it in Talent Tree Viewer (if installed) etc."
-    if self.talentBuildLinksSupported then
-        description = description .. "\nDefault talent links are also extended to allow this behaviour.";
-    end
-
-    return description;
+    return L["Attempts to turn loadout export strings found in chat, into clickable links. You can use modifiers, to copy the link, import it as a loadout, open it in Talent Tree Viewer (if installed) etc.\nDefault talent links are also extended to allow this behaviour."];
 end
 
 function Module:GetName()
-    return 'Clickable Export Strings In Chat'
+    return L['Clickable Export Strings In Chat'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.showExample = {
         type = 'execute',
-        name = 'Show Example link in chat',
-        desc = 'Shows an example of a clickable link in chat.',
+        name = L['Show Example link in chat'],
+        desc = L['Shows an example of a clickable link in chat.'],
         func = function()
             LoadAddOn('Blizzard_ClassTalentUI');
             local talentTab = ClassTalentFrame.TalentsTab;
@@ -113,37 +108,28 @@ function Module:OnHyperlinkEnter(chatFrame, link)
     local specName = select(2, GetSpecializationInfoByID(specID));
     local prettyLinkText = classColor:WrapTextInColorCode(("%s %s (lvl %d)"):format(specName, className, level));
 
-    local click = "Click:";
-    local altClick = "ALT + " .. click;
-    local ctrlClick = "CTRL + " .. click;
-    local shiftClick = "Shift + " .. click;
-    local shiftLeftClick = "Shift + Left-" .. click;
-    local shiftRightClick = "Shift + Right-" .. click;
+    local click = L["Click:"];
+    local altClick = L["ALT + Click:"];
+    local ctrlClick = L["CTRL + Click:"];
+    local shiftLeftClick = L["Shift + Left-Click:"];
+    local shiftRightClick = L["Shift + Right-Click:"];
 
-    local actionCopyLink = "Copy Link";
-    local actionImportLoadout = "Import Loadout";
+    local actionCopyLink = L["Copy Link"];
+    local actionImportLoadout = L["Import Loadout"];
 
     self.showingTooltip = true;
     GameTooltip:SetOwner(chatFrame, "ANCHOR_CURSOR");
     GameTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks - %s"):format(prettyLinkText)));
     if talentViewerEnabled then
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, "Open in Talent Tree Viewer"))
-        if self.talentBuildLinksSupported then
-            GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, "Open loadout in default Inspect UI"))
-        end
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
-    elseif self.talentBuildLinksSupported then
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, "Open loadout in default Inspect UI"))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L["Open in Talent Tree Viewer"]))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, L["Open loadout in default Inspect UI"]))
         GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
     else
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, actionImportLoadout))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L["Open loadout in default Inspect UI"]))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
     end
-    if self.talentBuildLinksSupported then
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, "Link in chat"))
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLink))
-    else
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftClick, actionCopyLink))
-    end
+    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, L["Link in chat"]))
+    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLink))
     GameTooltip:Show();
 end
 
@@ -162,7 +148,7 @@ function Module:SetItemRef(link, text, button)
             ChatEdit_InsertLink(fixedLink);
             return;
         else
-            Util:CopyText(exportString, 'Talent Loadout String');
+            Util:CopyText(exportString, L['Talent Loadout String']);
             return;
         end
     end
@@ -186,10 +172,10 @@ function Module:OpenInTalentTreeViewer(level, exportString)
     if not TalentViewer or not TalentViewer.ImportLoadout then
         if not self.talentBuildLinksSupported then
             self:OpenInImportUI(exportString);
-            print('Error opening in TalentTreeViewer. Showing default Blizzard import UI instead.');
+            print(L['Error opening in TalentTreeViewer. Showing default Blizzard import UI instead.']);
         else
             self:OpenInDefaultUI(level, exportString);
-            print('Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.');
+            print(L['Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.']);
         end
 
         return;

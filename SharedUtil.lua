@@ -2,6 +2,7 @@ local _, TTT = ...
 --- @class TalentTreeTweaks_Util
 local Util = {};
 TTT.Util = Util;
+local L = TTT.L;
 
 --- @type LibTalentTree
 local LTT = LibStub('LibTalentTree-1.0');
@@ -23,7 +24,7 @@ local LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion an
 function Util:OnInitialize()
     self.dialogName = 'TalentTreeTweaksCopyTextDialog';
     StaticPopupDialogs['TalentTreeTweaksCopyTextDialog'] = {
-        text = 'CTRL-C to copy %s',
+        text = L['CTRL-C to copy %s'],
         button1 = CLOSE,
         OnShow = function(dialog, data)
             local function HidePopup()
@@ -32,7 +33,7 @@ function Util:OnInitialize()
             dialog.editBox:SetScript('OnEscapePressed', HidePopup);
             dialog.editBox:SetScript('OnEnterPressed', HidePopup);
             dialog.editBox:SetScript('OnKeyUp', function(_, key)
-                if IsControlKeyDown() and key == 'C' then
+                if IsControlKeyDown() and (key == 'C' or key == 'X') then
                     HidePopup();
                 end
             end);

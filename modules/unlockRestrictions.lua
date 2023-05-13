@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
@@ -34,11 +35,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Unlocks several restrictions on the talent tree UI, such as being able to spend points while in combat, and being able to share your build without spending all points.';
+    return L['Unlocks several restrictions on the talent tree UI, such as being able to spend points while in combat, and being able to share your build without spending all points.'];
 end
 
 function Module:GetName()
-    return 'Unlock Restrictions';
+    return L['Unlock Restrictions'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -58,8 +59,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.unlockShareButton = {
         type = 'toggle',
-        name = 'Unlock Share Button',
-        desc = 'Unlocks the share button, so you can share your build without spending all points.',
+        name = L['Unlock Share Button'],
+        desc = L['Unlocks the share button, so you can share your build without spending all points.'],
         order = 5,
         width = 'double',
         get = get,
@@ -67,8 +68,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.unlockInCombatSpending = {
         type = 'toggle',
-        name = 'Unlock In Combat Spending',
-        desc = 'Unlocks the talent buttons, so you can reallocate points while in combat.',
+        name = L['Unlock In Combat Spending'],
+        desc = L['Unlocks the talent buttons, so you can reallocate points while in combat.'],
         order = 6,
         width = 'double',
         get = get,

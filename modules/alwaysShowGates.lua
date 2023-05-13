@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 --- @type LibTalentTree
@@ -26,11 +27,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Always show the "x more points required" gates. Gates that are passed will be semi-transparent.';
+    return L['Always show the "x more points required" gates. Gates that are passed will be semi-transparent.'];
 end
 
 function Module:GetName()
-    return 'Always Show Gates';
+    return L['Always Show Gates'];
 end
 
 function Module:SetupHook()

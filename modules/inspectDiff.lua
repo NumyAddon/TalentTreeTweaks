@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
@@ -33,11 +34,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Shows the difference between your talent choices, and the inspected player\'s talent choices.';
+    return L['Shows the difference between your talent choices, and the inspected player\'s talent choices.'];
 end
 
 function Module:GetName()
-    return 'Inspect Diff';
+    return L['Inspect Diff'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -82,7 +83,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     defaultOptionsTable.args.colorRed = {
         type = 'color',
-        name = 'You have a talent they don\'t',
+        name = L['You have a talent they don\'t'],
         hasAlpha = true,
         get = GetColor,
         set = SetColor,
@@ -90,7 +91,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.colorGreen = {
         type = 'color',
-        name = 'They have a talent you don\'t',
+        name = L['They have a talent you don\'t'],
         hasAlpha = true,
         get = GetColor,
         set = SetColor,
@@ -98,7 +99,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.colorYellow = {
         type = 'color',
-        name = 'You have selected a different choice, or different number of points in a talent',
+        name = L['You have selected a different choice, or different number of points in a talent'],
         hasAlpha = true,
         get = GetColor,
         set = SetColor,
@@ -106,8 +107,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.reset = {
         type = 'execute',
-        name = 'Reset',
-        desc = 'Reset the colors to default',
+        name = RESET,
+        desc = L['Reset the colors to default'],
         func = function()
             self.db.colorRed = defaults.colorRed;
             self.db.colorGreen = defaults.colorGreen;
@@ -119,8 +120,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.enableTalentTreeViewerDiff = {
         type = 'toggle',
-        name = 'Enable Talent Tree Viewer Diff',
-        desc = 'Show the difference between your talent choices, and the talent build in Talent Tree Viewer.',
+        name = L['Enable Talent Tree Viewer Diff'],
+        desc = L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'],
         get = function() return self.db.enableTalentTreeViewerDiff end,
         set = function(_, value)
             self.db.enableTalentTreeViewerDiff = value
@@ -194,12 +195,12 @@ function Module:InitCheckbox(talentViewerFrame)
     end);
     checkbox:SetScript('OnEnter', function()
         GameTooltip:SetOwner(checkbox, 'ANCHOR_RIGHT');
-        GameTooltip:AddLine('TalentTreeTweaks Diff Viewer');
-        GameTooltip:AddLine('Show the difference between your talent choices, and the talent build in Talent Tree Viewer.', 1, 1, 1, true);
+        GameTooltip:AddLine(L['TalentTreeTweaks Diff Viewer']);
+        GameTooltip:AddLine(L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'], 1, 1, 1, true);
         GameTooltip:Show();
     end);
     checkbox:SetScript('OnLeave', function() GameTooltip:Hide(); end);
-    checkbox.Text:SetText('Show Diff');
+    checkbox.Text:SetText(L['Show Diff']);
     checkbox:SetHitRectInsets(0, -checkbox.Text:GetWidth(), 0, 0);
 
     self.viewerCheckbox = checkbox;

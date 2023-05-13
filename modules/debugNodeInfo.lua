@@ -1,6 +1,7 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+local L = TTT.L;
 
 local Module = Main:NewModule('DebugNodeInfo');
 
@@ -13,11 +14,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'CTRL-clicking a talent will open a table inspector of your choice, with the nodeInfo associated with the node.';
+    return L['CTRL-clicking a talent will open a table inspector of your choice, with the nodeInfo associated with the node.'];
 end
 
 function Module:GetName()
-    return 'Debug Talent.nodeInfo';
+    return L['Debug Talent.nodeInfo'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -46,13 +47,13 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.extraDescription = {
         type = 'description',
-        name = 'You can toggle any of the following on/off to enable/disable the integration with that debug tool.',
+        name = L['You can toggle any of the following on/off to enable/disable the integration with that debug tool.'],
         order = increment(),
     };
     defaultOptionsTable.args.addButtonToTable = {
         type = 'toggle',
-        name = 'Add the button to NodeInfo table when dumped',
-        desc = 'Adds a _button property to the nodeInfo table, which is a reference to the talent button.',
+        name = L['Add the button to NodeInfo table when dumped'],
+        desc = L['Adds a _button property to the nodeInfo table, which is a reference to the talent button.'],
         get = get,
         set = set,
         order = increment(),
@@ -60,24 +61,24 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.tinspect = {
         type = 'toggle',
         name = '/tinspect',
-        desc = 'Opens Blizzard\'s table inspect window.',
+        desc = L['Opens Blizzard\'s table inspect window.'],
         get = get,
         set = set,
         order = increment(),
     };
     defaultOptionsTable.args.viragDevTool = {
         type = 'toggle',
-        name = 'ViragDevTool',
-        desc = 'Use ViragDevTool to inspect the nodeInfo table.',
+        name = '(Virag-)DevTool',
+        desc = L['Use (Virag-)DevTool to inspect the nodeInfo table.'],
         get = get,
         set = set,
-        disabled = not select(4, GetAddOnInfo('ViragDevTool')), -- 4-> loadable
+        disabled = not select(4, GetAddOnInfo('ViragDevTool')) and not select(4, GetAddOnInfo('DevTool')), -- 4-> loadable
         order = increment(),
     };
     defaultOptionsTable.args.luaBrowser = {
         type = 'toggle',
         name = 'LuaBrowser',
-        desc = 'Use LuaBrowser to inspect the nodeInfo table.',
+        desc = L['Use LuaBrowser to inspect the nodeInfo table.'],
         get = get,
         set = set,
         disabled = not select(4, GetAddOnInfo('LuaBrowser')), -- 4-> loadable
@@ -86,7 +87,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.slashDump = {
         type = 'toggle',
         name = '/dump',
-        desc = 'Dump the nodeInfo table to chat.',
+        desc = L['Dump the nodeInfo table to chat.'],
         get = get,
         set = set,
         order = increment(),
@@ -112,6 +113,9 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
 
     if self.db.viragDevTool and ViragDevTool_AddData then
         ViragDevTool_AddData(nodeInfo, 'NodeInfo ID ' .. (nodeInfo.ID or 'nil'));
+    end
+    if self.db.viragDevTool and DevTool and DevTool.AddData then
+        DevTool:AddData(nodeInfo, 'NodeInfo ID ' .. (nodeInfo.ID or 'nil'));
     end
 
     if self.db.luaBrowser and SlashCmdList.LuaBrowser then

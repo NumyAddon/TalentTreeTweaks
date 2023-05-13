@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
@@ -28,11 +29,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Allows you to scale the talent tree with CTRL+Scrolling with the mousewheel.'
+    return L['Allows you to scale the talent tree with CTRL+Scrolling with the mousewheel.'];
 end
 
 function Module:GetName()
-    return 'Scale Talent Frame'
+    return L['Scale Talent Frame'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -43,14 +44,14 @@ function Module:GetOptions(defaultOptionsTable, db)
         defaultOptionsTable.args.enable.disabled = true
         defaultOptionsTable.args.blizzMove = {
             type = 'description',
-            name = 'This module is incompatible with BlizzMove, and has been disabled.',
+            name = L['This module is incompatible with BlizzMove, and has been disabled.'],
             order = 5,
         };
     end
 
     defaultOptionsTable.args.scale = {
         type = 'range',
-        name = 'Change Scale',
+        name = L['Change Scale'],
         order = 6,
         disabled = self.blizzMoveEnabled,
         get = function(info)

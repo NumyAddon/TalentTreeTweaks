@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 --- @type LibUIDropDownMenu
 local LibDD = LibStub('LibUIDropDownMenu-4.0');
@@ -25,18 +26,18 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return [[Implements various workarounds around taint.
-
-Fully replace the loadout dropdown, to avoid tainting the edit mode dropdown.
-
-A workaround for one of the ways that Talent Tree taint can block action buttons from working.
-
-Replaces the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when needed.
-]];
+    return
+        L['Implements various workarounds around taint.']
+        .. "\n\n" ..
+        L['Fully replace the loadout dropdown, to avoid tainting the edit mode dropdown.']
+        .. "\n\n" ..
+        L['A workaround for one of the ways that Talent Tree taint can block action buttons from working.']
+        .. "\n\n" ..
+        L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when needed.'];
 end
 
 function Module:GetName()
-    return 'Reduce Taint';
+    return L['Reduce Taint'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -61,13 +62,13 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     defaultOptionsTable.args.extra_info = {
         type = 'description',
-        name = 'You have to reload your UI after disabling this module, for some of the change to take effect.',
+        name = L['You have to reload your UI after disabling this module, for some of the change to take effect.'],
         order = 5,
     };
     defaultOptionsTable.args.replaceDropDown = {
         type = 'toggle',
-        name = 'Replace Loadout Dropdown',
-        desc = 'Replace the loadout dropdown, to avoid tainting the edit mode dropdown.',
+        name = L['Replace Loadout Dropdown'],
+        desc = L['Replace the loadout dropdown, to avoid tainting the edit mode dropdown.'],
         order = counter(),
         get = get,
         set = function(info, value)
@@ -81,8 +82,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.disableMultiActionBarShowHide = {
         type = 'toggle',
-        name = 'Disable MultiActionBar_ShowAllGrids on Show',
-        desc = 'Disables the MultiActionBar_ShowAllGrids function, which can cause nasty taint issues.',
+        name = L['Disable MultiActionBar_ShowAllGrids on Show'],
+        desc = L['Disables the MultiActionBar_ShowAllGrids function, which can cause nasty taint issues.'],
         order = counter(),
         get = get,
         set = function(info, value)
@@ -122,7 +123,7 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
     talentsTab.InspectCopyButton:SetOnClickHandler(function()
         local loadoutString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
         if loadoutString ~= '' then
-            Util:CopyText(loadoutString, 'Inspected Build');
+            Util:CopyText(loadoutString, L['Inspected Build']);
         end
     end);
 end
@@ -218,7 +219,7 @@ end
 
 local function replacedShareButtonCallback()
     local exportString = ClassTalentFrame.TalentsTab:GetLoadoutExportString();
-    Util:CopyText(exportString, 'Talent Loadout String');
+    Util:CopyText(exportString, L['Talent Loadout String']);
 end
 
 local skipHook = false;

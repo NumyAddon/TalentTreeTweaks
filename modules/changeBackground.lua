@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('ChangeBackground', 'AceHook-3.0', 'AceEvent-3.0');
 Module.originalAlpha = {}
@@ -27,11 +28,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Adds options to adjust the background of the talent tree UI.'
+    return L['Adds options to adjust the background of the talent tree UI.'];
 end
 
 function Module:GetName()
-    return 'Change Background';
+    return L['Change Background'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -72,7 +73,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     }
     defaultOptionsTable.args.alpha = {
         type = 'range',
-        name = 'Background Transparency',
+        name = L['Background Transparency'],
         order = counter(),
         get = get,
         set = set,
@@ -83,14 +84,14 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.showAlphaInUI = {
         type = 'toggle',
-        name = 'Show a slider in the talent UI',
+        name = L['Show a slider in the talent UI'],
         order = counter(),
         get = get,
         set = set,
     };
     defaultOptionsTable.args.showAlphaInViewerUI = {
         type = 'toggle',
-        name = 'Show a slider in Talent Tree Viewer UI',
+        name = L['Show a slider in Talent Tree Viewer UI'],
         order = counter(),
         get = get,
         set = set,
@@ -174,7 +175,7 @@ function Module:CreateSlider(talentFrame, xOffset)
     local maxValue = 1;
     local steps = 40;
     local formatters = {
-        [MinimalSliderWithSteppersMixin.Label.Left] = function() return 'Transparency' end,
+        [MinimalSliderWithSteppersMixin.Label.Left] = function() return L['Transparency'] end,
         [MinimalSliderWithSteppersMixin.Label.Right] = function(value) return string.format('%.2f%%', value) end,
     }
     slider:Init(self.db.alpha, minValue, maxValue, steps, formatters);

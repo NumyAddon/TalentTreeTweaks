@@ -1,6 +1,7 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+local L = TTT.L;
 
 local Module = Main:NewModule('TooltipIds');
 
@@ -17,11 +18,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Adds spell id and more to the various talent tree tooltips.'
+    return L['Adds spell id and more to the various talent tree tooltips.'];
 end
 
 function Module:GetName()
-    return 'Tooltip IDs'
+    return L['Tooltip IDs'];
 end
 
 

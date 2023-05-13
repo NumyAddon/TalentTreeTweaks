@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('ImportIntoCurrentLoadout', 'AceHook-3.0');
 
@@ -38,11 +39,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Allows you to import talent loadouts into the currently selected loadout.';
+    return L['Allows you to import talent loadouts into the currently selected loadout.'];
 end
 
 function Module:GetName()
-    return 'Import into current loadout';
+    return L['Import into current loadout'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -59,8 +60,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.defaultCheckboxState = {
         type = 'toggle',
-        name = 'Import into current loadout by default',
-        desc = 'When enabled, the "Import into current loadout" checkbox will be checked by default.',
+        name = L['Import into current loadout by default'],
+        desc = L['When enabled, the "Import into current loadout" checkbox will be checked by default.'],
         width = 'double',
         get = function() return db.defaultCheckboxState; end,
         set = function(_, value)
@@ -73,8 +74,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.unlockImportButton = {
         type = 'toggle',
-        name = 'Unlocks the import button, even if at max loadouts',
-        desc = 'When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout',
+        name = L['Unlocks the import button, even if at max loadouts'],
+        desc = L['When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout'],
         width = 'double',
         get = function() return db.unlockImportButton; end,
         set = function(_, value)
@@ -135,7 +136,7 @@ function Module:CreateCheckbox(dialog)
         return
     end
 
-    local text = string.format('Import into current loadout (click "%s" afterwards)', TALENT_FRAME_APPLY_BUTTON_TEXT);
+    local text = string.format(L['Import into current loadout (click "%s" afterwards)'], TALENT_FRAME_APPLY_BUTTON_TEXT);
     local checkbox = CreateFrame('CheckButton', nil, dialog, 'UICheckButtonTemplate');
     checkbox:SetPoint('TOPLEFT', dialog.NameControl, 'BOTTOMLEFT', 0, 5);
     checkbox:SetSize(24, 24);
@@ -143,7 +144,7 @@ function Module:CreateCheckbox(dialog)
     checkbox:SetScript('OnEnter', function(self)
         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT');
         GameTooltip:SetText(text);
-        GameTooltip:AddLine('If checked, the imported build will be imported into the currently selected loadout.', 1, 1, 1);
+        GameTooltip:AddLine(L['If checked, the imported build will be imported into the currently selected loadout.'], 1, 1, 1);
         GameTooltip:Show();
     end);
     checkbox:SetScript('OnLeave', function()
@@ -285,7 +286,7 @@ function Module:ConvertToImportLoadoutEntryInfo(treeID, loadoutContent)
             local choiceNodeSelection = indexInfo.isChoiceNode and indexInfo.choiceNodeSelection or nil;
             if indexInfo.isNodeSelected and isChoiceNode ~= indexInfo.isChoiceNode then
                 -- guard against corrupt import strings
-                print("Import string is corrupt, node type mismatch at nodeID", treeNodeID, ". First option will be selected.");
+                print(string.format(L["Import string is corrupt, node type mismatch at nodeID %d. First option will be selected."], treeNodeID));
                 choiceNodeSelection = 1;
             end
             local result = {};

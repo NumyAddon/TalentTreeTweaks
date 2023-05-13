@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local DRAGONRIDING_TRAIT_SYSTEM_ID = 1;
 
@@ -32,13 +33,13 @@ function Module:OnDisable()
 end
 
 function Module:GetName()
-    return 'DragonRiding Auto Purchaser';
+    return L['DragonRiding Auto Purchaser'];
 end
 
 function Module:GetDescription()
-    local text = 'Automatically purchases the DragonRiding talent when you have enough currency.';
+    local text = L['Automatically purchases the DragonRiding talent when you have enough currency.'];
     if self.disabledByRefund then
-        text = text .. ' Temporarily |cffff0000disabled|r until next reload, because you refunded a talent.';
+        text = text .. ' ' .. L['Temporarily |cffff0000disabled|r until next reload, because you refunded a talent.'];
     end
 
     return text;
@@ -57,8 +58,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.reportPurchases = {
         type = 'toggle',
-        name = 'Report Purchases',
-        desc = 'Print in chat whenever a new talent is purchased.',
+        name = L['Report Purchases'],
+        desc = L['Print in chat whenever a new talent is purchased.'],
         order = 5,
         get = function()
             return self.db.reportPurchases;
@@ -192,7 +193,7 @@ function Module:ReportPurchases(entryIDs)
     end
     print(
         string.format(
-            '|cff33ff99TTT-DragonRiding Auto Purchaser:|r Purchased %d new talents.\n%s',
+            L['|cff33ff99TTT-DragonRiding Auto Purchaser:|r Purchased %d new talents.\n%s'],
             #entryIDs,
             table.concat(spellLinks, ', ')
         )

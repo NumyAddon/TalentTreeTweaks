@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('CopyTalentButtonInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
@@ -10,7 +11,7 @@ function Module:OnInitialize()
     self.bindingButton = CreateFrame('Button', 'TalentTreeTweaks_CopyTalentButtonInfoButton');
     self.bindingButton:SetScript('OnClick', function()
         if self.textToCopy then
-            Util:CopyText(self.textToCopy, 'SpellID');
+            Util:CopyText(self.textToCopy, L['SpellID']);
         end
     end);
 end
@@ -47,11 +48,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Allows you to press CTRL-C to copy the spellID of a talent, while hovering over it.';
+    return L['Allows you to press CTRL-C to copy the spellID of a talent, while hovering over it.'];
 end
 
 function Module:GetName()
-    return 'Copy SpellID on hover';
+    return L['Copy SpellID on hover'];
 end
 
 function Module:SetupHook(talentsTab)
@@ -116,9 +117,9 @@ function Module:OnShowSelections(talentsTab)
 end
 
 function Module:OnTalentTooltipCreated(_, tooltip)
-    local text = '|cFF00FF00CTRL-C to copy spellID|r';
+    local text = string.format('|cFF00FF00|r%s', L['CTRL-C to copy spellID']);
     if InCombatLockdown() then
-        text = text .. '|cFFFF0000 blocked in combat|r';
+        text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
     end
     tooltip:AddLine(text);
     tooltip:Show();

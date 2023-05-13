@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
@@ -20,11 +21,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Allows you to search for talents by their spellID, nodeID, entryID, and definitionID.'
+    return L['Allows you to search for talents by their spellID, nodeID, entryID, and definitionID.'];
 end
 
 function Module:GetName()
-    return 'Search by ID'
+    return L['Search by ID'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)

@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local LEVEL_CAP = 70;
 
@@ -23,15 +24,14 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return [[
-Adds a right-click option to the loadout dropdown to export your build.
-
-Adds a button to link the currently shown build in chat.
-]];
+    return
+        L['Adds a right-click option to the loadout dropdown to export your build.']
+        .. '\n\n' ..
+        L['Adds a button to link the currently shown build in chat.'];
 end
 
 function Module:GetName()
-    return 'Export Loadouts';
+    return L['Export Loadouts'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -58,16 +58,16 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     defaultOptionsTable.args.exportOnDropdownRightClick = {
         type = 'toggle',
-        name = 'Export on Right-Click',
-        desc = 'Adds a right-click option to the loadout dropdown to export your build.',
+        name = L['Export on Right-Click'],
+        desc = L['Adds a right-click option to the loadout dropdown to export your build.'],
         order = counter(),
         get = get,
         set = set,
     };
     defaultOptionsTable.args.showLinkInChatButton = {
         type = 'toggle',
-        name = 'Show '.. (TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or 'Post in Chat') ..' Button',
-        desc = 'Adds a button to link the currently shown build in chat.',
+        name = string.format(L['Show %s Button'], TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']),
+        desc = L['Adds a button to link the currently shown build in chat.'],
         order = counter(),
         get = get,
         set = set,
@@ -94,7 +94,7 @@ end
 
 function Module:MakeLinkButton(talentsTab)
     local button = CreateFrame('Button', nil, talentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
-    button:SetText(TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or 'Post in Chat');
+    button:SetText(TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']);
     button:SetSize(100, 22);
     button:SetPoint('BOTTOMLEFT', 47, 5);
     button:SetScript('OnClick', function()
@@ -130,7 +130,7 @@ function Module:SetupDropdownHook(talentsTab)
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
         if not ok or not configInfo then return; end
         local exportString = Util:GetLoadoutExportString(talentsTab, configID);
-        Util:CopyText(exportString, 'Talent Loadout String');
+        Util:CopyText(exportString, L['Talent Loadout String']);
     end);
     self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
     self:HookCustomSetupCallback(dropdown.DropDownControl);
@@ -161,7 +161,7 @@ function Module:LoadoutDropdownOnEnter(dropdownButton)
         self.tooltipShown = true;
         GameTooltip:SetOwner(dropdownButton, "ANCHOR_RIGHT");
     end
-    GameTooltip:AddLine("Right-click to share");
+    GameTooltip:AddLine(L["Right-click to share"]);
     GameTooltip:Show();
 end
 

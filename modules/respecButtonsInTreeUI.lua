@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
@@ -20,11 +21,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return 'Adds respec buttons to the talent tree UI.'
+    return L['Adds respec buttons to the talent tree UI.'];
 end
 
 function Module:GetName()
-    return 'Respec Buttons'
+    return L['Respec Buttons'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -33,18 +34,11 @@ function Module:GetOptions(defaultOptionsTable, db)
     return defaultOptionsTable;
 end
 
-function Module:ADDON_LOADED(_, addon)
-    if addon == 'Blizzard_ClassTalentUI' then
-        self:SetupHook();
-        self:UnregisterEvent('ADDON_LOADED');
-    end
-end
-
 function Module:SetupHook()
     self:SecureHook(ClassTalentFrame.TalentsTab, 'UpdateInspecting', function() self:UpdateRespecButtonContainer(); end);
 
     if self.respecButtonContainer then self:UpdateRespecButtonContainer(); return; end
-    self.respecButtonContainer = CreateFrame('Frame', 'TTTCont', ClassTalentFrame.TalentsTab);
+    self.respecButtonContainer = CreateFrame('Frame', nil, ClassTalentFrame.TalentsTab);
     local container = self.respecButtonContainer;
 
     -- create a respec button per spec, with icon and tooltip
@@ -75,7 +69,7 @@ do
     function respecButtonMixin:OnEnter()
         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT');
         GameTooltip:SetText(self.name);
-        GameTooltip:AddLine('Click to respec to this specialization.');
+        GameTooltip:AddLine(L['Click to respec to this specialization.']);
         GameTooltip:Show();
     end
     function respecButtonMixin:OnLeave() GameTooltip:Hide() end

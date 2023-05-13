@@ -3,6 +3,7 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule("ReduceSpam", "AceHook-3.0");
 
@@ -17,11 +18,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return "Mute chat spam while switching loadouts or specs.";
+    return L["Mute chat spam while switching loadouts or specs."];
 end
 
 function Module:GetName()
-    return "Reduce spam";
+    return L["Reduce spam"];
 end
 
 function Module:SetupHook()

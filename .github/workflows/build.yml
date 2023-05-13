@@ -17,6 +17,13 @@ jobs:
       - name: Replace toc-versions
         uses: Numynum/ToCVersions@master
 
+      - name: Update Locale
+        run: |
+          sudo apt-get install lua5.3
+          ./.github/scripts/update_translation.sh
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+
       - name: Create Retail Package
         uses: BigWigsMods/packager@master
         env:

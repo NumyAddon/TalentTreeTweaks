@@ -7,6 +7,7 @@
 	<Include file="AceConsole-3.0\AceConsole-3.0.xml"/>
 	<Include file="AceHook-3.0\AceHook-3.0.xml"/>
 	<Include file="AceEvent-3.0\AceEvent-3.0.xml"/>
+	<Include file="AceLocale-3.0\AceLocale-3.0.xml"/>
 	<Include file="LibTalentTree-1.0\LibTalentTree-1.0.xml"/>
 	<Include file="LibUIDropDownMenu\LibUIDropDownMenu.xml"/>
 </Ui>
