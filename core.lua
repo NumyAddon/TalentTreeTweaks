@@ -13,6 +13,14 @@ TTT.L = LibStub('AceLocale-3.0'):GetLocale(name);
 local L = TTT.L;
 
 function Main:OnInitialize()
+    if NumyProfiler then
+        NumyProfiler:WrapModules(name, 'Main', self);
+        NumyProfiler:WrapModules(name, 'Util', TTT.Util);
+        for moduleName, module in self:IterateModules() do
+            NumyProfiler:WrapModules(name, moduleName, module);
+        end
+    end
+
     TalentTreeTweaksDB = TalentTreeTweaksDB or {};
     self.db = TalentTreeTweaksDB;
     self.version = C_AddOns.GetAddOnMetadata(name, "Version") or "";
