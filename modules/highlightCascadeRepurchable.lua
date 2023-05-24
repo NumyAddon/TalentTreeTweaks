@@ -24,7 +24,7 @@ function Module:OnDisable()
         end
     end
     if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
 end
 

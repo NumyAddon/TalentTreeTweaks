@@ -39,10 +39,10 @@ function Module:OnDisable()
     self:UnhookAll();
 
     if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     if GenericTraitFrame then
-        GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquire, self);
+        GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
 end

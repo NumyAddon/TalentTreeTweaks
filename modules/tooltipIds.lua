@@ -25,7 +25,6 @@ function Module:GetName()
     return L['Tooltip IDs'];
 end
 
-
 function Module:GetOptions(defaultOptionsTable, db)
     local defaultDb = {
         talentTooltip = {
@@ -50,8 +49,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         end
     end
 
-    local order = 5;
-    local function increment() order = order + 1; return order; end;
+    local increment = CreateCounter(5);
 
     local getter = function(info, key)
         return self.db[info[#info]][key];
@@ -63,14 +61,14 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.talentTooltip = {
         order = increment(),
         type = 'multiselect',
-        name = 'Talent Tooltip',
-        desc = 'Toggles for the Talent Tooltips.',
+        name = L['Talent Tooltip'],
+        desc = L['Toggles for the Talent Tooltips.'],
         values = {
-            enabled = 'Enable Talent Tooltip',
-            nodeId = 'Enable Node ID',
-            entryId = 'Enable Entry ID',
-            definitionId = 'Enable Definition ID',
-            spellId = 'Enable Spell ID',
+            enabled = L['Talent Tooltip'],
+            nodeId = L['Node ID'],
+            entryId = L['Entry ID'],
+            definitionId = L['Definition ID'],
+            spellId = L['Spell ID'],
         },
         get = getter,
         set = setter,
@@ -78,14 +76,14 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.professionTooltip = {
         order = increment(),
         type = 'multiselect',
-        name = 'Talent Tooltip',
-        desc = 'Toggles for the Professions Tooltips.',
+        name = L['Talent Tooltip'],
+        desc = L['Toggles for the Professions Tooltips.'],
         values = {
-            enabled = 'Enable Professions Tooltip',
-            nodeId = 'Enable Node ID',
-            entryId = 'Enable Entry ID',
-            definitionId = 'Enable Definition ID',
-            spellId = 'Enable Spell ID',
+            enabled = L['Professions Tooltip'],
+            nodeId = L['Node ID'],
+            entryId = L['Entry ID'],
+            definitionId = L['Definition ID'],
+            spellId = L['Spell ID'],
         },
         get = getter,
         set = setter,
@@ -123,13 +121,13 @@ end
 
 function Module:AddGenericTraitButtonTooltips(button, tooltip, settings)
     if settings.entryId then
-        self:AddItemToTooltip('EntryId', button:GetEntryID(), tooltip)
+        self:AddItemToTooltip(L['EntryId'], button:GetEntryID(), tooltip)
     end
     if settings.spellId then
-        self:AddItemToTooltip('SpellId', button:GetSpellID(), tooltip)
+        self:AddItemToTooltip(L['SpellId'], button:GetSpellID(), tooltip)
     end
     if settings.definitionId then
-        self:AddItemToTooltip('DefinitionId', button.GetDefinitionID and button:GetDefinitionID() or nil, tooltip)
+        self:AddItemToTooltip(L['DefinitionId'], button.GetDefinitionID and button:GetDefinitionID() or nil, tooltip)
     end
 end
 
@@ -137,7 +135,7 @@ function Module:OnTalentTooltipCreated(button, tooltip)
     if not self.db.talentTooltip.enabled then return end
     local settings = self.db.talentTooltip
     if settings.nodeId then
-        self:AddItemToTooltip('NodeId', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
+        self:AddItemToTooltip(L['NodeId'], button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
 end
@@ -152,7 +150,7 @@ function Module:OnProfessionPerkEntered(perkId)
 
     local settings = self.db.professionTooltip
     if settings.nodeId then
-        self:AddItemToTooltip('Perk NodeId', perkId, tooltip)
+        self:AddItemToTooltip(L['Perk NodeId'], perkId, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
 end
@@ -167,7 +165,7 @@ function Module:OnProfessionPathEntered(nodeId)
 
     local settings = self.db.professionTooltip
     if settings.nodeId then
-        self:AddItemToTooltip('Path NodeId', nodeId, tooltip)
+        self:AddItemToTooltip(L['Path NodeId'], nodeId, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
 end
