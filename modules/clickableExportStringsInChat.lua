@@ -143,7 +143,7 @@ function Module:SetItemRef(link, text, button)
     if not (linkType == "garrmission" and addon == "TalentTreeTweaks") then return end
 
     if IsShiftKeyDown() then
-        if "LeftButton" == button and self.talentBuildLinksSupported then
+        if "LeftButton" == button then
             local fixedLink = GetFixedLink(text:gsub('garrmission:TalentTreeTweaks', 'talentbuild'));
             ChatEdit_InsertLink(fixedLink);
             return;
@@ -154,15 +154,13 @@ function Module:SetItemRef(link, text, button)
     end
     if IsControlKeyDown() then
         self:OpenInImportUI(exportString);
-    elseif IsAltKeyDown() and self.talentBuildLinksSupported then
+    elseif IsAltKeyDown() then
         self:OpenInDefaultUI(level, exportString);
     else
         if Main:IsTalentTreeViewerEnabled() then
             self:OpenInTalentTreeViewer(level, exportString);
-        elseif self.talentBuildLinksSupported then
-            self:OpenInDefaultUI(level, exportString);
         else
-            self:OpenInImportUI(exportString);
+            self:OpenInDefaultUI(level, exportString);
         end
     end
 end
@@ -170,13 +168,8 @@ end
 function Module:OpenInTalentTreeViewer(level, exportString)
     LoadAddOn('TalentTreeViewer');
     if not TalentViewer or not TalentViewer.ImportLoadout then
-        if not self.talentBuildLinksSupported then
-            self:OpenInImportUI(exportString);
-            print(L['Error opening in TalentTreeViewer. Showing default Blizzard import UI instead.']);
-        else
-            self:OpenInDefaultUI(level, exportString);
-            print(L['Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.']);
-        end
+        self:OpenInDefaultUI(level, exportString);
+        print(L['Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.']);
 
         return;
     end
