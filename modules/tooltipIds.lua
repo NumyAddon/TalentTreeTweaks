@@ -65,9 +65,9 @@ function Module:GetOptions(defaultOptionsTable, db)
         desc = L['Toggles for the Talent Tooltips.'],
         values = {
             enabled = L['Talent Tooltip'],
-            nodeId = L['Node ID'],
-            entryId = L['Entry ID'],
-            definitionId = L['Definition ID'],
+            nodeId = 'Node ID', -- don't translate
+            entryId = 'Entry ID', -- don't translate
+            definitionId = 'Definition ID', -- don't translate
             spellId = L['Spell ID'],
         },
         get = getter,
@@ -80,9 +80,9 @@ function Module:GetOptions(defaultOptionsTable, db)
         desc = L['Toggles for the Professions Tooltips.'],
         values = {
             enabled = L['Professions Tooltip'],
-            nodeId = L['Node ID'],
-            entryId = L['Entry ID'],
-            definitionId = L['Definition ID'],
+            nodeId = 'Node ID', -- don't translate
+            entryId = 'Entry ID', -- don't translate
+            definitionId = 'Definition ID', -- don't translate
             spellId = L['Spell ID'],
         },
         get = getter,
@@ -121,13 +121,13 @@ end
 
 function Module:AddGenericTraitButtonTooltips(button, tooltip, settings)
     if settings.entryId then
-        self:AddItemToTooltip(L['EntryId'], button:GetEntryID(), tooltip)
+        self:AddItemToTooltip('Entry ID', button:GetEntryID(), tooltip)
     end
     if settings.spellId then
-        self:AddItemToTooltip(L['SpellId'], button:GetSpellID(), tooltip)
+        self:AddItemToTooltip(L['Spell ID'], button:GetSpellID(), tooltip)
     end
     if settings.definitionId then
-        self:AddItemToTooltip(L['DefinitionId'], button.GetDefinitionID and button:GetDefinitionID() or nil, tooltip)
+        self:AddItemToTooltip('Definition ID', button.GetDefinitionID and button:GetDefinitionID() or nil, tooltip)
     end
 end
 
@@ -135,7 +135,7 @@ function Module:OnTalentTooltipCreated(button, tooltip)
     if not self.db.talentTooltip.enabled then return end
     local settings = self.db.talentTooltip
     if settings.nodeId then
-        self:AddItemToTooltip(L['NodeId'], button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
+        self:AddItemToTooltip('Node ID', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
 end
