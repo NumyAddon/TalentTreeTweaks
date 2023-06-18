@@ -172,7 +172,10 @@ end
 function Module:AddBuildToTooltip(tooltip, exportString)
     local falseOrSpecID, errorOrClassID, nilOrLoadoutInfo = Util:ParseTalentBuildString(exportString);
     if false == falseOrSpecID then
-        self:DebugPrint('Error parsing exportString, message:', errorOrClassID);
+        --@debug@
+        print('Error parsing exportString, message:', errorOrClassID);
+        --@end-debug@
+        return;
     end
     local specID = falseOrSpecID;
     local classID = errorOrClassID;
