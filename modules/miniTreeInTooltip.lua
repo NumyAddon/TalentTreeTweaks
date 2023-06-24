@@ -246,7 +246,6 @@ function Module:AddBuildToTooltip(tooltip, exportString)
 
     local dots = {};
 
-    DevTool:AddData(nilOrLoadoutInfo, 'LoadoutInfo')
     --- @type TalentTreeTweaks_Util_LoadoutContent
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
         local nodeID = nodeSelectionInfo.nodeID;
