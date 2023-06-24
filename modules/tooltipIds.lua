@@ -2,6 +2,10 @@ local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
 local L = TTT.L;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
+--- @type LibTalentTree
+local LTT = Util.LibTalentTree;
 
 local Module = Main:NewModule('TooltipIds');
 
@@ -33,6 +37,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             entryId = true,
             definitionId = false,
             spellId = true,
+            rowColInfo = false,
         },
         professionTooltip = {
             enabled = true,
@@ -69,6 +74,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             entryId = 'Entry ID', -- don't translate
             definitionId = 'Definition ID', -- don't translate
             spellId = L['Spell ID'],
+            rowColInfo = L['Row/Col Info'],
         },
         get = getter,
         set = setter,
@@ -138,6 +144,13 @@ function Module:OnTalentTooltipCreated(button, tooltip)
         self:AddItemToTooltip('Node ID', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
+    if settings.rowColInfo then
+        local nodeID = button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID
+        if nodeID then
+            local column, row = LTT:GetNodeGridPosition(nodeID)
+            self:AddItemToTooltip(L['Row/Col'], string.format('%d / %.1f', row, column):gsub('%.0', ''), tooltip)
+        end
+    end
 end
 
 function Module:OnProfessionPerkEntered(perkId)
