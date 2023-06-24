@@ -7,7 +7,19 @@ local L = TTT.L;
 
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
+--- @type LibTalentTree
 local LTT = Util.LibTalentTree;
+
+local VISUAL_STYLE_FULL = [[interface\addons\talenttreetweaks\media\mini-tree\full]]
+local VISUAL_STYLE_EMPTY = [[interface\addons\talenttreetweaks\media\mini-tree\empty]]
+local VISUAL_STYLE_HALF = [[interface\addons\talenttreetweaks\media\mini-tree\half]]
+local VISUAL_STYLE_LEFT = [[interface\addons\talenttreetweaks\media\mini-tree\left]]
+local VISUAL_STYLE_RIGHT = [[interface\addons\talenttreetweaks\media\mini-tree\right]]
+local VISUAL_STYLE_ONE_THIRD = [[interface\addons\talenttreetweaks\media\mini-tree\one-third]]
+local VISUAL_STYLE_TWO_THIRD = [[interface\addons\talenttreetweaks\media\mini-tree\two-third]]
+
+local DISPLAY_STYLE_SIMPLE = "simple";
+local DISPLAY_STYLE_SPELL_ICON = "spell_icon";
 
 function Module:OnInitialize()
     self.debug = false;
@@ -24,8 +36,8 @@ function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, config
 end
 
 function Module:OnEnable()
-    for i = 1, NUM_CHAT_WINDOWS do
-        local frame = _G["ChatFrame" .. i];
+    for _, frameName in pairs(CHAT_FRAMES) do
+        local frame = _G[frameName];
         self:SecureHookScript(frame, "OnHyperlinkEnter");
         self:SecureHookScript(frame, "OnHyperlinkLeave");
     end
@@ -60,6 +72,51 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
+    local defaults = {
+        displayStyle = DISPLAY_STYLE_SIMPLE,
+        scale = 1,
+    }
+    self.db = db;
+    for k, v in pairs(defaults) do
+        if db[k] == nil then
+            db[k] = v;
+        end
+    end
+
+    local increment = CreateCounter(5);
+
+    local getter = function(info)
+        return self.db[info[#info]];
+    end;
+    local setter = function(info, value)
+        self.db[info[#info]] = value;
+    end;
+
+    defaultOptionsTable.args.displayStyle = {
+        order = increment(),
+        type = "select",
+        name = L["Display Style"],
+        desc = L["Choose how the mini tree is displayed."],
+        values = {
+            [DISPLAY_STYLE_SIMPLE] = L["Simple dots"],
+            [DISPLAY_STYLE_SPELL_ICON] = L["Spell Icon"],
+        },
+        get = getter,
+        set = setter,
+    }
+    defaultOptionsTable.args.scale = {
+        order = increment(),
+        type = "range",
+        name = L["Scale"],
+        desc = L["Scale of the mini tree."],
+        min = 0.5,
+        max = 2,
+        step = 0.1,
+        get = getter,
+        set = setter,
+    }
+    --- @todo add options to show an example, using currently selected talents
+
     return defaultOptionsTable;
 end
 
@@ -183,17 +240,44 @@ function Module:AddBuildToTooltip(tooltip, exportString)
 
     local container = self:GetOrCreateContainer();
     container:Reset();
+    container:SetScale(self.db.scale);
+    local containerWidth, containerHeight = container:GetSize();
+    container:SetSize(containerWidth * self.db.scale, containerHeight * self.db.scale);
 
     local dots = {};
 
+    DevTool:AddData(nilOrLoadoutInfo, 'LoadoutInfo')
     --- @type TalentTreeTweaks_Util_LoadoutContent
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
         local nodeID = nodeSelectionInfo.nodeID;
-        if Util.LibTalentTree:IsNodeVisibleForSpec(specID, nodeSelectionInfo.nodeID) then
+        if LTT:IsNodeVisibleForSpec(specID, nodeSelectionInfo.nodeID) then
             local column, row = LTT:GetNodeGridPosition(treeID, nodeID);
             if column and row then
-                local isActive = nodeSelectionInfo.isNodeSelected or LTT:IsNodeGrantedForSpec(specID, nodeID)
-                local dot = container:MakeDot(column, row, isActive);
+                local nodeInfo = LTT:GetNodeInfo(treeID, nodeID);
+                local style = VISUAL_STYLE_EMPTY;
+                if (
+                    (nodeSelectionInfo.isNodeSelected and not nodeSelectionInfo.isChoiceNode and not nodeSelectionInfo.isPartiallyRanked)
+                    or LTT:IsNodeGrantedForSpec(specID, nodeID)
+                ) then
+                    style = VISUAL_STYLE_FULL;
+                elseif nodeSelectionInfo.isPartiallyRanked then
+                    local maxRanks = nodeInfo.maxRanks
+                    if maxRanks == 2 then
+                        style = VISUAL_STYLE_HALF;
+                    elseif maxRanks == 3 and nodeSelectionInfo.partialRanksPurchased == 1 then
+                        style = VISUAL_STYLE_ONE_THIRD;
+                    elseif maxRanks == 3 and nodeSelectionInfo.partialRanksPurchased == 2 then
+                        style = VISUAL_STYLE_TWO_THIRD;
+                    end
+                elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
+                    style = nodeSelectionInfo.choiceNodeSelection == 1 and VISUAL_STYLE_LEFT or VISUAL_STYLE_RIGHT;
+                end
+                local entryInfo = LTT:GetEntryInfo(nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection]);
+                local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID);
+                local spellID = definitionInfo.spellID;
+                local spellIcon = select(8, GetSpellInfo(spellID));
+
+                local dot = container:MakeDot(column, row, style, spellIcon);
                 dots[nodeID] = dot;
             else
                 self:DebugPrint('column and/or row not found for nodeID', nodeID)
@@ -206,7 +290,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
         for _, edge in pairs(edges or {}) do
             local targetDot = dots[edge.targetNode];
             if targetDot then
-                container:MakeLine(dot, targetDot, dot.isActive);
+                container:MakeLine(dot, targetDot, dot.isMaxed);
             end
         end
     end
@@ -219,11 +303,11 @@ end
 local containerMixin = {};
 function containerMixin:Init()
     self.spacing = 20;
-    self.dotSize = 10;
-    local expectedMaxRows = 10;
-    local expectedMaxCols = 20;
+    self.dotSize = 12;
+    self.expectedMaxRows = 10;
+    self.expectedMaxCols = 20;
 
-    self:SetSize(expectedMaxCols * self.spacing, expectedMaxRows * self.spacing);
+    self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
     self:Hide();
 
     self.dotPool = CreateFramePool("FRAME", self);
@@ -233,27 +317,25 @@ function containerMixin:Init()
     );
 end
 
-function containerMixin:MakeDot(column, row, isActive)
+function containerMixin:MakeDot(column, row, visualStyle, spellIcon)
     local dot, isNew = self.dotPool:Acquire();
     if isNew then
         dot:SetSize(self.dotSize, self.dotSize);
         dot.texture = dot:CreateTexture(nil, "ARTWORK");
         dot.texture:SetAllPoints(dot);
-        dot.texture:SetTexture("Interface\\Buttons\\WHITE8x8");
-        dot.mask = dot:CreateMaskTexture();
-        dot.mask:SetAllPoints(dot.texture);
-        dot.mask:SetTexture("Interface\\CHARACTERFRAME\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE");
-        dot.texture:AddMaskTexture(dot.mask);
     end
     dot:SetPoint("TOPLEFT", (column - 1) * self.spacing, -((row - 1) * self.spacing));
-    local r, g, b = 0.26, 0.26, 0.26; -- #434343 - greyish
-    if isActive then
-        r, g, b = 1, 0.82, 0; -- #ffd100 -- yellow
+
+    if Module.db.displayStyle == DISPLAY_STYLE_SIMPLE then
+        dot.texture:SetTexture(visualStyle);
+        dot.texture:SetDesaturated(false);
+    elseif Module.db.displayStyle == DISPLAY_STYLE_SPELL_ICON then
+        dot.texture:SetTexture(spellIcon);
+        dot.texture:SetDesaturated(visualStyle == VISUAL_STYLE_EMPTY);
     end
-    dot.texture:SetVertexColor(r, g, b);
     dot:Show();
 
-    dot.isActive = isActive;
+    dot.isMaxed = visualStyle == VISUAL_STYLE_FULL or visualStyle == VISUAL_STYLE_LEFT or visualStyle == VISUAL_STYLE_RIGHT;
 
     return dot;
 end
@@ -267,6 +349,7 @@ function containerMixin:MakeLine(dot1, dot2, isActive)
     if isActive then
         r, g, b = 1, 0.82, 0; -- #ffd100 -- yellow
     end
+    line:SetAlpha(isActive and 0.7 or 1);
     line:SetColorTexture(r, g, b);
     line:SetStartPoint("CENTER", dot1);
     line:SetEndPoint("CENTER", dot2);
@@ -286,6 +369,7 @@ end
 function containerMixin:Reset()
     self:ReleaseAllLines();
     self:ReleaseAllDots();
+    self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
 end
 
 --- @return TalentTreeTweaks_TreeInMinimapContainerMixin
