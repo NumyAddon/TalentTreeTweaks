@@ -148,7 +148,9 @@ function Module:OnTalentTooltipCreated(button, tooltip)
         local nodeID = button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID
         if nodeID then
             local column, row = LTT:GetNodeGridPosition(nodeID)
-            self:AddItemToTooltip(L['Row/Col'], string.format('%d / %.1f', row, column):gsub('%.0', ''), tooltip)
+            if column and row then
+                self:AddItemToTooltip(L['Row/Col'], string.format('%d / %.1f', row, column):gsub('%.0', ''), tooltip)
+            end
         end
     end
 end
