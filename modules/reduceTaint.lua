@@ -6,7 +6,7 @@ local Util = TTT.Util;
 local L = TTT.L;
 
 --- @type LibUIDropDownMenu
-local LibDD = LibStub('LibUIDropDownMenu-4.0');
+local LibDD = LibStub('LibUIDropDownMenuNumy-4.0');
 
 TalentTreeTweaks_DropDownControlReplacementMixin = CreateFromMixins(DropDownControlMixin);
 
