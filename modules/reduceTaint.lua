@@ -153,20 +153,22 @@ local function purgeKey(table, key)
     end
 end
 local nop = function() end;
-local function makeFEnvReplacement(original, functionsToNop)
+local function makeFEnvReplacement(original, replacement)
     local fEnv = {};
     setmetatable(fEnv, { __index = function(t, k)
-        return functionsToNop[k] and nop or original[k];
+        return replacement[k] or original[k];
     end});
     return fEnv;
 end
+
 function Module:HandleMultiActionBarTaint()
     if self.db.disableMultiActionBarShowHide then
         self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(ClassTalentFrame.OnShow);
         self.originalOnHideFEnv = self.originalOnHideFEnv or getfenv(ClassTalentFrame.OnHide);
+        local triggerMicroButtonUpdate = function() self:TriggerMicroButtonUpdate() end;
 
-        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = true, UpdateMicroButtons = true }));
-        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = true, UpdateMicroButtons = true }));
+        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = nop, UpdateMicroButtons = triggerMicroButtonUpdate }));
+        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = nop, UpdateMicroButtons = triggerMicroButtonUpdate }));
     elseif self.originalOnShowFEnv and self.originalOnHideFEnv then
         setfenv(ClassTalentFrame.OnShow, self.originalOnShowFEnv);
         setfenv(ClassTalentFrame.OnHide, self.originalOnHideFEnv);
@@ -182,6 +184,17 @@ function Module:HandleMultiActionBarTaint()
             purgeKey(TalentMicroButton, 'canUseTalentSpecUI');
         end);
     end
+end
+
+function Module:TriggerMicroButtonUpdate()
+    local cvarName = 'Numy_TalentTreeTweaks';
+    LFDMicroButton:RegisterEvent('CVAR_UPDATE');
+    if not self.cvarRegistered then
+        C_CVar.RegisterCVar(cvarName);
+        self.cvarRegistered = true;
+    end
+    C_CVar.SetCVar(cvarName, GetCVar(cvarName) == '1' and '0' or '1');
+    LFDMicroButton:UnregisterEvent('CVAR_UPDATE');
 end
 
 function Module:EnableDropDownReplacement()
