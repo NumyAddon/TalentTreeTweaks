@@ -129,30 +129,8 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
 end
 
 local function purgeKey(table, key)
-    local logLevel, c = GetCVar("taintLog"), -42
-    if (tonumber(logLevel) or 0) > 1 then
-        if CVarCallbackRegistry then
-            CVarCallbackRegistry:UnregisterEvent("CVAR_UPDATE")
-        end
-        SetCVar("taintLog", "1")
-    else
-        logLevel = nil
-    end
-    table[key] = nil
-    repeat
-        if table[c] == nil then
-            table[c] = nil
-        end
-        c = c - 1
-    until issecurevariable(table, key)
-    if logLevel then
-        SetCVar("taintLog", logLevel)
-        if CVarCallbackRegistry then
-            CVarCallbackRegistry:RegisterEvent("CVAR_UPDATE")
-        end
-    end
+    TextureLoadingGroupMixin.AddTexture({textures = table}, key);
 end
-local nop = function() end;
 local function makeFEnvReplacement(original, replacement)
     local fEnv = {};
     setmetatable(fEnv, { __index = function(t, k)
@@ -164,19 +142,29 @@ end
 function Module:HandleMultiActionBarTaint()
     if self.db.disableMultiActionBarShowHide then
         self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(ClassTalentFrame.OnShow);
-        self.originalOnHideFEnv = self.originalOnHideFEnv or getfenv(ClassTalentFrame.OnHide);
-        local triggerMicroButtonUpdate = function() self:TriggerMicroButtonUpdate() end;
 
-        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = nop, UpdateMicroButtons = triggerMicroButtonUpdate }));
-        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = nop, UpdateMicroButtons = triggerMicroButtonUpdate }));
-    elseif self.originalOnShowFEnv and self.originalOnHideFEnv then
+        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, {
+            TalentMicroButton = {
+                EvaluateAlertVisibility = function()
+                    HelpTip:HideAllSystem("MicroButtons");
+                end,
+            },
+            MultiActionBar_ShowAllGrids = nop,
+            UpdateMicroButtons = function() self:TriggerMicroButtonUpdate() end,
+        }));
+
+        self:SecureHook(FrameUtil, 'UnregisterFrameForEvents', function(frame)
+            if frame == ClassTalentFrame then
+                self:MakeOnHideSafe();
+            end
+        end);
+    elseif self.originalOnShowFEnv then
         setfenv(ClassTalentFrame.OnShow, self.originalOnShowFEnv);
-        setfenv(ClassTalentFrame.OnHide, self.originalOnHideFEnv);
+        self:Unhook(FrameUtil, 'UnregisterFrameForEvents');
     end
     if
-        (self.originalOnShowFEnv or self.originalOnHideFEnv)
-        and TalentMicroButton
-        and TalentMicroButton.EvaluateAlertVisibility
+        self.originalOnShowFEnv
+        and TalentMicroButton and TalentMicroButton.HasTalentAlertToShow
         and not self:IsHooked(TalentMicroButton, 'HasTalentAlertToShow')
     then
         self:SecureHook(TalentMicroButton, 'HasTalentAlertToShow', function()
@@ -186,8 +174,35 @@ function Module:HandleMultiActionBarTaint()
     end
 end
 
+function Module:MakeOnHideSafe()
+    if not issecurevariable(ClassTalentFrame, 'lockInspect') then
+        if not ClassTalentFrame.lockInspect then
+            purgeKey(ClassTalentFrame, 'lockInspect');
+        else
+            -- get blizzard to set the value to true
+            TextureLoadingGroupMixin.AddTexture({textures = ClassTalentFrame}, 'lockInspect');
+        end
+    end
+    local isInspecting = ClassTalentFrame:IsInspecting();
+    local notSecure = false;
+    if not issecurevariable(ClassTalentFrame, 'inspectUnit') then
+        purgeKey(ClassTalentFrame, 'inspectUnit');
+        notSecure = true;
+    end
+    if not issecurevariable(ClassTalentFrame, 'inspectString') then
+        purgeKey(ClassTalentFrame, 'inspectString');
+        notSecure = true;
+    end
+    if notSecure and isInspecting then
+        -- get blizzard to set the value to true
+        TextureLoadingGroupMixin.AddTexture({textures = ClassTalentFrame}, 'inspectString');
+    end
+end
+
 function Module:TriggerMicroButtonUpdate()
     local cvarName = 'Numy_TalentTreeTweaks';
+    -- the LFDMicroButton will trigger UpdateMicroButtons() in its OnEvent, without checking the event itself.
+    -- CVAR_UPDATE is easy enough to trigger at will, so we make use of that
     LFDMicroButton:RegisterEvent('CVAR_UPDATE');
     if not self.cvarRegistered then
         C_CVar.RegisterCVar(cvarName);
