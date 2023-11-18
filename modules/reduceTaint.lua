@@ -128,14 +128,35 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
     end);
 end
 
+local function purgeKey(table, key)
+    local logLevel, c = GetCVar("taintLog"), -42
+    if (tonumber(logLevel) or 0) > 1 then
+        if CVarCallbackRegistry then
+            CVarCallbackRegistry:UnregisterEvent("CVAR_UPDATE")
+        end
+        SetCVar("taintLog", "1")
+    else
+        logLevel = nil
+    end
+    table[key] = nil
+    repeat
+        if table[c] == nil then
+            table[c] = nil
+        end
+        c = c - 1
+    until issecurevariable(table, key)
+    if logLevel then
+        SetCVar("taintLog", logLevel)
+        if CVarCallbackRegistry then
+            CVarCallbackRegistry:RegisterEvent("CVAR_UPDATE")
+        end
+    end
+end
 local nop = function() end;
 local function makeFEnvReplacement(original, functionsToNop)
     local fEnv = {};
     setmetatable(fEnv, { __index = function(t, k)
-        if functionsToNop[k] then
-            return nop;
-        end
-        return original[k];
+        return functionsToNop[k] and nop or original[k];
     end});
     return fEnv;
 end
@@ -144,11 +165,22 @@ function Module:HandleMultiActionBarTaint()
         self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(ClassTalentFrame.OnShow);
         self.originalOnHideFEnv = self.originalOnHideFEnv or getfenv(ClassTalentFrame.OnHide);
 
-        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = true }));
-        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = true }));
+        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, { MultiActionBar_ShowAllGrids = true, UpdateMicroButtons = true }));
+        setfenv(ClassTalentFrame.OnHide, makeFEnvReplacement(self.originalOnHideFEnv, { MultiActionBar_HideAllGrids = true, UpdateMicroButtons = true }));
     elseif self.originalOnShowFEnv and self.originalOnHideFEnv then
         setfenv(ClassTalentFrame.OnShow, self.originalOnShowFEnv);
         setfenv(ClassTalentFrame.OnHide, self.originalOnHideFEnv);
+    end
+    if
+        (self.originalOnShowFEnv or self.originalOnHideFEnv)
+        and TalentMicroButton
+        and TalentMicroButton.EvaluateAlertVisibility
+        and not self:IsHooked(TalentMicroButton, 'HasTalentAlertToShow')
+    then
+        self:SecureHook(TalentMicroButton, 'HasTalentAlertToShow', function()
+            purgeKey(TalentMicroButton, 'canUseTalentUI');
+            purgeKey(TalentMicroButton, 'canUseTalentSpecUI');
+        end);
     end
 end
 
