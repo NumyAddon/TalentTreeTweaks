@@ -129,7 +129,7 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
 end
 
 local function purgeKey(table, key)
-    TextureLoadingGroupMixin.AddTexture({textures = table}, key);
+    TextureLoadingGroupMixin.RemoveTexture({textures = table}, key);
 end
 local function makeFEnvReplacement(original, replacement)
     local fEnv = {};
