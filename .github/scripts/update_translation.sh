@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Thanks to Nevcairiel @ https://github.com/Nevcairiel/Bartender4/blob/master/locale/wowace-locale-import.sh
 cf_token=
 
 # Load secrets

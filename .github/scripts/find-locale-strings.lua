@@ -1,4 +1,4 @@
--- Need to hardcode the project id here
+-- Thanks to Nevcairiel @ https://github.com/Nevcairiel/Bartender4/blob/master/locale/find-locale-strings.lua
 local TOC_FILE
 -- Automatically find the TOC in the given path, set to false to disable
 local AUTO_FIND_TOC = arg and arg[1] or "./"
