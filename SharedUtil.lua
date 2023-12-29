@@ -32,7 +32,7 @@ function Util:OnInitialize()
             end
             dialog.editBox:SetScript('OnEscapePressed', HidePopup);
             dialog.editBox:SetScript('OnEnterPressed', HidePopup);
-            dialog.editBox:SetScript('OnKeyDown', function(_, key)
+            dialog.editBox:SetScript('OnKeyUp', function(_, key)
                 if IsControlKeyDown() and (key == 'C' or key == 'X') then
                     HidePopup();
                 end
