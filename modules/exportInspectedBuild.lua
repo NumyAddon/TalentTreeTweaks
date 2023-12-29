@@ -85,11 +85,28 @@ function Module:SetupHook()
     end
 
     if self.db.showLinkInChatButton then
+        self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
         if not self.linkButton then
             self.linkButton = self:MakeLinkButton(talentsTab);
         end
         self.linkButton:Show();
     end
+end
+
+function Module:OnUpdateInspecting(talentsTab)
+    local isInspecting = talentsTab:IsInspecting();
+    if not isInspecting then
+        self.cachedInspectSpecID = nil;
+        self.cachedInspectClassID = nil;
+        self.cachedInspectUnitSex = nil;
+        self.cachedInspectExportString = nil;
+
+        return;
+    end
+    self.cachedInspectSpecID = talentsTab:GetSpecID();
+    self.cachedInspectClassID = talentsTab:GetClassID();
+    self.cachedInspectUnitSex = talentsTab:GetClassTalentFrame():GetUnitSex();
+    self.cachedInspectExportString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
 end
 
 function Module:MakeLinkButton(talentsTab)
@@ -98,7 +115,10 @@ function Module:MakeLinkButton(talentsTab)
     button:SetSize(100, 22);
     button:SetPoint('BOTTOMLEFT', 47, 5);
     button:SetScript('OnClick', function()
-        local exportString = Util:GetLoadoutExportString(talentsTab);
+        local specID = self.cachedInspectSpecID or talentsTab:GetSpecID();
+        local classID = self.cachedInspectClassID or talentsTab:GetClassID();
+	    local unitSex = self.cachedInspectUnitSex or talentsTab:GetClassTalentFrame():GetUnitSex();
+        local exportString = self.cachedInspectExportString or Util:GetLoadoutExportString(talentsTab);
 
         if not TALENT_BUILD_CHAT_LINK_TEXT then
             if not ChatEdit_InsertLink(exportString) then
@@ -107,10 +127,10 @@ function Module:MakeLinkButton(talentsTab)
             return;
         end
 
-        local specName = talentsTab:GetSpecName();
-        local className = talentsTab:GetClassName();
-        local specID = talentsTab:GetSpecID();
-        local classColor = RAID_CLASS_COLORS[select(2, GetClassInfo(talentsTab:GetClassID()))];
+	    local specName = select(2, GetSpecializationInfoByID(specID, unitSex));
+	    local classInfo = C_CreatureInfo.GetClassInfo(classID);
+        local className = classInfo and classInfo.className;
+        local classColor = RAID_CLASS_COLORS[classInfo and classInfo.classFile];
         local level = LEVEL_CAP;
 
         local linkDisplayText = ("[%s]"):format(TALENT_BUILD_CHAT_LINK_TEXT:format(specName, className));

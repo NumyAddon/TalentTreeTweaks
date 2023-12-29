@@ -114,15 +114,28 @@ function Module:SetupHook()
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
     self:SecureHook('HideUIPanel', 'OnHideUIPanel')
 
+    self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
     self:ReplaceCopyLoadoutButton(talentsTab);
 
     self:HandleMultiActionBarTaint();
 end
 
+function Module:OnUpdateInspecting(talentsTab)
+    local isInspecting = talentsTab:IsInspecting();
+    if not isInspecting then
+        self.cachedInspectExportString = nil;
+
+        return;
+    end
+    self.cachedInspectExportString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
+end
+
 function Module:ReplaceCopyLoadoutButton(talentsTab)
     talentsTab.InspectCopyButton:SetOnClickHandler(function()
-        local loadoutString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
-        if loadoutString ~= '' then
+        local loadoutString =
+            self.cachedInspectExportString
+            or (talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString());
+        if loadoutString and (loadoutString ~= "") then
             Util:CopyText(loadoutString, L['Inspected Build']);
         end
     end);
