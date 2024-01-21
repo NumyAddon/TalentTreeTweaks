@@ -8,9 +8,7 @@ local L = TTT.L;
 local Module = Main:NewModule("ReduceSpam", "AceHook-3.0");
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
-        self:SetupHook();
-    end);
+    self:SetupHook();
 end
 
 function Module:OnDisable()
