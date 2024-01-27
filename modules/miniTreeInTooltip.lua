@@ -10,27 +10,41 @@ local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 --- @type LibTalentTree
 local LTT = Util.LibTalentTree;
 
-local VISUAL_STYLE_FULL = [[interface\addons\talenttreetweaks\media\mini-tree\full]]
-local VISUAL_STYLE_EMPTY = [[interface\addons\talenttreetweaks\media\mini-tree\empty]]
-local VISUAL_STYLE_HALF = [[interface\addons\talenttreetweaks\media\mini-tree\half]]
-local VISUAL_STYLE_LEFT = [[interface\addons\talenttreetweaks\media\mini-tree\left]]
-local VISUAL_STYLE_RIGHT = [[interface\addons\talenttreetweaks\media\mini-tree\right]]
-local VISUAL_STYLE_ONE_THIRD = [[interface\addons\talenttreetweaks\media\mini-tree\one-third]]
-local VISUAL_STYLE_TWO_THIRD = [[interface\addons\talenttreetweaks\media\mini-tree\two-third]]
+-- these numbers have no meaning
+local VISUAL_STYLE_FULL = 1;
+local VISUAL_STYLE_EMPTY = 2;
+local VISUAL_STYLE_HALF = 3;
+local VISUAL_STYLE_LEFT = 4;
+local VISUAL_STYLE_RIGHT = 5;
+local VISUAL_STYLE_ONE_THIRD = 6;
+local VISUAL_STYLE_TWO_THIRD = 7;
 
-local DISPLAY_STYLE_SIMPLE = "simple";
-local DISPLAY_STYLE_SPELL_ICON = "spell_icon";
+local TEXTURE_FILE = [[interface\addons\talenttreetweaks\media\mini-tree-orbs]]
+
+-- these strings are saved as settings
+local DISPLAY_STYLE_SIMPLE = 'simple';
+local DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF = 'simple-default-diff';
+local DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF = 'simple-custom-diff';
+local DISPLAY_STYLE_SPELL_ICON = 'spell_icon';
+
+-- these numbers have no meaning
+local DIFF_DEFAULT_YELLOW = 1; -- same talents/default color
+local DIFF_DEFAULT_RED = 2; -- you have a talent they don't
+local DIFF_DEFAULT_GREEN = 3; -- they have a talent you don't
+local DIFF_DEFAULT_ORANGE = 4; -- different talent choice/rank
 
 function Module:OnInitialize()
     self.debug = false;
+    self.containers = {};
 end
 
 function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, configID)
     if not exportString and configID then
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
         if not ok or not configInfo then return; end
-        return false -- not yet supported, WIP
-        -- exportString = Util:GetLoadoutExportString(nil, configID);
+
+        exportString = Util:GetLoadoutExportString(nil, configID);
+        if not exportString then return false; end -- happens for example when using inspect or starter build configID
     end
     Module:AddBuildToTooltip(tooltip, exportString);
 end
@@ -41,11 +55,11 @@ function Module:OnEnable()
         self:SecureHookScript(frame, "OnHyperlinkEnter");
         self:SecureHookScript(frame, "OnHyperlinkLeave");
     end
+    self:SecureHook("FloatingChatFrame_OnLoad", function(frame)
+        self:SecureHookScript(frame, "OnHyperlinkEnter");
+        self:SecureHookScript(frame, "OnHyperlinkLeave");
+    end)
     self:SecureHook(GameTooltip, "Show", "OnTooltipShow")
-
-    if not self.container then
-        self.container = self:CreateContainer();
-    end
 
     Util:OnClassTalentUILoad(function()
         local talentsTab = ClassTalentFrame.TalentsTab;
@@ -73,8 +87,13 @@ end
 
 function Module:GetOptions(defaultOptionsTable, db)
     local defaults = {
-        displayStyle = DISPLAY_STYLE_SIMPLE,
+        displayStyle = DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF,
+        upgradedDisplayStyle = 0,
         scale = 1,
+        diffGreen = {r = 0, g = 1, b = 0},
+        diffOrange = {r = 1, g = 1, b = 0},
+        diffRed = {r = 1, g = 0, b = 0},
+        diffYellow = {r = 1, g = 1, b = 1},
     }
     self.db = db;
     for k, v in pairs(defaults) do
@@ -82,9 +101,29 @@ function Module:GetOptions(defaultOptionsTable, db)
             db[k] = v;
         end
     end
+    if self.db.upgradedDisplayStyle < 1 then
+        self.db.upgradedDisplayStyle = 1;
+        if self.db.displayStyle == DISPLAY_STYLE_SIMPLE then
+            self.db.displayStyle = DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF;
+        end
+    end
+    self.customColors = {
+        [DIFF_DEFAULT_RED] = self.db.diffRed,
+        [DIFF_DEFAULT_GREEN] = self.db.diffGreen,
+        [DIFF_DEFAULT_ORANGE] = self.db.diffOrange,
+        [DIFF_DEFAULT_YELLOW] = self.db.diffYellow,
+    }
 
     local increment = CreateCounter(5);
 
+    local function getColor(info)
+        local color = self.db[info[#info]];
+        return color.r, color.g, color.b, color.a;
+    end
+    local function setColor(info, r, g, b)
+        local color = self.db[info[#info]];
+        color.r, color.g, color.b = r, g, b;
+    end
     local getter = function(info)
         return self.db[info[#info]];
     end;
@@ -96,14 +135,86 @@ function Module:GetOptions(defaultOptionsTable, db)
         order = increment(),
         type = "select",
         name = L["Display Style"],
-        desc = L["Choose how the mini tree is displayed."],
+        desc = L["Choose how the mini tree is displayed. 'with diff' means that the mini tree will show the difference between your current build and the build in the tooltip."],
         values = {
             [DISPLAY_STYLE_SIMPLE] = L["Simple dots"],
             [DISPLAY_STYLE_SPELL_ICON] = L["Spell Icon"],
+            [DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF] = L["Simple dots with default diff colors"],
+            [DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF] = L["Simple dots with custom diff colors"],
         },
+        sorting = {
+            DISPLAY_STYLE_SIMPLE,
+            DISPLAY_STYLE_SPELL_ICON,
+            DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF,
+            DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF,
+        },
+        width = "double",
         get = getter,
         set = setter,
     }
+
+    defaultOptionsTable.args.customDiffWarning = {
+        order = increment(),
+        type = 'description',
+        name = L['Warning: Custom colors may look weird, this cannot be fixed.'],
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+    };
+    defaultOptionsTable.args.diffRed = {
+        order = increment(),
+        type = 'color',
+        name = L['You have a talent they don\'t'],
+        hasAlpha = false,
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+        get = getColor,
+        set = setColor,
+    };
+    defaultOptionsTable.args.diffGreen = {
+        order = increment(),
+        type = 'color',
+        name = L['They have a talent you don\'t'],
+        hasAlpha = false,
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+        get = getColor,
+        set = setColor,
+    };
+    defaultOptionsTable.args.diffOrange = {
+        order = increment(),
+        type = 'color',
+        name = L['You have selected a different choice, or different number of points in a talent'],
+        hasAlpha = false,
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+        get = getColor,
+        set = setColor,
+    };
+    defaultOptionsTable.args.diffYellow = {
+        order = increment(),
+        type = 'color',
+        name = L['You have the same talents'],
+        hasAlpha = false,
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+        get = getColor,
+        set = setColor,
+    };
+    defaultOptionsTable.args.reset = {
+        order = increment(),
+        type = 'execute',
+        name = RESET,
+        desc = L['Reset the colors to default'],
+        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
+        func = function()
+            self.db.diffRed = defaults.diffRed;
+            self.db.diffGreen = defaults.diffGreen;
+            self.db.diffOrange = defaults.diffOrange;
+            self.db.diffYellow = defaults.diffYellow;
+            self.customColors = {
+                [DIFF_DEFAULT_RED] = self.db.diffRed,
+                [DIFF_DEFAULT_GREEN] = self.db.diffGreen,
+                [DIFF_DEFAULT_ORANGE] = self.db.diffOrange,
+                [DIFF_DEFAULT_YELLOW] = self.db.diffYellow,
+            }
+        end,
+    };
+
     defaultOptionsTable.args.scale = {
         order = increment(),
         type = "range",
@@ -115,7 +226,24 @@ function Module:GetOptions(defaultOptionsTable, db)
         get = getter,
         set = setter,
     }
-    --- @todo add options to show an example, using currently selected talents
+    defaultOptionsTable.args.example = {
+        order = increment(),
+        type = "execute",
+        name = L["Show Example"],
+        desc = L["Show an example of the mini tree for your current spec."],
+        func = function()
+            local configID = C_ClassTalents.GetActiveConfigID();
+            if not configID then return end;
+            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_CURSOR');
+            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+            ItemRefTooltip:Show();
+            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_PRESERVE');
+            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+            ItemRefTooltip:Show();
+            TalentTreeTweaks_EmbedMiniTreeIntoTooltip(ItemRefTooltip, nil, configID)
+        end,
+        disabled = function() return not C_ClassTalents.GetActiveConfigID(); end,
+    }
 
     return defaultOptionsTable;
 end
@@ -180,7 +308,7 @@ end
 function Module:OnHyperlinkEnter(chatFrame, link)
     local linkType, part1, part2, part3, part4 = string.split(":", link);
     local specID, level, exportString;
-    if (linkType == "garrmission" and part1 == "TalentTreeTweaks") then
+    if (linkType == "addon" and part1 == "TalentTreeTweaks") then
         specID = part2;
         level = part3;
         exportString = part4;
@@ -238,7 +366,11 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     local classID = errorOrClassID;
     local treeID = LTT:GetClassTreeId(classID);
 
-    local container = self:GetOrCreateContainer();
+    local calculateDiff =
+        (self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF or self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF)
+        and specID == PlayerUtil.GetCurrentSpecID();
+
+    local container = self:GetOrCreateContainer(tooltip);
     container:Reset();
     container:SetScale(self.db.scale);
     local containerWidth, containerHeight = container:GetSize();
@@ -254,29 +386,36 @@ function Module:AddBuildToTooltip(tooltip, exportString)
             if column and row then
                 local nodeInfo = LTT:GetNodeInfo(treeID, nodeID);
                 local style = VISUAL_STYLE_EMPTY;
+                local rank = 0;
                 if (
                     (nodeSelectionInfo.isNodeSelected and not nodeSelectionInfo.isChoiceNode and not nodeSelectionInfo.isPartiallyRanked)
                     or LTT:IsNodeGrantedForSpec(specID, nodeID)
                 ) then
                     style = VISUAL_STYLE_FULL;
+                    rank = nodeInfo.maxRanks;
                 elseif nodeSelectionInfo.isPartiallyRanked then
                     local maxRanks = nodeInfo.maxRanks
+                    rank = nodeSelectionInfo.partialRanksPurchased;
                     if maxRanks == 2 then
                         style = VISUAL_STYLE_HALF;
-                    elseif maxRanks == 3 and nodeSelectionInfo.partialRanksPurchased == 1 then
+                    elseif maxRanks == 3 and rank == 1 then
                         style = VISUAL_STYLE_ONE_THIRD;
-                    elseif maxRanks == 3 and nodeSelectionInfo.partialRanksPurchased == 2 then
+                    elseif maxRanks == 3 and rank == 2 then
                         style = VISUAL_STYLE_TWO_THIRD;
                     end
                 elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
+                    rank = 1;
                     style = nodeSelectionInfo.choiceNodeSelection == 1 and VISUAL_STYLE_LEFT or VISUAL_STYLE_RIGHT;
                 end
-                local entryInfo = LTT:GetEntryInfo(nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection]);
+                local entryID = nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection];
+                local entryInfo = LTT:GetEntryInfo(entryID);
                 local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID);
                 local spellID = definitionInfo.spellID;
                 local spellIcon = select(8, GetSpellInfo(spellID));
 
-                local dot = container:MakeDot(column, row, style, spellIcon);
+                local diff = calculateDiff and self:GetDiffForNode(nodeID, entryID, rank) or nil;
+
+                local dot = container:MakeDot(column, row, style, spellIcon, diff);
                 dots[nodeID] = dot;
             else
                 self:DebugPrint('column and/or row not found for nodeID', nodeID)
@@ -298,6 +437,32 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     tooltip:Show();
 end
 
+function Module:GetDiffForNode(nodeID, targetEntry, targetRank)
+    local selfNodeInfo = C_Traits.GetNodeInfo(C_ClassTalents.GetActiveConfigID(), nodeID);
+    local selfEntry = selfNodeInfo and selfNodeInfo.activeEntry and selfNodeInfo.activeEntry.entryID;
+    local selfRank = selfNodeInfo and selfNodeInfo.activeEntry and selfNodeInfo.activeEntry.rank or 0;
+
+    local diff;
+    if targetRank == selfRank then
+        if selfRank == 0 and targetRank == 0 then
+            diff = nil; -- both empty
+        elseif targetEntry == selfEntry then
+            diff = DIFF_DEFAULT_YELLOW; -- same entry, same rank
+        else
+            diff = DIFF_DEFAULT_ORANGE; -- different entry
+        end
+    elseif targetRank ~= 0 and selfRank ~= 0 then
+        diff = DIFF_DEFAULT_ORANGE; -- same entry, different rank
+    elseif targetRank == 0 then
+        diff = DIFF_DEFAULT_RED; -- target has entry, self doesn't
+    elseif selfRank == 0 then
+        diff = DIFF_DEFAULT_GREEN; -- self has entry, target doesn't
+    end
+    local useCustomColors = self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF;
+
+    return useCustomColors and self.customColors[diff] or diff;
+end
+
 --- @class TalentTreeTweaks_TreeInMinimapContainerMixin
 local containerMixin = {};
 function containerMixin:Init()
@@ -316,7 +481,78 @@ function containerMixin:Init()
     );
 end
 
-function containerMixin:MakeDot(column, row, visualStyle, spellIcon)
+function containerMixin:ApplyTexture(texture, visualStyle, diff)
+    texture:SetTexture(TEXTURE_FILE);
+    texture:SetVertexColor(1, 1, 1);
+
+    local row = 1; -- yellow / default
+    if type(diff) == 'table' then
+    	row = 4; -- white
+    	texture:SetVertexColor(diff.r, diff.g, diff.b);
+    elseif diff == DIFF_DEFAULT_ORANGE then
+        row = 5; -- orange
+    elseif diff == DIFF_DEFAULT_YELLOW then
+        row = 1; -- yellow
+    elseif diff == DIFF_DEFAULT_RED then
+        row = 2; -- red
+    elseif diff == DIFF_DEFAULT_GREEN then
+        row = 3; -- green
+    end
+
+    if diff and visualStyle == VISUAL_STYLE_EMPTY then
+    	visualStyle = VISUAL_STYLE_FULL;
+    end
+
+    local col;
+    if visualStyle == VISUAL_STYLE_TWO_THIRD then
+        col = 1;
+    elseif visualStyle == VISUAL_STYLE_HALF then
+        col = 2;
+    elseif visualStyle == VISUAL_STYLE_ONE_THIRD then
+        col = 3;
+    elseif visualStyle == VISUAL_STYLE_FULL then
+        col = 4;
+    elseif visualStyle == VISUAL_STYLE_EMPTY then
+        -- special case
+        col = 5;
+        row = 1;
+    end
+    local factor = 66/512 -- texture file is 512x512, each orb is 64x64 + 2px spacing
+
+    local rotation;
+    if visualStyle == VISUAL_STYLE_LEFT then
+        col = 2;
+        rotation = 'left';
+    elseif visualStyle == VISUAL_STYLE_RIGHT then
+        col = 2;
+        rotation = 'right';
+    end
+
+    local left = (col - 1) * factor;
+    local right = col * factor;
+    local top = (row - 1) * factor;
+    local bottom = row * factor;
+
+    if not rotation then
+        texture:SetTexCoord(left, right, top, bottom);
+    elseif rotation == 'left' then
+        texture:SetTexCoord(
+            right, top, -- top left corner is top right of the image
+            left, top, -- bottom left corner is top left of the image
+            right, bottom, -- top right corner is bottom right of the image
+            left, bottom -- bottom right corner is bottom left of the image
+        )
+    elseif rotation == 'right' then
+        texture:SetTexCoord(
+            right, bottom, -- top left corner is bottom right of the image
+            left, bottom, -- bottom left corner is bottom left of the image
+            right, top, -- top right corner is top right of the image
+            left, top -- bottom right corner is top left of the image
+        )
+    end
+end
+
+function containerMixin:MakeDot(column, row, visualStyle, spellIcon, diff)
     local dot, isNew = self.dotPool:Acquire();
     if isNew then
         dot:SetSize(self.dotSize, self.dotSize);
@@ -325,12 +561,14 @@ function containerMixin:MakeDot(column, row, visualStyle, spellIcon)
     end
     dot:SetPoint("TOPLEFT", (column - 1) * self.spacing, -((row - 1) * self.spacing));
 
-    if Module.db.displayStyle == DISPLAY_STYLE_SIMPLE then
-        dot.texture:SetTexture(visualStyle);
-        dot.texture:SetDesaturated(false);
-    elseif Module.db.displayStyle == DISPLAY_STYLE_SPELL_ICON then
+    if Module.db.displayStyle == DISPLAY_STYLE_SPELL_ICON then
+        dot.texture:SetVertexColor(1, 1, 1);
         dot.texture:SetTexture(spellIcon);
+        dot.texture:SetTexCoord(0, 1, 0, 1);
         dot.texture:SetDesaturated(visualStyle == VISUAL_STYLE_EMPTY);
+    else
+        self:ApplyTexture(dot.texture, visualStyle, diff);
+        dot.texture:SetDesaturated(false);
     end
     dot:Show();
 
@@ -382,10 +620,10 @@ function Module:CreateContainer()
 end
 
 --- @return TalentTreeTweaks_TreeInMinimapContainerMixin
-function Module:GetOrCreateContainer()
-    if not self.container then
-        self.container = self:CreateContainer();
+function Module:GetOrCreateContainer(tooltip)
+    if not self.containers[tooltip] then
+        self.containers[tooltip] = self:CreateContainer();
     end
 
-    return self.container;
+    return self.containers[tooltip];
 end

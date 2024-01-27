@@ -97,7 +97,7 @@ end
 
 function Module:OnHyperlinkEnter(chatFrame, link)
     local linkType, addon, specID, level, exportString = string.split(":", link)
-    if not (linkType == "garrmission" and addon == "TalentTreeTweaks") then return end
+    if not (linkType == "addon" and addon == "TalentTreeTweaks") then return end
     specID = tonumber(specID);
     level = tonumber(level);
 
@@ -140,11 +140,11 @@ end
 
 function Module:SetItemRef(link, text, button)
     local linkType, addon, specID, level, exportString = string.split(":", link)
-    if not (linkType == "garrmission" and addon == "TalentTreeTweaks") then return end
+    if not (linkType == "addon" and addon == "TalentTreeTweaks") then return end
 
     if IsShiftKeyDown() then
         if "LeftButton" == button then
-            local fixedLink = GetFixedLink(text:gsub('garrmission:TalentTreeTweaks', 'talentbuild'));
+            local fixedLink = GetFixedLink(text:gsub('addon:TalentTreeTweaks', 'talentbuild'));
             ChatEdit_InsertLink(fixedLink);
             return;
         else
@@ -260,7 +260,7 @@ function Module:Filter(_, _, message, ...)
     for i = #toReplace, 1, -1 do
         local item = toReplace[i];
         local replacement = string.format(
-                '|Hgarrmission:TalentTreeTweaks:%d:%d:%s|h',
+                '|Haddon:TalentTreeTweaks:%d:%d:%s|h',
                 item.specID,
                 item.level,
                 item.importString

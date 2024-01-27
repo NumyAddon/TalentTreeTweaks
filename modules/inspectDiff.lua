@@ -319,9 +319,9 @@ function Module:SetButtonState(button, texture)
         elseif inspectRank ~= 0 and selfRank ~= 0 then
             colorToUse = self.db.colorYellow; -- same entry, different rank
         elseif inspectRank == 0 then
-            colorToUse = self.db.colorRed; -- inspect has entry, self doesn't
+            colorToUse = self.db.colorRed; -- self has entry, inspect doesn't
         elseif selfRank == 0 then
-            colorToUse = self.db.colorGreen; -- self has entry, inspect doesn't
+            colorToUse = self.db.colorGreen; -- inspect has entry, self doesn't
         end
     else
         local buttonEntryID = button.entryID;
@@ -341,7 +341,7 @@ function Module:SetButtonState(button, texture)
             elseif inspectRank == 0 then
                 colorToUse = self.db.colorRed; -- inspect doesn't have entry, self does
             elseif selfRank == 0 then
-                colorToUse = self.db.colorGreen; -- self has entry, inspect doesn't
+                colorToUse = self.db.colorGreen; -- self doesn't have entry, inspect does
             end
         end
     end
