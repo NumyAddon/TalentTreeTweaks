@@ -8,12 +8,14 @@ local L = TTT.L;
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
 function Module:OnEnable()
+    EventRegistry:RegisterCallback('TalentButton.OnClick', self.OnButtonClick, self);
     Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end
 
 function Module:OnDisable()
+    EventRegistry:UnregisterCallback('TalentButton.OnClick', self);
     self:UnhookAll();
 end
 
@@ -30,6 +32,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     local defaults = {
         dropdownUpdateOnLoadConfigFix = true,
+        linkChoiceNodeInChatFix = true,
     }
     for k, v in pairs(defaults) do
         if db[k] == nil then
@@ -53,6 +56,14 @@ function Module:GetOptions(defaultOptionsTable, db)
         order = 10,
     };
 
+    defaultOptionsTable.args.linkChoiceNodeInChatFix = {
+        type = 'toggle',
+        name = L['Fix issue that prevents linking choice talents in chat, when inspecting a build'],
+        get = get,
+        set = set,
+        order = 15,
+    }
+
     return defaultOptionsTable;
 end
 
@@ -70,6 +81,24 @@ end
 function Module:SetupHook()
     if self.db.dropdownUpdateOnLoadConfigFix then
         self:SetupDropDownUpdateHook();
+    end
+end
+
+function Module:OnButtonClick(buttonFrame, mouseButton)
+    if not self.db.linkChoiceNodeInChatFix then
+        return;
+    end
+
+    -- The default UI has an early return if IsInspecting is true, which prevents linking to chat
+    if
+        mouseButton == 'LeftButton' and buttonFrame and buttonFrame.selectionIndex
+        and buttonFrame.IsInspecting and buttonFrame:IsInspecting() and IsModifiedClick("CHATLINK")
+    then
+        local spellID = buttonFrame:GetSpellID();
+        if spellID then
+            local spellLink = GetSpellLink(spellID);
+            ChatEdit_InsertLink(spellLink);
+        end
     end
 end
 
