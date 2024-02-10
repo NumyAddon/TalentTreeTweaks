@@ -48,9 +48,9 @@ function Module:OnEnable()
     end
     self:SecureHook('SetItemRef');
     for i = 1, NUM_CHAT_WINDOWS do
-        local frame = _G["ChatFrame" .. i];
-        self:SecureHookScript(frame, "OnHyperlinkEnter");
-        self:SecureHookScript(frame, "OnHyperlinkLeave");
+        local frame = _G['ChatFrame' .. i];
+        self:SecureHookScript(frame, 'OnHyperlinkEnter');
+        self:SecureHookScript(frame, 'OnHyperlinkLeave');
     end
 end
 
@@ -62,23 +62,45 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return L["Attempts to turn loadout export strings found in chat, into clickable links. You can use modifiers, to copy the link, import it as a loadout, open it in Talent Tree Viewer (if installed) etc.\nDefault talent links are also extended to allow this behaviour."];
+    return L['Talent Loadout links are improved, to allow you to use modifiers, to copy the link, import it as a loadout, open it in Talent Tree Viewer (if installed) etc.\nOptionally, it can also scan your chat for any loadout string that was sent as normal regular text.'];
 end
 
 function Module:GetName()
-    return L['Clickable Export Strings In Chat'];
+    return L['Improved Loadout Links'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
+    Util:PrepareModuleDb(self, db, {
+        disableDetectionFromStrings = true,
+    });
+
+    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() end);
+    defaultOptionsTable.args.disableDetectionFromStrings = {
+        order = increment(),
+        type = 'toggle',
+        width = 'double',
+        name = L['Disable detection for loadout strings in chat'],
+        desc = L['Disables the module from scanning your chat for any loadout string that was sent as normal regular text. This can potentially reduce performance issues, especially on bussier realms.'],
+        get = getter,
+        set = setter,
+    };
+
     defaultOptionsTable.args.showExample = {
+        order = increment(),
         type = 'execute',
+        width = 'double',
         name = L['Show Example link in chat'],
         desc = L['Shows an example of a clickable link in chat.'],
         func = function()
             LoadAddOn('Blizzard_ClassTalentUI');
             local talentTab = ClassTalentFrame.TalentsTab;
             local exportString = Util:GetLoadoutExportString(talentTab);
-            print(select(2, self:Filter(_, _, exportString)));
+            print(L['Example of a regular string'], select(2, self:Filter(_, _, exportString)), self.db.disableDetectionFromStrings and '' or L['(was %s)']:format(exportString));
+
+            local linkDisplayText = ('[%s]'):format(TALENT_BUILD_CHAT_LINK_TEXT:format(PlayerUtil.GetSpecName(), PlayerUtil.GetClassName()));
+            local linkText = LinkUtil.FormatLink('talentbuild', linkDisplayText, PlayerUtil.GetCurrentSpecID(), UnitLevel('player'), exportString);
+            local chatLink = PlayerUtil.GetClassColor():WrapTextInColorCode(linkText);
+            print(L['Example of a loadout link'], select(2, self:Filter(_, _, chatLink)), L['(was %s)']:format(chatLink));
         end,
     };
 
@@ -92,12 +114,12 @@ function Module:DebugPrint(...)
 end
 
 function Module:WrapTooltipTextInColor(clickText, action)
-    return ("|cffeda55f%s|r %s"):format(clickText, (action));
+    return ('|cffeda55f%s|r %s'):format(clickText, (action));
 end
 
 function Module:OnHyperlinkEnter(chatFrame, link)
-    local linkType, addon, specID, level, exportString = string.split(":", link)
-    if not (linkType == "addon" and addon == "TalentTreeTweaks") then return end
+    local linkType, addon, specID, level, exportString = string.split(':', link)
+    if not (linkType == 'addon' and addon == 'TalentTreeTweaks') then return end
     specID = tonumber(specID);
     level = tonumber(level);
 
@@ -106,29 +128,29 @@ function Module:OnHyperlinkEnter(chatFrame, link)
     local className, classFileName = GetClassInfo(classID);
     local classColor = RAID_CLASS_COLORS[classFileName];
     local specName = select(2, GetSpecializationInfoByID(specID));
-    local prettyLinkText = classColor:WrapTextInColorCode(("%s %s (lvl %d)"):format(specName, className, level));
+    local prettyLinkText = classColor:WrapTextInColorCode(('%s %s (lvl %d)'):format(specName, className, level));
 
-    local click = L["Click:"];
-    local altClick = L["ALT + Click:"];
-    local ctrlClick = L["CTRL + Click:"];
-    local shiftLeftClick = L["Shift + Left-Click:"];
-    local shiftRightClick = L["Shift + Right-Click:"];
+    local click = L['Click:'];
+    local altClick = L['ALT + Click:'];
+    local ctrlClick = L['CTRL + Click:'];
+    local shiftLeftClick = L['Shift + Left-Click:'];
+    local shiftRightClick = L['Shift + Right-Click:'];
 
-    local actionCopyLink = L["Copy Link"];
-    local actionImportLoadout = L["Import Loadout"];
+    local actionCopyLink = L['Copy Link'];
+    local actionImportLoadout = L['Import Loadout'];
 
     self.showingTooltip = true;
-    GameTooltip:SetOwner(chatFrame, "ANCHOR_CURSOR");
-    GameTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks - %s"):format(prettyLinkText)));
+    GameTooltip:SetOwner(chatFrame, 'ANCHOR_CURSOR');
+    GameTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(('Talent Tree Tweaks - %s'):format(prettyLinkText)));
     if talentViewerEnabled then
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L["Open in Talent Tree Viewer"]))
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, L["Open loadout in default Inspect UI"]))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L['Open in Talent Tree Viewer']))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, L['Open loadout in default Inspect UI']))
         GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
     else
-        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L["Open loadout in default Inspect UI"]))
+        GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L['Open loadout in default Inspect UI']))
         GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
     end
-    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, L["Link in chat"]))
+    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, L['Link in chat']))
     GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLink))
     GameTooltip:Show();
 end
@@ -139,11 +161,11 @@ function Module:OnHyperlinkLeave()
 end
 
 function Module:SetItemRef(link, text, button)
-    local linkType, addon, specID, level, exportString = string.split(":", link)
-    if not (linkType == "addon" and addon == "TalentTreeTweaks") then return end
+    local linkType, addon, specID, level, exportString = string.split(':', link)
+    if not (linkType == 'addon' and addon == 'TalentTreeTweaks') then return end
 
     if IsShiftKeyDown() then
-        if "LeftButton" == button then
+        if 'LeftButton' == button then
             local fixedLink = GetFixedLink(text:gsub('addon:TalentTreeTweaks', 'talentbuild'));
             ChatEdit_InsertLink(fixedLink);
             return;
@@ -212,6 +234,9 @@ function Module:Filter(_, _, message, ...)
 
     local sStart, sEnd, importString = message:find(importStringPattern);
     local prefixExistsSomewhere = sStart and message:find(prefixPattern:gsub('%$', ''));
+    if not prefixExistsSomewhere and self.db.disableDetectionFromStrings then
+        return false, message, ...;
+    end
     while (sStart) do
         local lStart, lEnd;
         if prefixExistsSomewhere then
@@ -228,7 +253,7 @@ function Module:Filter(_, _, message, ...)
                 importString = importString,
                 wrapInLink = false,
             });
-        else
+        elseif not self.db.disableDetectionFromStrings then
             local valid = false;
             if importString:len() > 40 and importString:len() < 120 then
                 --- A druid with lots of options picked, uses 103 characters
@@ -241,7 +266,7 @@ function Module:Filter(_, _, message, ...)
                 valid, specID, requiredLevel = self:ParseImportString(importString);
             end
             if valid then
-                self:DebugPrint("Valid import string, specID:", specID);
+                self:DebugPrint('Valid import string, specID:', specID);
 
                 table.insert(toReplace, {
                     rStart = sStart,
@@ -289,29 +314,29 @@ function Module:ParseImportString(importText)
     self:DebugPrint('serialization version:', serializationVersion, 'specID:', specID)
 
     if(not headerValid) then
-        self:DebugPrint("Invalid header");
+        self:DebugPrint('Invalid header');
         return false;
     end
 
     if(serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
-        self:DebugPrint("Invalid serialization version");
+        self:DebugPrint('Invalid serialization version');
         return false;
     end
 
     local treeID = specID and Util.specToClassMap[specID] and LTT:GetClassTreeId(Util.specToClassMap[specID]);
     if (not treeID) then
-        self:DebugPrint("Invalid tree ID");
+        self:DebugPrint('Invalid tree ID');
         return false;
     end
 
     if(not self:IsHashValid(treeHash, treeID)) then
-        self:DebugPrint("Invalid tree hash");
+        self:DebugPrint('Invalid tree hash');
         return false;
     end
 
     local valid, pointsSpent = self:ValidateLoadoutContent(importStream, treeID);
     if (not valid) then
-        self:DebugPrint("Invalid loadout content");
+        self:DebugPrint('Invalid loadout content');
         return false;
     end
 
@@ -360,14 +385,14 @@ function Module:ValidateLoadoutContent(importStream, treeID)
     for i = 1, #treeNodes do
         local nodeSelectedValue = importStream:ExtractValue(1)
         if nodeSelectedValue == nil then
-            self:DebugPrint("Invalid nodeSelected value", i);
+            self:DebugPrint('Invalid nodeSelected value', i);
             return false
         end
 
         if(nodeSelectedValue == 1) then
             local isPartiallyRankedValue = importStream:ExtractValue(1);
             if isPartiallyRankedValue == nil then
-                self:DebugPrint("Invalid isPartiallyRanked value", i);
+                self:DebugPrint('Invalid isPartiallyRanked value', i);
                 return false
             end
 
@@ -378,7 +403,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
             if(isPartiallyRankedValue == 1) then
                 local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
                 if partialRanksPurchased == nil then
-                    self:DebugPrint("Invalid partialRanksPurchased value", i);
+                    self:DebugPrint('Invalid partialRanksPurchased value', i);
                     return false
                 end
                 pointsSpent = partialRanksPurchased;
@@ -386,14 +411,14 @@ function Module:ValidateLoadoutContent(importStream, treeID)
 
             local isChoiceNodeValue = importStream:ExtractValue(1);
             if isChoiceNodeValue == nil then
-                self:DebugPrint("Invalid isChoiceNode value", i);
+                self:DebugPrint('Invalid isChoiceNode value', i);
                 return false
             end
             if(isChoiceNodeValue == 1) then
                 local choiceNodeSelection = importStream:ExtractValue(2);
                 -- 0-indexed, so only 0 and 1 are valid
                 if choiceNodeSelection == nil or choiceNodeSelection > 1 then
-                    self:DebugPrint("Invalid choiceNodeSelection value", i, choiceNodeSelection);
+                    self:DebugPrint('Invalid choiceNodeSelection value', i, choiceNodeSelection);
                     return false
                 end
             end
