@@ -29,7 +29,19 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
-    self.db = db;
+    Util:PrepareModuleDb(self, db, {
+        inverseHighlight = false,
+    });
+    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() self:UpdateRespecButtonContainer(); end);
+
+    defaultOptionsTable.args.inverseHighlight = {
+        order = increment(),
+        type = "toggle",
+        name = L["Invert highlight"],
+        desc = L["Grey out inactive spec buttons, rather than the active spec button."],
+        get = getter,
+        set = setter,
+    }
 
     return defaultOptionsTable;
 end
@@ -55,6 +67,10 @@ function Module:SetupHook()
 end
 
 function Module:UpdateRespecButtonContainer()
+    for _, button in pairs(self.respecButtonContainer.buttons) do
+        button:OnEvent();
+    end
+
     local talentsTab = ClassTalentFrame.TalentsTab;
     if not talentsTab:IsInspecting() then
         self.respecButtonContainer:Show();
@@ -89,10 +105,10 @@ do
         local specIndex = self:GetID();
         if GetSpecialization() == specIndex then
             self:Disable();
-            self:DesaturateHierarchy(1);
+            self:DesaturateHierarchy(Module.db.inverseHighlight and 0 or 1);
         else
             self:Enable();
-            self:DesaturateHierarchy(0);
+            self:DesaturateHierarchy(Module.db.inverseHighlight and 1 or 0);
         end
     end
 end

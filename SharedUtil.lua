@@ -69,6 +69,23 @@ function Util:OnInitialize()
     self:RefreshConfigIDLookup();
 end
 
+function Util:PrepareModuleDb(module, db, defaults)
+    module.db = db;
+    for k, v in pairs(defaults) do
+        if db[k] == nil then
+            db[k] = v;
+        end
+    end
+end
+
+function Util:GetterSetterIncrementFactory(db, postSetCallback)
+    local getter = function(info) return db[info[#info]]; end
+    local setter = function(info, value) db[info[#info]] = value; if postSetCallback then postSetCallback(); end end
+    local increment = CreateCounter(5);
+
+    return getter, setter, increment;
+end
+
 function Util:ResetRegistry()
     self.classTalentUILoadCallbacks = {
         minPriority = 1,
