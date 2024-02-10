@@ -47,11 +47,15 @@ function Module:OnEnable()
         ChatFrame_AddMessageEventFilter(event, Filter)
     end
     self:SecureHook('SetItemRef');
-    for i = 1, NUM_CHAT_WINDOWS do
-        local frame = _G['ChatFrame' .. i];
+    for _, frameName in pairs(CHAT_FRAMES) do
+        local frame = _G[frameName];
         self:SecureHookScript(frame, 'OnHyperlinkEnter');
         self:SecureHookScript(frame, 'OnHyperlinkLeave');
     end
+    self:SecureHook('FloatingChatFrame_OnLoad', function(frame)
+        self:SecureHookScript(frame, 'OnHyperlinkEnter');
+        self:SecureHookScript(frame, 'OnHyperlinkLeave');
+    end);
 end
 
 function Module:OnDisable()
@@ -95,12 +99,12 @@ function Module:GetOptions(defaultOptionsTable, db)
             LoadAddOn('Blizzard_ClassTalentUI');
             local talentTab = ClassTalentFrame.TalentsTab;
             local exportString = Util:GetLoadoutExportString(talentTab);
-            print(L['Example of a regular string'], select(2, self:Filter(_, _, exportString)), self.db.disableDetectionFromStrings and '' or L['(was %s)']:format(exportString));
+            print(L['Example of a regular string'], self:ReplaceChatMessage(exportString), self.db.disableDetectionFromStrings and '' or L['(was %s)']:format(exportString));
 
             local linkDisplayText = ('[%s]'):format(TALENT_BUILD_CHAT_LINK_TEXT:format(PlayerUtil.GetSpecName(), PlayerUtil.GetClassName()));
             local linkText = LinkUtil.FormatLink('talentbuild', linkDisplayText, PlayerUtil.GetCurrentSpecID(), UnitLevel('player'), exportString);
             local chatLink = PlayerUtil.GetClassColor():WrapTextInColorCode(linkText);
-            print(L['Example of a loadout link'], select(2, self:Filter(_, _, chatLink)), L['(was %s)']:format(chatLink));
+            print(L['Example of a loadout link'], self:ReplaceChatMessage(chatLink), L['(was %s)']:format(chatLink));
         end,
     };
 
@@ -136,7 +140,7 @@ function Module:OnHyperlinkEnter(chatFrame, link)
     local shiftLeftClick = L['Shift + Left-Click:'];
     local shiftRightClick = L['Shift + Right-Click:'];
 
-    local actionCopyLink = L['Copy Link'];
+    local actionCopyLoadout = L['Copy Loadout'];
     local actionImportLoadout = L['Import Loadout'];
 
     self.showingTooltip = true;
@@ -151,7 +155,7 @@ function Module:OnHyperlinkEnter(chatFrame, link)
         GameTooltip:AddLine(self:WrapTooltipTextInColor(ctrlClick, actionImportLoadout))
     end
     GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftLeftClick, L['Link in chat']))
-    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLink))
+    GameTooltip:AddLine(self:WrapTooltipTextInColor(shiftRightClick, actionCopyLoadout))
     GameTooltip:Show();
 end
 
@@ -225,7 +229,7 @@ local function replaceSubString(str, sStart, sEnd, replacement)
     return string.sub(str, 1, sStart-1) .. replacement .. string.sub(str, sEnd+1)
 end
 
-function Module:Filter(_, _, message, ...)
+function Module:ReplaceChatMessage(message)
     local importStringPattern = '([A-Za-z0-9+/=]+)';
     local prefixPattern = '|Htalentbuild:(%d+):(%d+):$';
 
@@ -235,7 +239,7 @@ function Module:Filter(_, _, message, ...)
     local sStart, sEnd, importString = message:find(importStringPattern);
     local prefixExistsSomewhere = sStart and message:find(prefixPattern:gsub('%$', ''));
     if not prefixExistsSomewhere and self.db.disableDetectionFromStrings then
-        return false, message, ...;
+        return message;
     end
     while (sStart) do
         local lStart, lEnd;
@@ -301,9 +305,12 @@ function Module:Filter(_, _, message, ...)
         message = replaceSubString(message, item.rStart, item.rEnd, replacement);
     end
 
-    return false, message, ...;
+    return message;
 end
 
+function Module:Filter(_, _, message, ...)
+    return false, self:ReplaceChatMessage(message), ...;
+end
 
 local validStringsCache = {};
 function Module:ParseImportString(importText)
@@ -344,7 +351,6 @@ function Module:ParseImportString(importText)
 
     return true, specID, pointsSpent;
 end
-
 
 function Module:ReadLoadoutHeader(importStream)
     local headerBitWidth = self.bitWidthHeaderVersion + self.bitWidthSpecID + 128;
