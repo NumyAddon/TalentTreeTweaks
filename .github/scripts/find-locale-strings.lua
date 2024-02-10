@@ -68,16 +68,14 @@ for line in io.lines(TOC_FILE) do
             local keys = 0
             local contents = io.open(line):read("*all")
 
-            for match in string.gmatch(contents, "L%[\"(.-)%\"]") do
+            for match in string.gmatch(contents, "L%[\"(.-)\"]") do
                 if( not localizedKeys[match] ) then keys = keys + 1 end
                 localizedKeys[match] = true
             end
-            for match in string.gmatch(contents, "L%['(.-)%']") do
+            for match in string.gmatch(contents, "L%['(.-)']") do
                 -- convert format from single to double quotes
                 match = string.gsub(match, "\\'", "'")
                 match = string.gsub(match, "\"", "\\\"")
-                match = string.gsub(match, "^L[\\'", "L[\"")
-                match = string.gsub(match, "[\\']$", "\"]")
                 if( not localizedKeys[match] ) then keys = keys + 1 end
                 localizedKeys[match] = true
             end
