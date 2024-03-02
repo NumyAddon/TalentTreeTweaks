@@ -6,7 +6,6 @@ local Util = TTT.Util;
 local L = TTT.L;
 
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
---- @type LibTalentTree
 local LTT = Util.LibTalentTree;
 local GATE_TEXT_FORMAT = '%d (+%d)';
 local TOOLTIP_FORMAT = L['%d points spent past the gate.\n%d extra points above the gate are free to be moved away.'];

@@ -7,7 +7,6 @@ local L = TTT.L;
 
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
---- @type LibTalentTree
 local LTT = Util.LibTalentTree;
 
 -- these numbers have no meaning

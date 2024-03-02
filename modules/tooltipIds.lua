@@ -4,7 +4,6 @@ local Main = TTT.Main;
 local L = TTT.L;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
---- @type LibTalentTree
 local LTT = Util.LibTalentTree;
 
 local Module = Main:NewModule('TooltipIds');

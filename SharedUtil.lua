@@ -4,7 +4,6 @@ local Util = {};
 TTT.Util = Util;
 local L = TTT.L;
 
---- @type LibTalentTree
 local LTT = LibStub('LibTalentTree-1.0');
 Util.LibTalentTree = LTT;
 
