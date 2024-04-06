@@ -230,34 +230,35 @@ local function replaceSubString(str, sStart, sEnd, replacement)
 end
 
 function Module:ReplaceChatMessage(message)
-    local importStringPattern = '([A-Za-z0-9+/=]+)';
-    local prefixPattern = '|Htalentbuild:(%d+):(%d+):$';
+    message = message:gsub('(|Htalentbuild:(%d+):(%d+):([^|]+)|h)', '|Haddon:TalentTreeTweaks:%2:%3:%4|h');
+    if self.db.disableDetectionFromStrings then
+        return message;
+    end
 
-    local specID, requiredLevel;
+    local importStringPattern = '([A-Za-z0-9+/=]+)';
+    local prefixPattern = '|Haddon:TalentTreeTweaks:(%d+):(%d+):$';
+
     local toReplace = {};
 
     local sStart, sEnd, importString = message:find(importStringPattern);
     local prefixExistsSomewhere = sStart and message:find(prefixPattern:gsub('%$', ''));
-    if not prefixExistsSomewhere and self.db.disableDetectionFromStrings then
-        return message;
-    end
+    local lEnd;
     while (sStart) do
-        local lStart, lEnd;
+        local lStart;
         if prefixExistsSomewhere then
-            lStart, lEnd, specID, requiredLevel = message:sub(1, sStart-1):find(prefixPattern);
+            lStart = message:sub(lEnd or 1, sStart-1):find(prefixPattern);
+            if lStart then
+                lStart = lStart + (lEnd or 1) - 1;
+                lEnd = message:sub(lStart):find('|h');
+                if lEnd then
+                    lEnd = lEnd + lStart;
+                    sEnd = math.max(lEnd, sEnd); -- sEnd must never go down, or we get into an infinite loop
+                end
+            end
         end
 
-        if lStart then
-            --- coming from a talentbuild link, don't validate it, just blindly accept, and rewrite the link
-            table.insert(toReplace, {
-                rStart = lStart,
-                rEnd = sEnd + 2, -- string.len('|h')
-                specID = specID,
-                level = requiredLevel,
-                importString = importString,
-                wrapInLink = false,
-            });
-        elseif not self.db.disableDetectionFromStrings then
+        if not lStart then
+            local specID, requiredLevel;
             local valid = false;
             if importString:len() > 40 and importString:len() < 120 then
                 --- A druid with lots of options picked, uses 103 characters
