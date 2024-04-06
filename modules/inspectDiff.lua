@@ -210,7 +210,7 @@ function Module:ViewerNodeChanged(TalentViewer, nodeID)
     local talentFrame = TalentViewer:GetTalentFrame();
     local button = talentFrame:GetTalentButtonByNodeID(nodeID);
     if button and self.viewerButtonTextures[button] then
-        C_Timer.After(0, function()
+        RunNextFrame(function()
             self:SetViewerButtonState(button, self.viewerButtonTextures[button]);
         end)
     end
@@ -293,7 +293,7 @@ function Module:SetBlizzardButtonState(button, texture)
 end
 
 function Module:SetViewerButtonState(button, texture)
-    if not self.isViewerSameSpec then
+    if not self.isViewerSameSpec or not self.db.enableTalentTreeViewerDiff then
         texture:Hide();
         return;
     end
