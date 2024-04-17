@@ -9,6 +9,7 @@ local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
 Module.bitWidthSpecID = 16;
 Module.bitWidthRanksPurchased = 6;
+local LEVELING_EXPORT_STRING_PATERN = ".+%-LVL%-.+";
 
 local LTT = Util.LibTalentTree;
 
@@ -127,6 +128,7 @@ function Module:OnHyperlinkEnter(chatFrame, link)
     specID = tonumber(specID);
     level = tonumber(level);
 
+    local hasLevelingBuild = not not exportString:match(LEVELING_EXPORT_STRING_PATERN);
     local talentViewerEnabled = Main:IsTalentTreeViewerEnabled();
     local classID = Util.specToClassMap[specID];
     local className, classFileName = GetClassInfo(classID);
@@ -146,6 +148,9 @@ function Module:OnHyperlinkEnter(chatFrame, link)
     self.showingTooltip = true;
     GameTooltip:SetOwner(chatFrame, 'ANCHOR_CURSOR');
     GameTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(('Talent Tree Tweaks - %s'):format(prettyLinkText)));
+    if hasLevelingBuild then
+        GameTooltip:AddLine(CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16) .. L['This loadout includes leveling information.']);
+    end
     if talentViewerEnabled then
         GameTooltip:AddLine(self:WrapTooltipTextInColor(click, L['Open in Talent Tree Viewer']))
         GameTooltip:AddLine(self:WrapTooltipTextInColor(altClick, L['Open loadout in default Inspect UI']))
@@ -232,7 +237,7 @@ end
 function Module:ReplaceChatMessage(message)
     message = message:gsub('(|Htalentbuild:(%d+):(%d+):([^|]+)|h)', '|Haddon:TalentTreeTweaks:%2:%3:%4|h');
     if self.db.disableDetectionFromStrings then
-        return message;
+        return message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16));
     end
 
     local importStringPattern = '([A-Za-z0-9+/=]+)';
@@ -290,10 +295,10 @@ function Module:ReplaceChatMessage(message)
     for i = #toReplace, 1, -1 do
         local item = toReplace[i];
         local replacement = string.format(
-                '|Haddon:TalentTreeTweaks:%d:%d:%s|h',
-                item.specID,
-                item.level,
-                item.importString
+            '|Haddon:TalentTreeTweaks:%d:%d:%s|h',
+            item.specID,
+            item.level,
+            item.importString
         );
         if item.wrapInLink then
             local classID = Util.specToClassMap[item.specID];
@@ -306,7 +311,7 @@ function Module:ReplaceChatMessage(message)
         message = replaceSubString(message, item.rStart, item.rEnd, replacement);
     end
 
-    return message;
+    return message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16));
 end
 
 function Module:Filter(_, _, message, ...)
