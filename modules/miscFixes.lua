@@ -4,7 +4,7 @@ local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
-
+--- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
 function Module:OnEnable()
@@ -102,6 +102,9 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
     end
 end
 
+local function secureSetNil(table, key)
+    TextureLoadingGroupMixin.RemoveTexture({textures = table}, key);
+end
 function Module:SetupDropDownUpdateHook()
     local talentsTab = ClassTalentFrame.TalentsTab;
 
@@ -113,6 +116,8 @@ function Module:SetupDropDownUpdateHook()
         end
 
         frame.LoadoutDropDown:SetSelectionID(configID);
+        -- this seems to reduce the amount of tainted values, but I didn't really dig into it
+        secureSetNil(ClassTalentFrame.TalentsTab.LoadoutDropDown.DropDownControl, 'selectedValue');
     end)
 end
 
