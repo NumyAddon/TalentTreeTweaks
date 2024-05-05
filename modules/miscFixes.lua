@@ -102,9 +102,6 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
     end
 end
 
-local function secureSetNil(table, key)
-    TextureLoadingGroupMixin.RemoveTexture({textures = table}, key);
-end
 function Module:SetupDropDownUpdateHook()
     local talentsTab = ClassTalentFrame.TalentsTab;
 
@@ -116,8 +113,6 @@ function Module:SetupDropDownUpdateHook()
         end
 
         frame.LoadoutDropDown:SetSelectionID(configID);
-        -- this seems to reduce the amount of tainted values, but I didn't really dig into it
-        secureSetNil(ClassTalentFrame.TalentsTab.LoadoutDropDown.DropDownControl, 'selectedValue');
     end)
 end
 
