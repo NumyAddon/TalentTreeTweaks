@@ -4,12 +4,15 @@ local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
+
+if not Util.isDF then return; end -- todo: TWW compatibility
+
 --- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
 function Module:OnEnable()
     EventRegistry:RegisterCallback('TalentButton.OnClick', self.OnButtonClick, self);
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -103,7 +106,7 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
 end
 
 function Module:SetupDropDownUpdateHook()
-    local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame();
 
     self:SecureHook(talentsTab, 'CheckUpdateLastSelectedConfigID', function(frame, configID)
         if
@@ -117,5 +120,5 @@ function Module:SetupDropDownUpdateHook()
 end
 
 function Module:UnhookDropDownUpdateHook()
-    self:Unhook(ClassTalentFrame.TalentsTab, 'CheckUpdateLastSelectedConfigID');
+    self:Unhook(Util:GetTalentFrame(), 'CheckUpdateLastSelectedConfigID');
 end

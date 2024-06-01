@@ -5,14 +5,18 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_SearchForIds: AceModule, AceHook-3.0
 local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
+local TALENT_TREE_VIEWER = 1;
+local BLIZZARD_TALENT_UI = 2;
+
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
-        self:SetupHook('Blizzard_ClassTalentUI');
+    Util:OnTalentUILoad(function()
+        self:SetupHook(BLIZZARD_TALENT_UI);
     end);
     EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
-        self:SetupHook('TalentTreeViewer');
+        self:SetupHook(TALENT_TREE_VIEWER);
     end)
 end
 
@@ -35,14 +39,15 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:SetupHook(addon)
-    if addon == 'Blizzard_ClassTalentUI' and ClassTalentFrame and ClassTalentFrame.TalentsTab and ClassTalentFrame.TalentsTab.textSearch then
-        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
-        self:RawHook(ClassTalentFrame.TalentsTab.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
+    local talentFrame;
+    if addon == BLIZZARD_TALENT_UI then
+    	talentFrame = Util:GetTalentFrame();
+    elseif addon == TALENT_TREE_VIEWER then
+        talentFrame = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
     end
-
-    if addon == 'TalentTreeViewer' and TalentViewer_DF and TalentViewer_DF.Talents and TalentViewer_DF.Talents.textSearch then
-        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
-        self:RawHook(TalentViewer_DF.Talents.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
+    if talentFrame and talentFrame.textSearch then
+        self:RawHook(talentFrame.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
+        self:RawHook(talentFrame.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
     end
 end
 

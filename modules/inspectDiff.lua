@@ -9,7 +9,7 @@ local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
 function Module:OnEnable()
     self.blizzardButtonTextures = self.blizzardButtonTextures or {};
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupBlizzardHook();
     end);
 
@@ -144,7 +144,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:SetupBlizzardHook()
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentFrame = Util:GetTalentFrame();
     self:SecureHook(talentFrame, 'UpdateInspecting');
     self:UpdateInspecting(talentFrame);
 

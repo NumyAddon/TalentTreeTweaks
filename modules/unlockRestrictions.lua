@@ -24,7 +24,7 @@ end
 
 function Module:OnEnable()
     self.enabled = true;
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -86,7 +86,8 @@ function Module:SetupHook()
 end
 
 function Module:UpdateShareButton()
-    local dropdown = ClassTalentFrame.TalentsTab.LoadoutDropDown;
+    if not Util.isDF then return; end -- todo: TWW compatibility
+    local dropdown = Util:GetTalentFrame().LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
         if self.textsToUnlock[sentinelInfo.text] then
             self.textsToUnlock[sentinelInfo.text] = nil;
@@ -116,7 +117,7 @@ end
 function Module:OnButtonClick(talentButton, mouseButton)
     if
         not self.db.unlockInCombatSpending
-        or talentButton.talentFrame ~= ClassTalentFrame.TalentsTab
+        or talentButton.talentFrame ~= Util:GetTalentFrame()
         or talentButton:IsInspecting()
     then
         return

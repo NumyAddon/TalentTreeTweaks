@@ -72,7 +72,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         desc = L['Use (Virag-)DevTool to inspect the nodeInfo table.'],
         get = get,
         set = set,
-        disabled = not select(4, GetAddOnInfo('ViragDevTool')) and not select(4, GetAddOnInfo('DevTool')), -- 4-> loadable
+        disabled = not select(4, C_AddOns.GetAddOnInfo('ViragDevTool')) and not select(4, C_AddOns.GetAddOnInfo('DevTool')), -- 4-> loadable
         order = increment(),
     };
     defaultOptionsTable.args.luaBrowser = {
@@ -81,7 +81,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         desc = L['Use LuaBrowser to inspect the nodeInfo table.'],
         get = get,
         set = set,
-        disabled = not select(4, GetAddOnInfo('LuaBrowser')), -- 4-> loadable
+        disabled = not select(4, C_AddOns.GetAddOnInfo('LuaBrowser')), -- 4-> loadable
         order = increment(),
     };
     defaultOptionsTable.args.slashDump = {

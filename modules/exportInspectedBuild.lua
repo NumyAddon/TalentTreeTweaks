@@ -7,18 +7,19 @@ local L = TTT.L;
 
 local LEVEL_CAP = 70;
 
+--- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab.LoadoutDropDown:SetRightClickCallback(nil);
+    if Util:GetTalentFrame() then
+        Util:GetTalentFrame().LoadoutDropDown:SetRightClickCallback(nil);
     end
     if self.linkButton then self.linkButton:Hide(); end
 end
@@ -78,7 +79,7 @@ end
 
 
 function Module:SetupHook()
-    local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame();
 
     if self.db.exportOnDropdownRightClick then
         self:SetupDropdownHook(talentsTab);
@@ -105,7 +106,7 @@ function Module:OnUpdateInspecting(talentsTab)
     end
     self.cachedInspectSpecID = talentsTab:GetSpecID();
     self.cachedInspectClassID = talentsTab:GetClassID();
-    self.cachedInspectUnitSex = talentsTab:GetClassTalentFrame():GetUnitSex();
+    self.cachedInspectUnitSex = Util:GetTalentContainerFrame():GetUnitSex();
     self.cachedInspectExportString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
 end
 
@@ -117,7 +118,7 @@ function Module:MakeLinkButton(talentsTab)
     button:SetScript('OnClick', function()
         local specID = self.cachedInspectSpecID or talentsTab:GetSpecID();
         local classID = self.cachedInspectClassID or talentsTab:GetClassID();
-	    local unitSex = self.cachedInspectUnitSex or talentsTab:GetClassTalentFrame():GetUnitSex();
+	    local unitSex = self.cachedInspectUnitSex or Util:GetTalentContainerFrame():GetUnitSex();
         local exportString = self.cachedInspectExportString or Util:GetLoadoutExportString(talentsTab);
 
         if not TALENT_BUILD_CHAT_LINK_TEXT then
@@ -145,6 +146,7 @@ function Module:MakeLinkButton(talentsTab)
 end
 
 function Module:SetupDropdownHook(talentsTab)
+    if not Util.isDF then return; end -- todo: TWW compatibility
     local dropdown = talentsTab.LoadoutDropDown;
     dropdown:SetRightClickCallback(function(configID)
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);

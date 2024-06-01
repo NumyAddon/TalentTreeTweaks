@@ -32,6 +32,20 @@ local DIFF_DEFAULT_RED = 2; -- you have a talent they don't
 local DIFF_DEFAULT_GREEN = 3; -- they have a talent you don't
 local DIFF_DEFAULT_ORANGE = 4; -- different talent choice/rank
 
+local GetSpellInfo;
+do -- todo: remove after 11.0 release
+	GetSpellInfo = _G.GetSpellInfo or function(spellID)
+		if not spellID then
+			return nil;
+		end
+
+		local spellInfo = C_Spell.GetSpellInfo(spellID);
+		if spellInfo then
+			return spellInfo.name, nil, spellInfo.iconID, spellInfo.castTime, spellInfo.minRange, spellInfo.maxRange, spellInfo.spellID, spellInfo.originalIconID;
+		end
+	end
+end
+
 function Module:OnInitialize()
     self.debug = false;
     self.containers = {};
@@ -60,8 +74,9 @@ function Module:OnEnable()
     end)
     self:SecureHook(GameTooltip, "Show", "OnTooltipShow")
 
-    Util:OnClassTalentUILoad(function()
-        local talentsTab = ClassTalentFrame.TalentsTab;
+    Util:OnTalentUILoad(function()
+        local talentsTab = Util:GetTalentFrame();
+        if not Util.isDF then return; end -- todo: TWW compatibility
         local dropdown = talentsTab.LoadoutDropDown;
         self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
         self:HookCustomSetupCallback(dropdown.DropDownControl);
@@ -290,7 +305,7 @@ function Module:LoadoutDropdownOnEnter(dropdownButton)
     local configID = dropdownButton.value
     local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
     if not ok or not configInfo then return; end
-    local exportString = Util:GetLoadoutExportString(ClassTalentFrame.TalentsTab, configID);
+    local exportString = Util:GetLoadoutExportString(Util:GetTalentFrame(), configID);
 
     if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
         self.loadoutDropdownTooltipShown = true;

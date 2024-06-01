@@ -8,12 +8,14 @@ local L = TTT.L;
 --- @type LibUIDropDownMenu
 local LibDD = LibStub('LibUIDropDownMenuNumy-4.0');
 
+if not Util.isDF then return; end -- todo: TWW compatibility
+
 TalentTreeTweaks_DropDownControlReplacementMixin = CreateFromMixins(DropDownControlMixin);
 
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end, 1); -- load before any other module
 end
@@ -100,7 +102,7 @@ function Module:SetupHook()
         self:EnableDropDownReplacement();
     end
 
-    local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame();
     talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
     for talentButton in talentsTab:EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);
@@ -110,7 +112,7 @@ function Module:SetupHook()
     -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
     self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
 
-    -- ToggleTalentFrame starts of with a ClassTalentFrame:SetInspecting call, which has a high likelihood of tainting execution
+    -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
     self:SecureHook('HideUIPanel', 'OnHideUIPanel')
 
@@ -153,10 +155,11 @@ local function makeFEnvReplacement(original, replacement)
 end
 
 function Module:HandleMultiActionBarTaint()
+    local talentContainerFrame = Util:GetTalentContainerFrame();
     if self.db.disableMultiActionBarShowHide then
-        self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(ClassTalentFrame.OnShow);
+        self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(talentContainerFrame.OnShow);
 
-        setfenv(ClassTalentFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, {
+        setfenv(talentContainerFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, {
             TalentMicroButton = {
                 EvaluateAlertVisibility = function()
                     HelpTip:HideAllSystem("MicroButtons");
@@ -167,12 +170,12 @@ function Module:HandleMultiActionBarTaint()
         }));
 
         self:SecureHook(FrameUtil, 'UnregisterFrameForEvents', function(frame)
-            if frame == ClassTalentFrame then
+            if frame == talentContainerFrame then
                 self:MakeOnHideSafe();
             end
         end);
     elseif self.originalOnShowFEnv then
-        setfenv(ClassTalentFrame.OnShow, self.originalOnShowFEnv);
+        setfenv(talentContainerFrame.OnShow, self.originalOnShowFEnv);
         self:Unhook(FrameUtil, 'UnregisterFrameForEvents');
     end
     if
@@ -188,27 +191,28 @@ function Module:HandleMultiActionBarTaint()
 end
 
 function Module:MakeOnHideSafe()
-    if not issecurevariable(ClassTalentFrame, 'lockInspect') then
-        if not ClassTalentFrame.lockInspect then
-            purgeKey(ClassTalentFrame, 'lockInspect');
+    local talentContainerFrame = Util:GetTalentContainerFrame();
+    if not issecurevariable(talentContainerFrame, 'lockInspect') then
+        if not talentContainerFrame.lockInspect then
+            purgeKey(talentContainerFrame, 'lockInspect');
         else
             -- get blizzard to set the value to true
-            TextureLoadingGroupMixin.AddTexture({textures = ClassTalentFrame}, 'lockInspect');
+            TextureLoadingGroupMixin.AddTexture({textures = talentContainerFrame}, 'lockInspect');
         end
     end
-    local isInspecting = ClassTalentFrame:IsInspecting();
+    local isInspecting = talentContainerFrame:IsInspecting();
     local notSecure = false;
-    if not issecurevariable(ClassTalentFrame, 'inspectUnit') then
-        purgeKey(ClassTalentFrame, 'inspectUnit');
+    if not issecurevariable(talentContainerFrame, 'inspectUnit') then
+        purgeKey(talentContainerFrame, 'inspectUnit');
         notSecure = true;
     end
-    if not issecurevariable(ClassTalentFrame, 'inspectString') then
-        purgeKey(ClassTalentFrame, 'inspectString');
+    if not issecurevariable(talentContainerFrame, 'inspectString') then
+        purgeKey(talentContainerFrame, 'inspectString');
         notSecure = true;
     end
     if notSecure and isInspecting then
         -- get blizzard to set the value to true
-        TextureLoadingGroupMixin.AddTexture({textures = ClassTalentFrame}, 'inspectString');
+        TextureLoadingGroupMixin.AddTexture({textures = talentContainerFrame}, 'inspectString');
     end
 end
 
@@ -226,7 +230,7 @@ function Module:TriggerMicroButtonUpdate()
 end
 
 function Module:EnableDropDownReplacement()
-    local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame();
     local loadoutDropDown = talentsTab.LoadoutDropDown;
     if not self.replacementDropDownControl then
         self.replacementDropDownControl = self:CreateReplacementDropDownControl(loadoutDropDown);
@@ -256,8 +260,8 @@ function Module:CreateReplacementDropDownControl(parent)
 end
 
 function Module:DisableDropDownReplacement()
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab and self.replacementDropDownControl then
-        local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame(true);
+    if talentsTab and self.replacementDropDownControl then
         local loadoutDropDown = talentsTab.LoadoutDropDown;
         self.replacementDropDownControl:Hide();
         loadoutDropDown.DropDownControl = loadoutDropDown.DropDownControlOrig or loadoutDropDown.DropDownControl;
@@ -269,7 +273,7 @@ function Module:DisableDropDownReplacement()
 end
 
 function Module:OnShowUIPanel(frame)
-    if frame ~= ClassTalentFrame then return end
+    if frame ~= Util:GetTalentContainerFrame(true) then return end
     if (frame.IsShown and not frame:IsShown()) then
         -- if possible, force show the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Show()
@@ -277,7 +281,7 @@ function Module:OnShowUIPanel(frame)
 end
 
 function Module:OnHideUIPanel(frame)
-    if frame ~= ClassTalentFrame then return end
+    if frame ~= Util:GetTalentContainerFrame(true) then return end
     if (frame.IsShown and frame:IsShown()) then
         -- if possible, force hide the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Hide()
@@ -285,13 +289,13 @@ function Module:OnHideUIPanel(frame)
 end
 
 function Module:OnShowSelections()
-    for _, button in pairs(ClassTalentFrame.TalentsTab.SelectionChoiceFrame.selectionFrameArray) do
+    for _, button in pairs(Util:GetTalentFrame().SelectionChoiceFrame.selectionFrameArray) do
         self:OnTalentButtonAcquired(button);
     end
 end
 
 local function replacedShareButtonCallback()
-    local exportString = ClassTalentFrame.TalentsTab:GetLoadoutExportString();
+    local exportString = Util:GetTalentFrame():GetLoadoutExportString();
     Util:CopyText(exportString, L['Talent Loadout String']);
 end
 

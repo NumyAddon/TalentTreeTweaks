@@ -13,6 +13,8 @@ libs\embeds.xml
 locale\locale.xml
 
 core.lua
+ImportExportUtilV1.lua
+ImportExportUtilV2.lua
 SharedUtil.lua
 
 modules\reduceTaint.lua

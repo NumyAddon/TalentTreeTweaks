@@ -9,7 +9,7 @@ local Module = Main:NewModule('ChangeBackground', 'AceHook-3.0', 'AceEvent-3.0')
 Module.originalAlpha = {}
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupDefaultUI();
     end);
     EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
@@ -112,11 +112,13 @@ end
 
 function Module:UpdateBackground(resetAlpha)
     local alpha = resetAlpha and 1 or self.db.alpha;
-    if ClassTalentFrame then
-        self:TrySetAlpha(ClassTalentFrame.TalentsTab.Background, alpha);
-        self:TrySetAlpha(ClassTalentFrame.TalentsTab.BlackBG, alpha);
-        self:TrySetAlpha(ClassTalentFrame.Center, alpha); -- ElvUI background
-        self:TrySetAlpha(ClassTalentFrameBg, alpha);
+    local talentContainerFrame = Util:GetTalentContainerFrame();
+    if talentContainerFrame then
+        local talentFrame = Util:GetTalentFrame();
+        self:TrySetAlpha(talentFrame.Background, alpha);
+        self:TrySetAlpha(talentFrame.BlackBG, alpha);
+        self:TrySetAlpha(talentContainerFrame.Center, alpha); -- ElvUI background
+        self:TrySetAlpha(_G[talentContainerFrame:GetName() .. 'Bg'], alpha);
     end
 
     if TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame() then
@@ -146,7 +148,7 @@ end
 
 function Module:SetupDefaultUI()
     self:UpdateBackground();
-    self.alphaSlider = self.alphaSlider or self:CreateSlider(ClassTalentFrame.TalentsTab);
+    self.alphaSlider = self.alphaSlider or self:CreateSlider(Util:GetTalentFrame());
     self.alphaSlider:SetShown(self.db.showAlphaInUI);
 
     RunNextFrame(function()

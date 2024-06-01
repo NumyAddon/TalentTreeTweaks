@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_ClickableExportStringsInChat: AceModule, AceHook-3.0
 local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
 Module.bitWidthSpecID = 16;
@@ -97,8 +98,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         name = L['Show Example link in chat'],
         desc = L['Shows an example of a clickable link in chat.'],
         func = function()
-            LoadAddOn('Blizzard_ClassTalentUI');
-            local talentTab = ClassTalentFrame.TalentsTab;
+            local talentTab = Util:GetTalentFrame();
             local exportString = Util:GetLoadoutExportString(talentTab);
             print(L['Example of a regular string'], self:ReplaceChatMessage(exportString), self.db.disableDetectionFromStrings and '' or L['(was %s)']:format(exportString));
 
@@ -197,7 +197,7 @@ function Module:SetItemRef(link, text, button)
 end
 
 function Module:OpenInTalentTreeViewer(level, exportString)
-    LoadAddOn('TalentTreeViewer');
+    C_AddOns.LoadAddOn('TalentTreeViewer');
     if not TalentViewer or not TalentViewer.ImportLoadout then
         self:OpenInDefaultUI(level, exportString);
         print(L['Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.']);
@@ -208,9 +208,9 @@ function Module:OpenInTalentTreeViewer(level, exportString)
 end
 
 function Module:OpenInImportUI(exportString)
-    LoadAddOn('Blizzard_ClassTalentUI');
-    if not ClassTalentFrame:IsShown() then
-        ToggleTalentFrame();
+    local talentFrame = Util:GetTalentContainerFrame();
+    if not talentFrame:IsShown() then
+        ShowUIPanel(talentFrame);
     end
     ClassTalentLoadoutImportDialog.NameControl:GetEditBox():SetAutoFocus(true);
     ClassTalentLoadoutImportDialog.ImportControl:GetEditBox():SetAutoFocus(false);
@@ -221,12 +221,11 @@ function Module:OpenInImportUI(exportString)
 end
 
 function Module:OpenInDefaultUI(level, exportString)
-    ClassTalentFrame_LoadUI();
-
-    if not ClassTalentFrame or not ClassTalentFrame.SetInspectString then return end
-    ClassTalentFrame:SetInspectString(exportString, level);
-    if not ClassTalentFrame:IsShown() then
-        ShowUIPanel(ClassTalentFrame);
+    local talentFrame = Util:GetTalentContainerFrame();
+    if not talentFrame or not talentFrame.SetInspectString then return end
+    talentFrame:SetInspectString(exportString, level);
+    if not talentFrame:IsShown() then
+        ShowUIPanel(talentFrame);
     end
 end
 

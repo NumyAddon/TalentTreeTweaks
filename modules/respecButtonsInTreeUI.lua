@@ -8,7 +8,7 @@ local L = TTT.L;
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -47,10 +47,11 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:SetupHook()
-    self:SecureHook(ClassTalentFrame.TalentsTab, 'UpdateInspecting', function() self:UpdateRespecButtonContainer(); end);
+    local talentFrame = Util:GetTalentFrame();
+    self:SecureHook(talentFrame, 'UpdateInspecting', function() self:UpdateRespecButtonContainer(); end);
 
     if self.respecButtonContainer then self:UpdateRespecButtonContainer(); return; end
-    self.respecButtonContainer = CreateFrame('Frame', nil, ClassTalentFrame.TalentsTab);
+    self.respecButtonContainer = CreateFrame('Frame', nil, talentFrame);
     local container = self.respecButtonContainer;
 
     -- create a respec button per spec, with icon and tooltip
@@ -62,7 +63,7 @@ function Module:SetupHook()
     container:SetSize(41 * GetNumSpecializations(), 40);
 
     container:ClearAllPoints();
-    container:SetPoint('RIGHT', ClassTalentFrame.TalentsTab.PvPTalentSlotTray.Label, 'LEFT', -20, 0);
+    container:SetPoint('RIGHT', talentFrame.PvPTalentSlotTray.Label, 'LEFT', -20, 0);
     container:Show();
 end
 
@@ -71,7 +72,7 @@ function Module:UpdateRespecButtonContainer()
         button:OnEvent();
     end
 
-    local talentsTab = ClassTalentFrame.TalentsTab;
+    local talentsTab = Util:GetTalentFrame();
     if not talentsTab:IsInspecting() then
         self.respecButtonContainer:Show();
         return;
@@ -97,7 +98,7 @@ do
             return
         end
         SetSpecialization(specIndex)
-        ClassTalentFrame.TalentsTab:SetCommitStarted(0)
+        Util:GetTalentFrame():SetCommitStarted(0)
         Module:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED')
         Module:RegisterEvent('SPECIALIZATION_CHANGE_CAST_FAILED')
     end
@@ -141,11 +142,11 @@ end
 function Module:ACTIVE_PLAYER_SPECIALIZATION_CHANGED()
     self:UnregisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED')
     self:UnregisterEvent('SPECIALIZATION_CHANGE_CAST_FAILED')
-    ClassTalentFrame.TalentsTab:SetCommitStarted(nil)
+    Util:GetTalentFrame():SetCommitStarted(nil)
 end
 
 function Module:SPECIALIZATION_CHANGE_CAST_FAILED()
     self:UnregisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED')
     self:UnregisterEvent('SPECIALIZATION_CHANGE_CAST_FAILED')
-    ClassTalentFrame.TalentsTab:SetCommitStarted(nil)
+    Util:GetTalentFrame():SetCommitStarted(nil)
 end

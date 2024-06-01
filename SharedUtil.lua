@@ -3,6 +3,12 @@ local _, TTT = ...
 local Util = {};
 TTT.Util = Util;
 local L = TTT.L;
+--- @type TalentTreeTweaks_ImportExportUtil
+local ImportExportUtil = TTT.ImportExportUtil;
+
+local isDF = select(4, GetBuildInfo()) < 110000;
+Util.isDF = isDF;
+local talentAddonName = isDF and 'Blizzard_ClassTalentUI' or 'Blizzard_PlayerSpells';
 
 local LTT = LibStub('LibTalentTree-1.0');
 Util.LibTalentTree = LTT;
@@ -15,10 +21,6 @@ do
         end
     end
 end
-Util.bitWidthHeaderVersion = 8;
-Util.bitWidthSpecID = 16;
-Util.bitWidthRanksPurchased = 6;
-local LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
 
 Util.configIDLookup = {};
 
@@ -56,7 +58,7 @@ function Util:OnInitialize()
     eventFrame:SetScript('OnEvent', function(_, event, ...)
         if event == 'ADDON_LOADED' then
             local addonName = ...;
-            if addonName == 'Blizzard_ClassTalentUI' and self.classTalentUILoadCallbacks.registered then
+            if addonName == talentAddonName and self.classTalentUILoadCallbacks.registered then
                 eventFrame:UnregisterEvent('ADDON_LOADED');
                 self:RunOnLoadCallbacks();
             end
@@ -95,7 +97,7 @@ end
 
 --- @param callback function
 --- @param priority ?number - lower numbers are called first
-function Util:OnClassTalentUILoad(callback, priority)
+function Util:OnTalentUILoad(callback, priority)
     local actualPriority = priority or 10;
     local registry = self.classTalentUILoadCallbacks;
     registry[actualPriority] = registry[actualPriority] or {};
@@ -104,8 +106,8 @@ function Util:OnClassTalentUILoad(callback, priority)
     registry.maxPriority = math.max(registry.maxPriority, actualPriority);
     registry.registered = true;
 
-    if IsAddOnLoaded('Blizzard_ClassTalentUI') then
-        self:RunOnLoadCallbacks()
+    if C_AddOns.IsAddOnLoaded(talentAddonName) then
+        self:RunOnLoadCallbacks();
     end
 end
 
@@ -123,6 +125,22 @@ end
 
 function Util:CopyText(text, optionalTitleSuffix)
     StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
+end
+
+function Util:GetTalentContainerFrame(noAutoload)
+    local frameName = isDF and 'ClassTalentFrame' or 'PlayerSpellsFrame';
+    if not _G[frameName] and not noAutoload then
+        C_AddOns.LoadAddOn(talentAddonName);
+    end
+
+    return _G[frameName];
+end
+
+function Util:GetTalentFrame(noAutoload)
+    local talentFrame = self:GetTalentContainerFrame(noAutoload);
+    if not talentFrame then return; end
+
+    return talentFrame.TalentsTab or talentFrame.TalentsFrame;
 end
 
 function Util:RefreshConfigIDLookup()
@@ -154,180 +172,26 @@ function Util:GetSpecIDFromConfigID(configID)
     end
 end
 
-local function fixLoadoutString(loadoutString, specID)
-   local exportStream = ExportUtil.MakeExportDataStream();
-   local importStream = ExportUtil.MakeImportDataStream(loadoutString);
-
-   if importStream:ExtractValue(Util.bitWidthHeaderVersion) ~= 1 then
-      return nil; -- only version 1 is supported
-   end
-
-   local headerSpecID = importStream:ExtractValue(Util.bitWidthSpecID);
-   if headerSpecID == specID then
-      return loadoutString; -- no update needed
-   end
-
-   exportStream:AddValue(Util.bitWidthHeaderVersion, 1);
-   exportStream:AddValue(Util.bitWidthSpecID, specID);
-   local remainingBits = importStream:GetNumberOfBits() - Util.bitWidthHeaderVersion - Util.bitWidthSpecID;
-   -- copy the remaining bits in batches of 16
-   while remainingBits > 0 do
-      local bitsToCopy = math.min(remainingBits, 16);
-      exportStream:AddValue(bitsToCopy, importStream:ExtractValue(bitsToCopy));
-      remainingBits = remainingBits - bitsToCopy;
-   end
-
-   return exportStream:GetExportString();
-end
-
 function Util:GetLoadoutExportString(talentsTab, configIDOverride)
-    if (self:GetSpecIDFromConfigID(configIDOverride)) then
-        local specID = self:GetSpecIDFromConfigID(configIDOverride);
-        local loadoutString = C_Traits.GenerateImportString(configIDOverride);
-        if loadoutString and loadoutString ~= '' then
-            return fixLoadoutString(loadoutString, specID);
-        end
-    end
-    if not talentsTab then
-        return nil;
-    end
-
-    local exportStream = ExportUtil.MakeExportDataStream();
-    local configID = configIDOverride or talentsTab:GetConfigID();
-    local currentSpecID = talentsTab:GetSpecID();
-    local treeID = LTT:GetClassTreeId(talentsTab:GetClassID())
-
-    -- write header
-    exportStream:AddValue(self.bitWidthHeaderVersion, LOADOUT_SERIALIZATION_VERSION);
-    exportStream:AddValue(self.bitWidthSpecID, currentSpecID);
-    for _, hashVal in ipairs(C_Traits.GetTreeHash(treeID)) do
-        exportStream:AddValue(8, hashVal);
-    end
-
-    talentsTab:WriteLoadoutContent(exportStream, configID, treeID);
-
-    return exportStream:GetExportString();
+    return ImportExportUtil:GetLoadoutExportString(talentsTab, configIDOverride);
 end
 
----@class TalentTreeTweaks_Util_LoadoutContent
----@field isNodeSelected boolean
----@field isPartiallyRanked boolean
----@field partialRanksPurchased number
----@field isChoiceNode boolean
----@field choiceNodeSelection number
----@field nodeID number
-
---- @return ( boolean|number, string|number, nil|TalentTreeTweaks_Util_LoadoutContent[]) # specID, classID, loadoutInfo; in case of errors: false, errorMessage
+--- @return false|number # specID or false on error
+--- @return number|string # classID or errorMessage on error
+--- @return nil|TalentTreeTweaks_Util_LoadoutContent[] # loadoutInfo or nothing on error
 function Util:ParseTalentBuildString(importString)
-    local importStream = ExportUtil.MakeImportDataStream(importString);
-
-    local headerValid, serializationVersion, specIDFromString, treeHash = self:ReadLoadoutHeader(importStream);
-    local classIDFromString = self.specToClassMap[specIDFromString];
-
-    if(not headerValid) then
-        return false, LOADOUT_ERROR_BAD_STRING;
-    end
-
-    if(serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
-        return false, LOADOUT_ERROR_SERIALIZATION_VERSION_MISMATCH;
-    end
-
-    local treeID = LTT:GetClassTreeId(classIDFromString);
-    if not self:IsHashValid(treeHash, treeID) then
-        return false, LOADOUT_ERROR_TREE_CHANGED;
-    end
-
-    return tonumber(specIDFromString), tonumber(classIDFromString), self:ReadLoadoutContent(importStream, treeID);
+    return ImportExportUtil:ParseTalentBuildString(importString);
 end
 
 function Util:ReadLoadoutHeader(importStream)
-    local headerBitWidth = self.bitWidthHeaderVersion + self.bitWidthSpecID + 128;
-    local importStreamTotalBits = importStream:GetNumberOfBits();
-    if( importStreamTotalBits < headerBitWidth) then
-        return false, 0, 0, 0;
-    end
-    local serializationVersion = importStream:ExtractValue(self.bitWidthHeaderVersion);
-    local specID = importStream:ExtractValue(self.bitWidthSpecID);
-
-    -- treeHash is a 128bit hash, passed as an array of 16, 8-bit values
-    local treeHash = {};
-    for i=1,16,1 do
-        treeHash[i] = importStream:ExtractValue(8);
-    end
-    return true, serializationVersion, specID, treeHash;
-end
-
-local nodeCache = {};
-local function GetTreeNodes(treeID)
-    if not nodeCache[treeID] then
-        nodeCache[treeID] = C_Traits.GetTreeNodes(treeID);
-    end
-    return nodeCache[treeID];
-end
-
-local treeHashCache = {}
-local function GetTreeHash(treeID)
-    if not treeHashCache[treeID] then
-        treeHashCache[treeID] = C_Traits.GetTreeHash(treeID);
-    end
-    return treeHashCache[treeID];
+    return ImportExportUtil:ReadLoadoutHeader(importStream);
 end
 
 function Util:IsHashValid(treeHash, treeID)
-    if not #treeHash == 16 then
-        return false;
-    end
-    local expectedHash = GetTreeHash(treeID);
-    local allZero = true;
-    for i, value in ipairs(treeHash) do
-        if value ~= 0 then
-            allZero = false;
-        end
-        if not allZero and value ~= expectedHash[i] then
-            return false;
-        end
-    end
-
-    return true;
+    return ImportExportUtil:IsHashValid(treeHash, treeID);
 end
 
 function Util:ReadLoadoutContent(importStream, treeID)
-    local results = {};
-
-    local treeNodes = GetTreeNodes(treeID);
-    for i, nodeID in ipairs(treeNodes) do
-        local nodeSelectedValue = importStream:ExtractValue(1)
-        local isNodeSelected =  nodeSelectedValue == 1;
-        local isPartiallyRanked = false;
-        local partialRanksPurchased = 0;
-        local isChoiceNode = false;
-        local choiceNodeSelection = 0;
-
-        if(isNodeSelected) then
-            local isPartiallyRankedValue = importStream:ExtractValue(1);
-            isPartiallyRanked = isPartiallyRankedValue == 1;
-            if(isPartiallyRanked) then
-                partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
-            end
-            local isChoiceNodeValue = importStream:ExtractValue(1);
-            isChoiceNode = isChoiceNodeValue == 1;
-            if(isChoiceNode) then
-                choiceNodeSelection = importStream:ExtractValue(2);
-            end
-        end
-
-        local result = {};
-        result.isNodeSelected = isNodeSelected;
-        result.isPartiallyRanked = isPartiallyRanked;
-        result.partialRanksPurchased = partialRanksPurchased;
-        result.isChoiceNode = isChoiceNode;
-        -- entry index is stored as zero-index, so convert back to lua index
-        result.choiceNodeSelection = choiceNodeSelection + 1;
-        result.nodeID = nodeID;
-        results[i] = result;
-
-    end
-
-    return results;
+    return ImportExportUtil:ReadLoadoutContent(importStream, treeID);
 end
 

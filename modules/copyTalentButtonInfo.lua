@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_CopyTalentButtonInfo: AceModule, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('CopyTalentButtonInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnInitialize()
@@ -17,8 +18,8 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
-        self:SetupHook(ClassTalentFrame.TalentsTab);
+    Util:OnTalentUILoad(function()
+        self:SetupHook(Util:GetTalentFrame());
     end);
     EventUtil.ContinueOnAddOnLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
@@ -38,8 +39,8 @@ function Module:OnDisable()
     self:DisableBinding();
     self:UnhookAll();
 
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    if Util:GetTalentFrame() then
+        Util:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     if GenericTraitFrame then
         GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);

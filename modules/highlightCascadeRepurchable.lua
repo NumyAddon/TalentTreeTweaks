@@ -11,7 +11,7 @@ Module.enabled = false;
 function Module:OnEnable()
     self.enabled = true;
     self.buttonTextures = self.buttonTextures or {};
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -23,8 +23,8 @@ function Module:OnDisable()
             texture:Hide();
         end
     end
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    if Util:GetTalentFrame() then
+        Util:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
 end
 
@@ -86,8 +86,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:SetupHook()
-    ClassTalentFrame.TalentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
-    for talentButton in ClassTalentFrame.TalentsTab:EnumerateAllTalentButtons() do
+    Util:GetTalentFrame():RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
+    for talentButton in Util:GetTalentFrame():EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);
     end
 end

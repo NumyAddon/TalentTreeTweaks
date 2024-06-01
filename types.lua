@@ -1,0 +1,8 @@
+---@class TalentTreeTweaks_Util_LoadoutContent
+---@field isNodeSelected boolean
+---@field isNodeGranted boolean|nil # only present in V2
+---@field isPartiallyRanked boolean
+---@field partialRanksPurchased number
+---@field isChoiceNode boolean
+---@field choiceNodeSelection number
+---@field nodeID number

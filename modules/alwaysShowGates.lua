@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_AlwaysShowGates: AceModule, AceHook-3.0
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 local LTT = Util.LibTalentTree;
 local GATE_TEXT_FORMAT = '%d (+%d)';
@@ -15,15 +16,16 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
-        ClassTalentFrame.TalentsTab:RefreshGates();
+    local talentFrame = Util:GetTalentFrame();
+    if talentFrame then
+        talentFrame:RefreshGates();
     end
 end
 
@@ -36,11 +38,11 @@ function Module:GetName()
 end
 
 function Module:SetupHook()
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentTab = Util:GetTalentFrame();
     -- We have to create our own gatePool, because otherwise we will cause massive taint issues
     -- when acquiring a gate from the pool. Using our own pool causes no such issues
-    self.gatePool = self.gatePool or CreateFramePool("FRAME", talentFrame.ButtonsParent, "TalentFrameGateTemplate");
-    self:SecureHook(talentFrame, 'RefreshGates', function() RunNextFrame(function() self:RefreshGates() end) end);
+    self.gatePool = self.gatePool or CreateFramePool("FRAME", talentTab.ButtonsParent, "TalentFrameGateTemplate");
+    self:SecureHook(talentTab, 'RefreshGates', function() RunNextFrame(function() self:RefreshGates() end) end);
     self:RefreshGates();
 end
 
@@ -53,7 +55,7 @@ local function GateOnEnter(gate)
 end
 
 function Module:RefreshGates()
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentFrame = Util:GetTalentFrame();
     self.gatePool:ReleaseAll();
 
     if not talentFrame.talentTreeInfo or not talentFrame.talentTreeInfo.gates then
@@ -80,7 +82,7 @@ end
 
 function Module:EnrichConditionInfo(condInfo)
     if not LTT then return condInfo; end
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentFrame = Util:GetTalentFrame();
     local specID = talentFrame:GetSpecID();
     self.gateInfo[specID] = self.gateInfo[specID] or LTT:GetGates(specID);
 
@@ -103,7 +105,7 @@ function Module:EnrichConditionInfo(condInfo)
 end
 
 function Module:GetCurrencySpentAboveGate(condID, currencyID)
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentFrame = Util:GetTalentFrame();
     local nodesAboveGate = self:GetNodesAboveGate(condID, currencyID);
     local spent = 0;
     for _, nodeID in ipairs(nodesAboveGate) do
@@ -118,7 +120,7 @@ end
 
 local nodesCache = {};
 function Module:GetNodes()
-    local talentFrame = ClassTalentFrame.TalentsTab;
+    local talentFrame = Util:GetTalentFrame();
     local treeID = talentFrame:GetTalentTreeID();
     if not nodesCache[treeID] then
         nodesCache[treeID] = C_Traits.GetTreeNodes(treeID);
@@ -130,7 +132,7 @@ end
 local nodesAboveGateCache = {};
 function Module:GetNodesAboveGate(condID, currencyID)
     if not nodesAboveGateCache[condID] then
-        local talentFrame = ClassTalentFrame.TalentsTab;
+        local talentFrame = Util:GetTalentFrame();
         local treeID = talentFrame:GetTalentTreeID();
         local nodes = self:GetNodes();
         local nodesAboveGate = {};
@@ -160,7 +162,7 @@ end
 local currencyCache = {};
 function Module:IsCurrencyClassCurrency(currencyID)
     if currencyCache[currencyID] == nil then
-        local talentFrame = ClassTalentFrame.TalentsTab;
+        local talentFrame = Util:GetTalentFrame();
         local configID = talentFrame:GetConfigID();
         local treeID = talentFrame:GetTalentTreeID();
         for i, currencyInfo in ipairs(C_Traits.GetTreeCurrencyInfo(configID, treeID, true)) do

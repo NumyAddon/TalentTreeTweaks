@@ -5,25 +5,26 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_ScaleTalentFrame: AceModule, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
-local ADDON_NAME_TALENT_TREE_VIEWER = 'TalentTreeViewer';
-local ADDON_NAME_BLIZZARD_CLASS_TALENT_UI = 'Blizzard_ClassTalentUI';
+local TALENT_TREE_VIEWER = 'TalentTreeViewer';
+local BLIZZARD_TALENT_UI = 2;
 
 function Module:OnEnable()
     if self.blizzMoveEnabled then return end
-    Util:OnClassTalentUILoad(function()
-        self:SetupHook(ADDON_NAME_BLIZZARD_CLASS_TALENT_UI);
+    Util:OnTalentUILoad(function()
+        self:SetupHook(BLIZZARD_TALENT_UI);
     end);
-    EventUtil.ContinueOnAddOnLoaded(ADDON_NAME_TALENT_TREE_VIEWER, function()
-        self:SetupHook(ADDON_NAME_TALENT_TREE_VIEWER);
+    EventUtil.ContinueOnAddOnLoaded(TALENT_TREE_VIEWER, function()
+        self:SetupHook(TALENT_TREE_VIEWER);
     end)
 end
 
 function Module:OnDisable()
     if self.blizzMoveEnabled then return end
 
-    if ClassTalentFrame then ClassTalentFrame:SetScale(1); end
+    if Util:GetTalentContainerFrame(true) then Util:GetTalentContainerFrame(true):SetScale(1); end
     if TalentViewer_DF then TalentViewer_DF:SetScale(1); end
     self:UnhookAll();
 end
@@ -37,7 +38,7 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
-    self.blizzMoveEnabled = GetAddOnEnableState(UnitName('player'), 'BlizzMove') == 2;
+    self.blizzMoveEnabled = C_AddOns.GetAddOnEnableState(UnitName('player'), 'BlizzMove') == 2;
     self.db = db;
 
     if self.blizzMoveEnabled then
@@ -60,7 +61,8 @@ function Module:GetOptions(defaultOptionsTable, db)
         set = function(info, value)
             value = math.max(0.5, math.min(2, value));
             self.db[info[#info]] = value;
-            if ClassTalentFrame and ClassTalentFrame.SetScale then ClassTalentFrame:SetScale(value); end
+            local containerFrame = Util:GetTalentContainerFrame(true);
+            if containerFrame and containerFrame.SetScale then containerFrame:SetScale(value); end
         end,
         min = 0.5,
         max = 2,
@@ -73,15 +75,14 @@ end
 
 function Module:SetupHook(addon)
     local settingKey, frame, buttonsParent
-    if addon == ADDON_NAME_BLIZZARD_CLASS_TALENT_UI then
-        settingKey = 'scale'
-        frame = ClassTalentFrame
-        buttonsParent = frame.TalentsTab.ButtonsParent
-    end
-    if addon == ADDON_NAME_TALENT_TREE_VIEWER then
-        settingKey = 'viewerScale'
-        frame = TalentViewer_DF
-        buttonsParent = frame.Talents.ButtonsParent
+    if addon == BLIZZARD_TALENT_UI then
+        settingKey = 'scale';
+        frame = Util:GetTalentContainerFrame();
+        buttonsParent = Util:GetTalentFrame().ButtonsParent;
+    elseif addon == TALENT_TREE_VIEWER then
+        settingKey = 'viewerScale';
+        frame = TalentViewer:GetTalentFrame():GetParent();
+        buttonsParent = TalentViewer:GetTalentFrame().ButtonsParent;
     end
     if self.db[settingKey] == nil then
         self.db[settingKey] = frame:GetScale();

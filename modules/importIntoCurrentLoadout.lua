@@ -24,7 +24,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnClassTalentUILoad(function()
+    Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -101,7 +101,8 @@ function Module:SetupHook()
 end
 
 function Module:OnUnlockImportButtonValueChanged()
-    local dropdown = ClassTalentFrame.TalentsTab.LoadoutDropDown;
+    if not Util.isDF then return; end -- todo: TWW compatibility
+    local dropdown = Util:GetTalentFrame().LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
         if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_IMPORT then
             if not self.oldDisabledCallback then
