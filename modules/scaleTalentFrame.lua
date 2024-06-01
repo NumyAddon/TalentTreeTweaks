@@ -38,7 +38,7 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
-    self.blizzMoveEnabled = C_AddOns.GetAddOnEnableState(UnitName('player'), 'BlizzMove') == 2;
+    self.blizzMoveEnabled = C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2;
     self.db = db;
 
     if self.blizzMoveEnabled then

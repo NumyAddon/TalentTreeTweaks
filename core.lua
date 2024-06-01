@@ -170,5 +170,5 @@ function Main:IsModuleEnabled(moduleName)
 end
 
 function Main:IsTalentTreeViewerEnabled()
-    return C_AddOns.GetAddOnEnableState(UnitName('player'), 'TalentTreeViewer') == 2;
+    return C_AddOns.GetAddOnEnableState('TalentTreeViewer', UnitName('player')) == 2;
 end
