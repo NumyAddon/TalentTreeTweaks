@@ -283,7 +283,7 @@ function Module:ConvertToImportLoadoutEntryInfo(treeID, loadoutContent)
 
         if (indexInfo.isNodeSelected) then
             local treeNode = C_Traits.GetNodeInfo(configID, treeNodeID);
-            local isChoiceNode = treeNode.type == Enum.TraitNodeType.Selection;
+            local isChoiceNode = treeNode.type == Enum.TraitNodeType.Selection or treeNode.type == Enum.TraitNodeType.SubTreeSelection;
             local choiceNodeSelection = indexInfo.isChoiceNode and indexInfo.choiceNodeSelection or nil;
             if indexInfo.isNodeSelected and isChoiceNode ~= indexInfo.isChoiceNode then
                 -- guard against corrupt import strings

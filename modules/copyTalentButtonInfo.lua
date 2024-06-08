@@ -24,7 +24,7 @@ function Module:OnEnable()
     EventUtil.ContinueOnAddOnLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
     end);
-    EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
+    EventUtil.ContinueOnAddOnLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
         if not talentsTab then return; end
         self:SetupHook(talentsTab);

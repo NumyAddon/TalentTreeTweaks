@@ -197,7 +197,11 @@ function Module:SetItemRef(link, text, button)
 end
 
 function Module:OpenInTalentTreeViewer(level, exportString)
-    C_AddOns.LoadAddOn('TalentTreeViewer');
+    if TalentViewerLoader then
+        TalentViewerLoader:LoadTalentViewer();
+    else
+        C_AddOns.LoadAddOn('TalentTreeViewer');
+    end
     if not TalentViewer or not TalentViewer.ImportLoadout then
         self:OpenInDefaultUI(level, exportString);
         print(L['Error opening in TalentTreeViewer. Showing default Blizzard inspect UI instead.']);

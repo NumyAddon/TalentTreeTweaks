@@ -6,6 +6,7 @@
 ## Version: @project-version@
 ## X-Curse-Project-ID: 678792
 ## SavedVariables: TalentTreeTweaksDB
+## OptionalDeps: TalentTreeViewer_Loader
 
 TaintLess.xml
 libs\embeds.xml

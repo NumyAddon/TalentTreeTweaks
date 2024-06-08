@@ -26,6 +26,9 @@ function Module:OnDisable()
     local talentFrame = Util:GetTalentFrame();
     if talentFrame then
         talentFrame:RefreshGates();
+        if not Util.isDF and talentFrame.HeroTalentsContainer then
+            talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -15, 0)
+        end
     end
 end
 
@@ -77,6 +80,11 @@ function Module:RefreshGates()
 
             talentFrame:OnGateDisplayed(gate, firstButton, condInfo);
         end
+    end
+
+    if not Util.isDF and talentFrame.HeroTalentsContainer then
+        -- shift the hero talents container to the left to make room for the longer gate text
+        talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -80, 0)
     end
 end
 

@@ -12,7 +12,7 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupDefaultUI();
     end);
-    EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
+    EventUtil.ContinueOnAddOnLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         self:SetupTTVUI();
     end);
 end

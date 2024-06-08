@@ -8,7 +8,7 @@ local L = TTT.L;
 --- @class TalentTreeTweaks_ScaleTalentFrame: AceModule, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
-local TALENT_TREE_VIEWER = 'TalentTreeViewer';
+local TALENT_TREE_VIEWER = TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer';
 local BLIZZARD_TALENT_UI = 2;
 
 function Module:OnEnable()

@@ -14,7 +14,7 @@ function Module:OnEnable()
     end);
 
     self.viewerButtonTextures = self.viewerButtonTextures or {};
-    EventUtil.ContinueOnAddOnLoaded('TalentTreeViewer', function()
+    EventUtil.ContinueOnAddOnLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         self:SetupViewerHook();
     end);
 end
@@ -158,6 +158,7 @@ end
 
 function Module:SetupViewerHook()
     local talentViewerFrame = TalentViewer:GetTalentFrame();
+    if not talentViewerFrame.GetClassID then return; end -- something went wrong loading the TTViewer addon
     self:InitCheckbox(talentViewerFrame);
     self:SecureHook(TalentViewer, 'SelectSpec', 'UpdateViewerSpec');
     self:UpdateViewerSpec(TalentViewer, talentViewerFrame:GetClassID(), talentViewerFrame:GetSpecID());
