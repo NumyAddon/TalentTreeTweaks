@@ -5,13 +5,14 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @type LibUIDropDownMenu
+--- @type LibUIDropDownMenuNumy-4.0
 local LibDD = LibStub('LibUIDropDownMenuNumy-4.0');
 
-if not Util.isDF then return; end -- todo: TWW compatibility
+if Util.isDF then
+    TalentTreeTweaks_DropDownControlReplacementMixin = CreateFromMixins(DropDownControlMixin);
+end
 
-TalentTreeTweaks_DropDownControlReplacementMixin = CreateFromMixins(DropDownControlMixin);
-
+--- @class TalentTreeTweaks_ReduceTaintModule: AceModule, AceHook-3.0
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
 function Module:OnEnable()
@@ -21,7 +22,7 @@ function Module:OnEnable()
 end
 
 function Module:OnDisable()
-    if self.db.replaceDropDown then
+    if self.db.replaceDropDown and Util.isDF then
         self:DisableDropDownReplacement();
     end
     self:UnhookAll();
@@ -31,8 +32,8 @@ function Module:GetDescription()
     return
         L['Implements various workarounds around taint.']
         .. "\n\n" ..
-        L['Fully replace the loadout dropdown, to avoid tainting the edit mode dropdown.']
-        .. "\n\n" ..
+        (Util.isDF and L['Fully replace the loadout dropdown, to avoid tainting the edit mode dropdown.'] or '')
+        .. (Util.isDF and "\n\n" or '') ..
         L['A workaround for one of the ways that Talent Tree taint can block action buttons from working.']
         .. "\n\n" ..
         L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when needed.'];
@@ -45,7 +46,7 @@ end
 function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
     local defaults = {
-        replaceDropDown = true,
+        replaceDropDown = Util.isDF,
         disableMultiActionBarShowHide = true,
     };
     for k, v in pairs(defaults) do
@@ -67,21 +68,25 @@ function Module:GetOptions(defaultOptionsTable, db)
         name = L['You have to reload your UI after disabling this module, for some of the change to take effect.'],
         order = 5,
     };
-    defaultOptionsTable.args.replaceDropDown = {
-        type = 'toggle',
-        name = L['Replace Loadout Dropdown'],
-        desc = L['Replace the loadout dropdown, to avoid tainting the edit mode dropdown.'],
-        order = counter(),
-        get = get,
-        set = function(info, value)
-            set(info, value);
-            if value then
-                self:EnableDropDownReplacement();
-            else
-                self:DisableDropDownReplacement();
-            end
-        end,
-    };
+    if Util.isDF then
+        defaultOptionsTable.args.replaceDropDown = {
+            type = 'toggle',
+            name = L['Replace Loadout Dropdown'],
+            desc = L['Replace the loadout dropdown, to avoid tainting the edit mode dropdown.'],
+            order = counter(),
+            get = get,
+            set = function(info, value)
+                set(info, value);
+                if value then
+                    self:EnableDropDownReplacement();
+                else
+                    self:DisableDropDownReplacement();
+                end
+            end,
+        };
+    else
+        self.db.replaceDropDown = nil;
+    end
     defaultOptionsTable.args.disableMultiActionBarShowHide = {
         type = 'toggle',
         name = L['Disable MultiActionBar_ShowAllGrids on Show'],
@@ -98,7 +103,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:SetupHook()
-    if self.db.replaceDropDown then
+    if Util.isDF and self.db.replaceDropDown then
         self:EnableDropDownReplacement();
     end
 
@@ -109,8 +114,10 @@ function Module:SetupHook()
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
 
-    -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
-    self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
+    if Util.isDF then -- todo: TWW compatibility
+        -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
+        self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
+    end
 
     -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution
     self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
@@ -315,12 +322,15 @@ function Module:ReplaceShareButton(dropdown, selectionID)
 end
 
 function Module:SetActionBarHighlights(talentButton, shown)
+    local notMissing =
+        TalentButtonUtil and TalentButtonUtil.ActionBarStatus and TalentButtonUtil.ActionBarStatus.NotMissing -- DF
+        or ActionButtonUtil and ActionButtonUtil.ActionBarActionStatus and ActionButtonUtil.ActionBarActionStatus.NotMissing; -- TWW
     local spellID = talentButton:GetSpellID();
     if (
         spellID
         and (
             talentButton.IsMissingFromActionBar and not talentButton:IsMissingFromActionBar()
-            or talentButton.GetActionBarStatus and talentButton:GetActionBarStatus() == TalentButtonUtil.ActionBarStatus.NotMissing
+            or talentButton.GetActionBarStatus and talentButton:GetActionBarStatus() == notMissing
         )
     ) then
         self:HandleBlizzardActionButtonHighlights(shown and spellID);
@@ -363,7 +373,7 @@ function Module:OnTalentButtonAcquired(button)
     button.HideActionBarHighlights = HideActionBarHighlightsReplacement;
 end
 
-do
+if Util.isDF then
     --- copied from DropDownControlMixin
     function TalentTreeTweaks_DropDownControlReplacementMixin:OnLoad()
         local function InitializeDropDownFrame(frame, level)
