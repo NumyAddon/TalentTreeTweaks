@@ -423,9 +423,9 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                 end
                 local entryID = nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection];
                 local entryInfo = LTT:GetEntryInfo(entryID);
-                local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID);
-                local spellID = definitionInfo.spellID;
-                local spellIcon = select(8, GetSpellInfo(spellID));
+                local definitionInfo = entryInfo.definitionID and C_Traits.GetDefinitionInfo(entryInfo.definitionID);
+                local spellID = definitionInfo and definitionInfo.spellID;
+                local spellIcon = spellID and select(8, GetSpellInfo(spellID));
 
                 local diff = calculateDiff and self:GetDiffForNode(nodeID, entryID, rank) or nil;
 
