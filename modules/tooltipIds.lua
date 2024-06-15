@@ -68,7 +68,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         name = L['Talent Tooltip'],
         desc = L['Toggles for the Talent Tooltips.'],
         values = {
-            enabled = L['Talent Tooltip'],
+            enabled = L['Enabled'],
             nodeId = 'Node ID', -- don't translate
             entryId = 'Entry ID', -- don't translate
             definitionId = 'Definition ID', -- don't translate
@@ -81,10 +81,10 @@ function Module:GetOptions(defaultOptionsTable, db)
     defaultOptionsTable.args.professionTooltip = {
         order = increment(),
         type = 'multiselect',
-        name = L['Talent Tooltip'],
+        name = L['Professions Tooltip'],
         desc = L['Toggles for the Professions Tooltips.'],
         values = {
-            enabled = L['Professions Tooltip'],
+            enabled = L['Enabled'],
             nodeId = 'Node ID', -- don't translate
             entryId = 'Entry ID', -- don't translate
             definitionId = 'Definition ID', -- don't translate
