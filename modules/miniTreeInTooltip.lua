@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TalentTreeTweaks_MiniTreeInTooltip: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
 local LTT = Util.LibTalentTree;
@@ -76,10 +77,15 @@ function Module:OnEnable()
 
     Util:OnTalentUILoad(function()
         local talentsTab = Util:GetTalentFrame();
-        if not Util.isDF then return; end -- todo: TWW compatibility
-        local dropdown = talentsTab.LoadoutDropDown;
-        self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
-        self:HookCustomSetupCallback(dropdown.DropDownControl);
+        if not Util.isDF then
+            local dropdown = talentsTab.LoadSystem.Dropdown;
+            self:SecureHook(dropdown, 'SetupMenu', 'HookMenuGenerator');
+            self:HookMenuGenerator(dropdown);
+        else --- todo: remove after 11.0 release
+            local dropdown = talentsTab.LoadoutDropDown;
+            self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
+            self:HookCustomSetupCallback(dropdown.DropDownControl);
+        end
     end)
 
     EventUtil.ContinueOnAddOnLoaded("Blizzard_InspectUI", function()
@@ -265,6 +271,27 @@ end
 function Module:DebugPrint(...)
     if self.debug then
         print(...)
+    end
+end
+
+function Module:HookMenuGenerator(dropdown)
+    hooksecurefunc(dropdown, 'menuGenerator', function(...) self:OnMenuGenerator(...) end);
+end
+
+function Module:OnMenuGenerator(dropdown, rootDescription)
+    for i, elementDescription in rootDescription:EnumerateElementDescriptions() do
+        local configID = elementDescription.data
+        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+        if not ok or not configInfo then return; end
+        hooksecurefunc(elementDescription, 'onEnter', function(frame)
+            local exportString = Util:GetLoadoutExportString(Util:GetTalentFrame(), configID);
+
+            if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
+                self.loadoutDropdownTooltipShown = true;
+                GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
+            end
+            self:AddBuildToTooltip(GameTooltip, exportString);
+        end);
     end
 end
 
