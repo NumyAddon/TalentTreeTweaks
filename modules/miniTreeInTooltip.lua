@@ -14,6 +14,7 @@ local LTT = Util.LibTalentTree;
 local VISUAL_STYLE_FULL = 1;
 local VISUAL_STYLE_EMPTY = 2;
 local VISUAL_STYLE_HALF = 3;
+local VISUAL_STYLE_HALF_FLIPPED = 8;
 local VISUAL_STYLE_LEFT = 4;
 local VISUAL_STYLE_RIGHT = 5;
 local VISUAL_STYLE_ONE_THIRD = 6;
@@ -114,6 +115,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         diffOrange = {r = 1, g = 1, b = 0},
         diffRed = {r = 1, g = 0, b = 0},
         diffYellow = {r = 1, g = 1, b = 1},
+        inactiveSubTreeAlpha = 0.5,
     }
     self.db = db;
     for k, v in pairs(defaults) do
@@ -246,6 +248,19 @@ function Module:GetOptions(defaultOptionsTable, db)
         get = getter,
         set = setter,
     }
+    if not Util.isDF then
+        defaultOptionsTable.args.inactiveSubTreeAlpha = {
+            order = increment(),
+            type = "range",
+            name = L["Fade Inactive Hero Trees"],
+            desc = L["Fade Inactive Hero Trees, to more easily see which one is active."],
+            min = 0,
+            max = 1,
+            step = 0.1,
+            get = getter,
+            set = setter,
+        };
+    end
     defaultOptionsTable.args.example = {
         order = increment(),
         type = "execute",
@@ -418,6 +433,11 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     container:SetSize(containerWidth * self.db.scale, containerHeight * self.db.scale);
 
     local dots = {};
+    local dotsBySubTree = {};
+    local activeSubTreeID;
+    local subTrees = LTT:GetSubTreeIDsForSpecID(specID);
+    table.sort(subTrees);
+    local subTreeMap = tInvert(subTrees);
 
     --- @type TalentTreeTweaks_Util_LoadoutContent
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
@@ -426,8 +446,18 @@ function Module:AddBuildToTooltip(tooltip, exportString)
             local column, row = LTT:GetNodeGridPosition(treeID, nodeID);
             if column and row then
                 local nodeInfo = LTT:GetNodeInfo(treeID, nodeID);
+                if nodeInfo.subTreeID and subTreeMap[nodeInfo.subTreeID] then
+                    row = row + (subTreeMap[nodeInfo.subTreeID] - 1) * 5;
+                end
                 local style = VISUAL_STYLE_EMPTY;
                 local rank = 0;
+                local entryID = nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection];
+                local entryInfo = LTT:GetEntryInfo(entryID);
+                local definitionInfo = entryInfo.definitionID and C_Traits.GetDefinitionInfo(entryInfo.definitionID);
+                local spellID = definitionInfo and definitionInfo.spellID;
+                local spellIcon = spellID and select(8, GetSpellInfo(spellID));
+                local isAtlas = false;
+
                 if (
                     (nodeSelectionInfo.isNodeSelected and not nodeSelectionInfo.isChoiceNode and not nodeSelectionInfo.isPartiallyRanked)
                     or LTT:IsNodeGrantedForSpec(specID, nodeID)
@@ -447,23 +477,39 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                 elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
                     rank = 1;
                     style = nodeSelectionInfo.choiceNodeSelection == 1 and VISUAL_STYLE_LEFT or VISUAL_STYLE_RIGHT;
+                    if nodeInfo.isSubTreeSelection then
+                        activeSubTreeID = entryInfo.subTreeID;
+                        local subTreeInfo = activeSubTreeID and LTT:GetSubTreeInfo(activeSubTreeID);
+                        spellIcon = subTreeInfo and subTreeInfo.iconElementID;
+                        isAtlas = true;
+                        local subTreeIndex = subTreeMap[activeSubTreeID];
+                        if subTreeIndex == 1 then
+                            style = VISUAL_STYLE_HALF;
+                        elseif subTreeIndex == 2 then
+                            style = VISUAL_STYLE_HALF_FLIPPED;
+                        end
+                    end
                 end
-                local entryID = nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection];
-                local entryInfo = LTT:GetEntryInfo(entryID);
-                local definitionInfo = entryInfo.definitionID and C_Traits.GetDefinitionInfo(entryInfo.definitionID);
-                local spellID = definitionInfo and definitionInfo.spellID;
-                local spellIcon = spellID and select(8, GetSpellInfo(spellID));
-
                 local diff = calculateDiff and self:GetDiffForNode(nodeID, entryID, rank) or nil;
 
-                local dot = container:MakeDot(column, row, style, spellIcon, diff);
+                local dot = container:MakeDot(column, row, style, spellIcon, isAtlas, diff);
                 dots[nodeID] = dot;
+                if nodeInfo.subTreeID then
+                    dotsBySubTree[nodeInfo.subTreeID] = dotsBySubTree[nodeInfo.subTreeID] or {};
+                    table.insert(dotsBySubTree[nodeInfo.subTreeID], dot);
+                end
             else
                 self:DebugPrint('column and/or row not found for nodeID', nodeID)
             end
         end
     end
 
+    for subTreeID, subTreeDots in pairs(dotsBySubTree) do
+        local isActive = subTreeID == activeSubTreeID;
+        for _, dot in pairs(subTreeDots) do
+            dot:SetAlpha(isActive and 1 or (1 - self.db.inactiveSubTreeAlpha));
+        end
+    end
     for nodeID, dot in pairs(dots) do
         local edges = LTT:GetNodeEdges(treeID, nodeID);
         for _, edge in pairs(edges or {}) do
@@ -510,7 +556,7 @@ function containerMixin:Init()
     self.spacing = 20;
     self.dotSize = 12;
     self.expectedMaxRows = 10;
-    self.expectedMaxCols = 20;
+    self.expectedMaxCols = Util.isDF and 20 or 23;
 
     self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
     self:Hide();
@@ -567,6 +613,9 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
     elseif visualStyle == VISUAL_STYLE_RIGHT then
         col = 2;
         rotation = 'right';
+    elseif visualStyle == VISUAL_STYLE_HALF_FLIPPED then
+        col = 2;
+        rotation = 'flip';
     end
 
     local left = (col - 1) * factor;
@@ -590,22 +639,35 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
             right, top, -- top right corner is top right of the image
             left, top -- bottom right corner is top left of the image
         )
+    elseif rotation == 'flip' then
+        texture:SetTexCoord(
+            left, bottom, -- top left corner is bottom left of the image
+            left, top, -- bottom left corner is top left of the image
+            right, bottom, -- top right corner is bottom right of the image
+            right, top -- bottom right corner is top right of the image
+        )
     end
 end
 
-function containerMixin:MakeDot(column, row, visualStyle, spellIcon, diff)
+function containerMixin:MakeDot(column, row, visualStyle, spellIcon, isAtlas, diff)
     local dot, isNew = self.dotPool:Acquire();
     if isNew then
         dot:SetSize(self.dotSize, self.dotSize);
         dot.texture = dot:CreateTexture(nil, "ARTWORK");
         dot.texture:SetAllPoints(dot);
     end
+    dot:SetAlpha(1);
     dot:SetPoint("TOPLEFT", (column - 1) * self.spacing, -((row - 1) * self.spacing));
 
     if Module.db.displayStyle == DISPLAY_STYLE_SPELL_ICON then
         dot.texture:SetVertexColor(1, 1, 1);
-        dot.texture:SetTexture(spellIcon);
-        dot.texture:SetTexCoord(0, 1, 0, 1);
+        if isAtlas then
+            dot.texture:SetTexCoord(0, 1, 0, 1);
+            dot.texture:SetAtlas(spellIcon);
+        else
+            dot.texture:SetTexture(spellIcon);
+            dot.texture:SetTexCoord(0, 1, 0, 1);
+        end
         dot.texture:SetDesaturated(visualStyle == VISUAL_STYLE_EMPTY);
     else
         self:ApplyTexture(dot.texture, visualStyle, diff);
@@ -627,7 +689,9 @@ function containerMixin:MakeLine(dot1, dot2, isActive)
     if isActive then
         r, g, b = 1, 0.82, 0; -- #ffd100 -- yellow
     end
-    line:SetAlpha(isActive and 0.7 or 1);
+    local lineAlpha = isActive and 0.7 or 1;
+    lineAlpha = lineAlpha * dot1:GetAlpha();
+    line:SetAlpha(lineAlpha);
     line:SetColorTexture(r, g, b);
     line:SetStartPoint("CENTER", dot1);
     line:SetEndPoint("CENTER", dot2);

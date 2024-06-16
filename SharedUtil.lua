@@ -172,6 +172,15 @@ function Util:GetSpecIDFromConfigID(configID)
     end
 end
 
+function Util:GetActiveSubTreeIDByNodeInfo(nodeInfo)
+    local activeEntryID = nodeInfo and nodeInfo.activeEntry and nodeInfo.activeEntry.entryID;
+    if not activeEntryID then return; end
+
+    local entryInfo = LTT:GetEntryInfo(activeEntryID);
+
+    return entryInfo and entryInfo.subTreeID;
+end
+
 function Util:GetLoadoutExportString(talentsTab, configIDOverride)
     return ImportExportUtil:GetLoadoutExportString(talentsTab, configIDOverride);
 end
