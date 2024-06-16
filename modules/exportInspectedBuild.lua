@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local LEVEL_CAP = 70;
+local LEVEL_CAP = Util.isDF and 70 or 80;
 
 --- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');

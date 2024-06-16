@@ -39,6 +39,7 @@ local events = {
 local function Filter(...) return Module:Filter(...) end
 
 local LOADOUT_SERIALIZATION_VERSION;
+local SUPPORTED_SERIALIZATION_VERSIONS = {[1] = true, [2] = true};
 function Module:OnInitialize()
     self.debug = false;
     LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
@@ -339,6 +340,11 @@ function Module:ParseImportString(importText)
         return false;
     end
 
+    if(not SUPPORTED_SERIALIZATION_VERSIONS[serializationVersion]) then
+        self:DebugPrint('Unsupported serialization version');
+        return false;
+    end
+
     local treeID = specID and Util.specToClassMap[specID] and LTT:GetClassTreeId(Util.specToClassMap[specID]);
     if (not treeID) then
         self:DebugPrint('Invalid tree ID');
@@ -405,43 +411,54 @@ function Module:ValidateLoadoutContent(importStream, treeID)
         end
 
         if(nodeSelectedValue == 1) then
-            local isPartiallyRankedValue = importStream:ExtractValue(1);
-            if isPartiallyRankedValue == nil then
-                self:DebugPrint('Invalid isPartiallyRanked value', i);
-                return false
-            end
-
-            local nodeInfo = LTT:GetLibNodeInfo(treeID, treeNodes[i]);
-            local isClassNode = nodeInfo and nodeInfo.isClassNode;
-            local pointsSpent = nodeInfo and nodeInfo.maxRanks or 1;
-
-            if(isPartiallyRankedValue == 1) then
-                local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
-                if partialRanksPurchased == nil then
-                    self:DebugPrint('Invalid partialRanksPurchased value', i);
+            local isNodePurchased = true;
+            if LOADOUT_SERIALIZATION_VERSION == 2 then
+                local isNodePurchasedValue = importStream:ExtractValue(1);
+                if isNodePurchasedValue == nil then
+                    self:DebugPrint('Invalid isNodePurchased value', i);
                     return false
                 end
-                pointsSpent = partialRanksPurchased;
+                isNodePurchased = isNodePurchasedValue == 1;
             end
-
-            local isChoiceNodeValue = importStream:ExtractValue(1);
-            if isChoiceNodeValue == nil then
-                self:DebugPrint('Invalid isChoiceNode value', i);
-                return false
-            end
-            if(isChoiceNodeValue == 1) then
-                local choiceNodeSelection = importStream:ExtractValue(2);
-                -- 0-indexed, so only 0 and 1 are valid
-                if choiceNodeSelection == nil or choiceNodeSelection > 1 then
-                    self:DebugPrint('Invalid choiceNodeSelection value', i, choiceNodeSelection);
+            if isNodePurchased then
+                local isPartiallyRankedValue = importStream:ExtractValue(1);
+                if isPartiallyRankedValue == nil then
+                    self:DebugPrint('Invalid isPartiallyRanked value', i);
                     return false
                 end
-            end
 
-            if(isClassNode) then
-                classPointsSpent = classPointsSpent + pointsSpent;
-            else
-                specPointsSpent = specPointsSpent + pointsSpent;
+                local nodeInfo = LTT:GetLibNodeInfo(treeID, treeNodes[i]);
+                local isClassNode = nodeInfo and nodeInfo.isClassNode;
+                local pointsSpent = nodeInfo and nodeInfo.maxRanks or 1;
+
+                if(isPartiallyRankedValue == 1) then
+                    local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
+                    if partialRanksPurchased == nil then
+                        self:DebugPrint('Invalid partialRanksPurchased value', i);
+                        return false
+                    end
+                    pointsSpent = partialRanksPurchased;
+                end
+
+                local isChoiceNodeValue = importStream:ExtractValue(1);
+                if isChoiceNodeValue == nil then
+                    self:DebugPrint('Invalid isChoiceNode value', i);
+                    return false
+                end
+                if(isChoiceNodeValue == 1) then
+                    local choiceNodeSelection = importStream:ExtractValue(2);
+                    -- 0-indexed, so only 0 and 1 are valid
+                    if choiceNodeSelection == nil or choiceNodeSelection > 1 then
+                        self:DebugPrint('Invalid choiceNodeSelection value', i, choiceNodeSelection);
+                        return false
+                    end
+                end
+
+                if(isClassNode) then
+                    classPointsSpent = classPointsSpent + pointsSpent;
+                else
+                    specPointsSpent = specPointsSpent + pointsSpent;
+                end
             end
         end
     end
