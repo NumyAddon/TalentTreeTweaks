@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+local LTT = Util.LibTalentTree;
+
 --- @class TalentTreeTweaks_SearchForIds: AceModule, AceHook-3.0
 local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
@@ -45,10 +47,78 @@ function Module:SetupHook(addon)
     elseif addon == TALENT_TREE_VIEWER then
         talentFrame = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
     end
-    if talentFrame and talentFrame.textSearch then
+    if Util.isDF and talentFrame and talentFrame.textSearch then
         self:RawHook(talentFrame.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
         self:RawHook(talentFrame.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
+    elseif not Util.isDF then
+        local searchController = talentFrame.searchController;
+        local textSearchFilter = searchController.searchFilters[SpellSearchUtil.FilterType.Text];
+        self:RawHook(textSearchFilter, 'InternalGetExactSearchMatchDescription', 'InternalGetExactSearchMatchDescriptionHook', true);
+        self:RawHook(textSearchFilter, 'DerivedGetMatchTypeForTraitNodeEntry', 'DerivedGetMatchTypeForTraitNodeEntryHook', true);
     end
+end
+
+function Module:MatchesID(traitSearchSource, searchString, nodeID, specificEntryID)
+    local entryIDs = specificEntryID and {specificEntryID} or LTT:GetNodeInfo(nodeID).entryIDs;
+    for _, entryID in ipairs(entryIDs) do
+        local definitionInfo = traitSearchSource:GetEntryDefinitionInfo(entryID);
+        if
+            searchString == tostring(entryID)
+            or (definitionInfo and searchString == tostring(definitionInfo.spellID))
+            or searchString == tostring(nodeID)
+            or searchString == tostring(LTT:GetEntryInfo(entryID).definitionID)
+        then
+            return SpellSearchUtil.MatchType.ExactMatch;
+        end
+    end
+end
+
+function Module:InternalGetExactSearchMatchDescriptionHook(object)
+    local result = self.hooks[object].InternalGetExactSearchMatchDescription(object);
+    if result then
+        return result;
+    end
+    local searchString = object.searchString;
+    if not searchString or not string.match(searchString, '^%d+$') then return; end
+
+    local allNodeInfos = object:GetAllSourceDataEntriesByType(SpellSearchUtil.SourceType.Trait);
+    if allNodeInfos then
+        local traitSearchSource = object:GetSearchSourceByType(SpellSearchUtil.SourceType.Trait);
+        local matchingDescriptions = '';
+        for _, nodeInfo in pairs(allNodeInfos) do
+            if nodeInfo and nodeInfo.entryIDs then
+                -- Evaluating every entryID as some nodes have multiple choice entries
+                for _, entryID in ipairs(nodeInfo.entryIDs) do
+                    local entryDescription = nil;
+                    local definitionInfo = traitSearchSource:GetEntryDefinitionInfo(entryID);
+                    if definitionInfo then
+                        entryDescription = TalentUtil.GetTalentDescriptionFromInfo(definitionInfo);
+                    end
+
+                    if entryDescription and self:MatchesID(traitSearchSource, searchString, nodeInfo.ID, entryID) then
+                        matchingDescriptions = matchingDescriptions .. entryDescription;
+                    end
+                end
+            end
+        end
+
+        return matchingDescriptions;
+    end
+end
+
+function Module:DerivedGetMatchTypeForTraitNodeEntryHook(object, entryID)
+    local results = self.hooks[object].DerivedGetMatchTypeForTraitNodeEntry(object, entryID);
+    if results and (results.matchType == SpellSearchUtil.MatchType.ExactMatch or not results.name) then
+        return results;
+    end
+
+    local nodeID = LTT:GetNodeIDForEntry(entryID);
+    local traitSearchSource = object:GetSearchSourceByType(SpellSearchUtil.SourceType.Trait);
+    if self:MatchesID(traitSearchSource, object.searchString, nodeID, entryID) then
+        results.matchType = SpellSearchUtil.MatchType.ExactMatch;
+    end
+
+    return results;
 end
 
 function Module:GetExactSearchMatchDescriptionHook(searchMixin)
