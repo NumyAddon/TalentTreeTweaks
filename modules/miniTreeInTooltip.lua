@@ -82,7 +82,7 @@ function Module:OnEnable()
             local dropdown = talentsTab.LoadSystem.Dropdown;
             self:SecureHook(dropdown, 'SetupMenu', 'HookMenuGenerator');
             self:HookMenuGenerator(dropdown);
-        else --- todo: remove after 11.0 release
+        else -- todo: remove after 11.0 release
             local dropdown = talentsTab.LoadoutDropDown;
             self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
             self:HookCustomSetupCallback(dropdown.DropDownControl);
@@ -477,7 +477,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                 elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
                     rank = 1;
                     style = nodeSelectionInfo.choiceNodeSelection == 1 and VISUAL_STYLE_LEFT or VISUAL_STYLE_RIGHT;
-                    if nodeInfo.isSubTreeSelection then
+                    if nodeInfo.isSubTreeSelection or nodeInfo.type == Enum.TraitNodeType.SubTreeSelection then
                         activeSubTreeID = entryInfo.subTreeID;
                         local subTreeInfo = activeSubTreeID and LTT:GetSubTreeInfo(activeSubTreeID);
                         spellIcon = subTreeInfo and subTreeInfo.iconElementID;

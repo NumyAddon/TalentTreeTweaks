@@ -87,10 +87,18 @@ function Module:GetOptions(defaultOptionsTable, db)
     else
         self.db.replaceDropDown = nil;
     end
+    defaultOptionsTable.args.alwaysReplaceShareButton = {
+        type = 'toggle',
+        name = L['Always Replace Share Button'],
+        desc = L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when possible.'],
+        order = counter(),
+        get = get,
+        set = set,
+    };
     defaultOptionsTable.args.disableMultiActionBarShowHide = {
         type = 'toggle',
         name = L['Disable MultiActionBar_ShowAllGrids on Show'],
-        desc = L['Disables the MultiActionBar_ShowAllGrids function, which can cause nasty taint issues.'],
+        desc = L['Disables the MultiActionBar_ShowAllGrids function, which can cause action buttons to break.'],
         order = counter(),
         get = get,
         set = function(info, value)
@@ -114,9 +122,13 @@ function Module:SetupHook()
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
 
-    if Util.isDF then -- todo: TWW compatibility
+    if Util.isDF then -- todo: remove after 11.0 release
         -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
         self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
+    else
+        local dropdown = talentsTab.LoadSystem.Dropdown;
+        self:SecureHook(dropdown, 'SetupMenu', 'HookMenuGenerator');
+        self:HookMenuGenerator(dropdown);
     end
 
     -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution
@@ -319,6 +331,33 @@ function Module:ReplaceShareButton(dropdown, selectionID)
             sentinelInfo.callback = replacedShareButtonCallback;
         end
     end
+end
+
+function Module:HookMenuGenerator(dropdown)
+    hooksecurefunc(dropdown, 'menuGenerator', function(...) self:OnMenuGenerator(...) end);
+end
+
+function Module:OnMenuGenerator(dropdown, rootDescription)
+    if not self:ShouldReplaceShareButton() then return; end
+
+    for _, elementDescription in rootDescription:EnumerateElementDescriptions() do
+        if elementDescription.text == TALENT_FRAME_DROP_DOWN_EXPORT then
+            for _, subElementDescription in elementDescription:EnumerateElementDescriptions() do
+                -- for unlock restrictions module: subElementDescription:SetEnabled(function() return true end); -- try without func wrapper too
+                if subElementDescription.text == TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD then
+                    subElementDescription:SetResponder(function()
+                        replacedShareButtonCallback();
+                    end);
+                end
+            end
+        end
+    end
+end
+
+function Module:ShouldReplaceShareButton()
+    return
+        self.db.alwaysReplaceShareButton
+        or not issecurevariable(Util:GetTalentFrame(), 'configID');
 end
 
 function Module:SetActionBarHighlights(talentButton, shown)
