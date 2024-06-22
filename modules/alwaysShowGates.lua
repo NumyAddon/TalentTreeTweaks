@@ -140,14 +140,17 @@ end
 local nodesAboveGateCache = {};
 function Module:GetNodesAboveGate(condID, currencyID)
     if not nodesAboveGateCache[condID] then
-        local talentFrame = Util:GetTalentFrame();
-        local treeID = talentFrame:GetTalentTreeID();
         local nodes = self:GetNodes();
         local nodesAboveGate = {};
         local currencyIsClassCurrency = self:IsCurrencyClassCurrency(currencyID);
         for _, nodeID in ipairs(nodes) do
-            local nodeInfo = talentFrame:GetAndCacheNodeInfo(nodeID);
-            if nodeInfo and (LTT:IsClassNode(treeID, nodeID) == currencyIsClassCurrency) then
+            local nodeInfo = LTT:GetLibNodeInfo(nodeID);
+            if
+                nodeInfo
+                and nodeInfo.isClassNode == currencyIsClassCurrency
+                and not nodeInfo.isSubTreeSelection
+                and not nodeInfo.subTreeID
+            then
                 local conditionFound = false;
                 for _, conditionID in ipairs(nodeInfo.conditionIDs) do
                     if conditionID == condID then
