@@ -12,3 +12,6 @@ externals:
         url: https://github.com/NumyAddon/LibTalentTree-1.0
         curse-slug: libtalenttree
     libs/LibUIDropDownMenu: https://github.com/NumyAddon/LibUIDropDownMenu
+    libs/Taintless:
+        url: https://www.townlong-yak.com/addons.git/taintless
+        commit: default
