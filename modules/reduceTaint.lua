@@ -178,8 +178,20 @@ function Module:HandleMultiActionBarTaint()
     if self.db.disableMultiActionBarShowHide then
         self.originalOnShowFEnv = self.originalOnShowFEnv or getfenv(talentContainerFrame.OnShow);
 
+        if
+            not (TalentMicroButton and TalentMicroButton.EvaluateAlertVisibility)
+            and not (PlayerSpellsMicroButton and PlayerSpellsMicroButton.EvaluateAlertVisibility)
+        then
+            Util:DebugPrint('cannot find the Talent MicroButton, it can spread taint to action bars if not handled properly');
+        end
+
         setfenv(talentContainerFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, {
             TalentMicroButton = {
+                EvaluateAlertVisibility = function()
+                    HelpTip:HideAllSystem("MicroButtons");
+                end,
+            },
+            PlayerSpellsMicroButton = {
                 EvaluateAlertVisibility = function()
                     HelpTip:HideAllSystem("MicroButtons");
                 end,

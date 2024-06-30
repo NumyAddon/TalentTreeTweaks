@@ -15,6 +15,10 @@ Util.LibTalentTree = LTT;
 
 Util.RightClickAtlasMarkup = CreateAtlasMarkup('NPE_RightClick', 18, 18);
 Util.LeftClickAtlasMarkup = CreateAtlasMarkup('NPE_LeftClick', 18, 18);
+Util.debug = false;
+--@debug@
+Util.debug = true;
+--@end-debug@
 
 Util.specToClassMap = {};
 do
@@ -26,6 +30,12 @@ do
 end
 
 Util.configIDLookup = {};
+
+function Util:DebugPrint(...)
+    if not self.debug then return; end
+
+    print('TalentTreeTweaks Debug:', ...);
+end
 
 function Util:OnInitialize()
     self.dialogName = 'TalentTreeTweaksCopyTextDialog';
