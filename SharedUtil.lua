@@ -13,6 +13,7 @@ local talentAddonName = isDF and 'Blizzard_ClassTalentUI' or 'Blizzard_PlayerSpe
 local LTT = LibStub('LibTalentTree-1.0');
 Util.LibTalentTree = LTT;
 
+Util.PlayerKey = UnitName('player') .. '-' .. GetRealmName();
 Util.RightClickAtlasMarkup = CreateAtlasMarkup('NPE_RightClick', 18, 18);
 Util.LeftClickAtlasMarkup = CreateAtlasMarkup('NPE_LeftClick', 18, 18);
 Util.debug = false;
