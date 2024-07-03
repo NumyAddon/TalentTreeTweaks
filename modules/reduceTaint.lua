@@ -126,9 +126,9 @@ function Module:SetupHook()
         -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
         self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
     else
-        local dropdown = talentsTab.LoadSystem.Dropdown;
-        self:SecureHook(dropdown, 'SetupMenu', 'HookMenuGenerator');
-        self:HookMenuGenerator(dropdown);
+        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+            self:OnLoadoutMenuOpen(dropdown, rootDescription);
+        end);
     end
 
     -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution
@@ -345,11 +345,7 @@ function Module:ReplaceShareButton(dropdown, selectionID)
     end
 end
 
-function Module:HookMenuGenerator(dropdown)
-    hooksecurefunc(dropdown, 'menuGenerator', function(...) self:OnMenuGenerator(...) end);
-end
-
-function Module:OnMenuGenerator(dropdown, rootDescription)
+function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
     if not self:ShouldReplaceShareButton() then return; end
 
     for _, elementDescription in rootDescription:EnumerateElementDescriptions() do
@@ -357,9 +353,7 @@ function Module:OnMenuGenerator(dropdown, rootDescription)
             for _, subElementDescription in elementDescription:EnumerateElementDescriptions() do
                 -- for unlock restrictions module: subElementDescription:SetEnabled(function() return true end); -- try without func wrapper too
                 if subElementDescription.text == TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD then
-                    subElementDescription:SetResponder(function()
-                        replacedShareButtonCallback();
-                    end);
+                    subElementDescription:SetResponder(replacedShareButtonCallback);
                 end
             end
         end

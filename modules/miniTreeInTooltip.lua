@@ -79,9 +79,9 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         local talentsTab = Util:GetTalentFrame();
         if not Util.isDF then
-            local dropdown = talentsTab.LoadSystem.Dropdown;
-            self:SecureHook(dropdown, 'SetupMenu', 'HookMenuGenerator');
-            self:HookMenuGenerator(dropdown);
+        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+            self:OnLoadoutMenuOpen(dropdown, rootDescription);
+        end);
         else -- todo: remove after 11.0 release
             local dropdown = talentsTab.LoadoutDropDown;
             self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
@@ -289,15 +289,12 @@ function Module:DebugPrint(...)
     end
 end
 
-function Module:HookMenuGenerator(dropdown)
-    hooksecurefunc(dropdown, 'menuGenerator', function(...) self:OnMenuGenerator(...) end);
-end
-
-function Module:OnMenuGenerator(dropdown, rootDescription)
+function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
     for i, elementDescription in rootDescription:EnumerateElementDescriptions() do
         local configID = elementDescription.data
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
         if not ok or not configInfo then return; end
+        -- todo: replace with elementDescription:HookOnEnter
         hooksecurefunc(elementDescription, 'onEnter', function(frame)
             local exportString = Util:GetLoadoutExportString(Util:GetTalentFrame(), configID);
 

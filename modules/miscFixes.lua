@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+local GetSpellLink = GetSpellLink or C_Spell.GetSpellLink;
+
 if not Util.isDF then return; end -- todo: TWW compatibility
 
 --- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
