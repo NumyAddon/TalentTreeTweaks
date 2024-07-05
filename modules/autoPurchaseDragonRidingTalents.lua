@@ -5,8 +5,10 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local TRAIT_SYSTEM_ID = Constants.MountDynamicFlightConsts.TRAIT_SYSTEM_ID;
-local TREE_ID = Constants.MountDynamicFlightConsts.TREE_ID;
+local TRAIT_SYSTEM_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TRAIT_SYSTEM_ID
+    or DRAGONRIDING_TRAIT_SYSTEM_ID or 1;
+local TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID
+    or DRAGONRIDING_TREE_ID or 672;
 
 local RIDE_ALONG_ENABLED = 1;
 local RIDE_ALONG_DISABLED = 2;
