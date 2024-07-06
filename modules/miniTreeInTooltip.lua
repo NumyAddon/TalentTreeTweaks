@@ -291,7 +291,7 @@ end
 
 function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
     for i, elementDescription in rootDescription:EnumerateElementDescriptions() do
-        local configID = elementDescription.data
+        local configID = elementDescription:GetData();
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
         if not ok or not configInfo then return; end
         -- todo: replace with elementDescription:HookOnEnter
@@ -299,7 +299,6 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
             local exportString = Util:GetLoadoutExportString(Util:GetTalentFrame(), configID);
 
             if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
-                self.loadoutDropdownTooltipShown = true;
                 GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
             end
             self:AddBuildToTooltip(GameTooltip, exportString);

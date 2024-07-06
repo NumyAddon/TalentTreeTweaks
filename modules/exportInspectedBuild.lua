@@ -10,6 +10,38 @@ local LEVEL_CAP = Util.isDF and 70 or 80;
 --- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
 
+Module.overlayPool = {
+    --- @type table<BUTTON, true>
+    active = {},
+    --- @type BUTTON[]
+    inactive = {},
+    --- @return BUTTON?
+    Acquire = function(self)
+        local btn = table.remove(self.inactive);
+        if not btn then return; end
+        self.active[btn] = true;
+        return btn;
+    end,
+    --- @param btn BUTTON
+    Release = function(self, btn)
+        self.active[btn] = nil;
+        table.insert(self.inactive, btn);
+        btn:ClearAllPoints();
+        btn:Hide();
+    end,
+};
+if not Util.isDF then
+    for i = 1, 50 do
+        local btn = CreateFrame('BUTTON');
+        btn:RegisterForClicks('RightButtonDown');
+        btn:RegisterForClicks('RightButtonUp');
+        btn:SetPassThroughButtons('LeftButton');
+        btn:SetPropagateMouseMotion(true);
+        btn:Hide();
+        Module.overlayPool.inactive[i] = btn;
+    end
+end
+
 function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook();
@@ -82,7 +114,13 @@ function Module:SetupHook()
     local talentsTab = Util:GetTalentFrame();
 
     if self.db.exportOnDropdownRightClick then
-        self:SetupDropdownHook(talentsTab);
+        if Util.isDF then
+            self:SetupDropdownHook(talentsTab);
+        else
+            Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+                self:OnLoadoutMenuOpen(dropdown, rootDescription);
+            end);
+        end
     end
 
     if self.db.showLinkInChatButton then
@@ -121,13 +159,6 @@ function Module:MakeLinkButton(talentsTab)
 	    local unitSex = self.cachedInspectUnitSex or Util:GetTalentContainerFrame():GetUnitSex();
         local exportString = self.cachedInspectExportString or Util:GetLoadoutExportString(talentsTab);
 
-        if not TALENT_BUILD_CHAT_LINK_TEXT then
-            if not ChatEdit_InsertLink(exportString) then
-                ChatFrame_OpenChat(exportString);
-            end
-            return;
-        end
-
 	    local specName = select(2, GetSpecializationInfoByID(specID, unitSex));
 	    local classInfo = C_CreatureInfo.GetClassInfo(classID);
         local className = classInfo and classInfo.className;
@@ -145,8 +176,49 @@ function Module:MakeLinkButton(talentsTab)
     return button;
 end
 
+function Module:ApplyLoadoutMenuItemOverlay(attachment, configID)
+    local btn = self.overlayPool:Acquire();
+    if not btn then
+        Util:DebugPrint('No buttons available in overlay pool');
+        return;
+    end
+    btn:SetParent(attachment);
+    btn:SetAllPoints();
+    btn:Show();
+    btn:SetScript('OnClick', function()
+        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+        if not ok or not configInfo then return; end
+        local talentsTab = Util:GetTalentFrame();
+        local exportString = Util:GetLoadoutExportString(talentsTab, configID);
+        Util:CopyText(exportString, L['Talent Loadout String']);
+    end);
+    attachment:SetScript('OnHide', function() self.overlayPool:Release(btn) end);
+end
+
+function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
+    for _, elementDescription in rootDescription:EnumerateElementDescriptions() do
+        local configID = elementDescription:GetData();
+        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
+        if ok and configInfo then
+            -- todo: replace with elementDescription:HookOnEnter
+            hooksecurefunc(elementDescription, 'onEnter', function(frame)
+                if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
+                    GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
+                end
+                GameTooltip:AddLine(L["Right-click to share"]);
+                GameTooltip:Show();
+            end)
+            elementDescription:AddInitializer(function(button, description, menu)
+                -- all this crap, is only because blizzard doesn't reset the button's script when it's reused :/
+                local attachment = button:AttachFrame('FRAME');
+                attachment:SetAllPoints();
+                self:ApplyLoadoutMenuItemOverlay(attachment, configID);
+            end);
+        end
+    end
+end
+
 function Module:SetupDropdownHook(talentsTab)
-    if not Util.isDF then return; end -- todo: TWW compatibility
     local dropdown = talentsTab.LoadoutDropDown;
     dropdown:SetRightClickCallback(function(configID)
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
