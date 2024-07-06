@@ -236,18 +236,18 @@ function Module:MakeOnHideSafe()
         end
     end
     local isInspecting = talentContainerFrame:IsInspecting();
-    local notSecure = false;
     if not issecurevariable(talentContainerFrame, 'inspectUnit') then
         purgeKey(talentContainerFrame, 'inspectUnit');
-        notSecure = true;
     end
     if not issecurevariable(talentContainerFrame, 'inspectString') then
         purgeKey(talentContainerFrame, 'inspectString');
-        notSecure = true;
     end
-    if notSecure and isInspecting then
-        -- get blizzard to set the value to true
-        TextureLoadingGroupMixin.AddTexture({textures = talentContainerFrame}, 'inspectString');
+    if isInspecting then
+        purgeKey(talentContainerFrame, 'inspectString');
+        purgeKey(talentContainerFrame, 'inspectUnit');
+        RunNextFrame(function()
+            talentContainerFrame:SetInspecting(nil, nil, nil);
+        end);
     end
 end
 
