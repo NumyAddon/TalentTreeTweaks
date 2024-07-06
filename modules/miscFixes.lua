@@ -7,8 +7,6 @@ local L = TTT.L;
 
 local GetSpellLink = GetSpellLink or C_Spell.GetSpellLink;
 
-if not Util.isDF then return; end -- todo: TWW compatibility
-
 --- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
@@ -109,6 +107,7 @@ end
 
 function Module:SetupDropDownUpdateHook()
     local talentsTab = Util:GetTalentFrame();
+    local dropdown = talentsTab.LoadoutDropDown or talentsTab.LoadSystem;
 
     self:SecureHook(talentsTab, 'CheckUpdateLastSelectedConfigID', function(frame, configID)
         if
@@ -117,7 +116,7 @@ function Module:SetupDropDownUpdateHook()
             return;
         end
 
-        frame.LoadoutDropDown:SetSelectionID(configID);
+        dropdown:SetSelectionID(configID);
     end)
 end
 
