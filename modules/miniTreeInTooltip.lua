@@ -48,11 +48,6 @@ do -- todo: remove after 11.0 release
 	end
 end
 
-function Module:OnInitialize()
-    self.debug = false;
-    self.containers = {};
-end
-
 function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, configID)
     if not exportString and configID then
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
@@ -62,6 +57,17 @@ function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, config
         if not exportString then return false; end -- happens for example when using inspect or starter build configID
     end
     Module:AddBuildToTooltip(tooltip, exportString);
+end
+
+function Module:OnInitialize()
+    self.debug = false;
+    self.containers = {};
+    if not Util.isDF then
+        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+            if not self:IsEnabled() then return; end
+            self:OnLoadoutMenuOpen(dropdown, rootDescription);
+        end);
+    end
 end
 
 function Module:OnEnable()
@@ -78,11 +84,7 @@ function Module:OnEnable()
 
     Util:OnTalentUILoad(function()
         local talentsTab = Util:GetTalentFrame();
-        if not Util.isDF then
-        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
-            self:OnLoadoutMenuOpen(dropdown, rootDescription);
-        end);
-        else -- todo: remove after 11.0 release
+        if Util.isDF then -- todo: remove after 11.0 release
             local dropdown = talentsTab.LoadoutDropDown;
             self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
             self:HookCustomSetupCallback(dropdown.DropDownControl);

@@ -15,6 +15,14 @@ end
 --- @class TalentTreeTweaks_ReduceTaintModule: AceModule, AceHook-3.0
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
+function Module:OnInitialize()
+    if Util.isDF then return; end
+    Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+        if not self:IsEnabled() then return; end
+        self:OnLoadoutMenuOpen(dropdown, rootDescription);
+    end);
+end
+
 function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook();
@@ -125,10 +133,6 @@ function Module:SetupHook()
     if Util.isDF then -- todo: remove after 11.0 release
         -- GetSentinelKeyInfoFromSelectionID happens just before callbacks are executed, so that's as good a place as any, to replace the callback
         self:SecureHook(talentsTab.LoadoutDropDown, 'GetSentinelKeyInfoFromSelectionID', function(dropdown, selectionID) self:ReplaceShareButton(dropdown, selectionID) end);
-    else
-        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
-            self:OnLoadoutMenuOpen(dropdown, rootDescription);
-        end);
     end
 
     -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution

@@ -42,6 +42,15 @@ if not Util.isDF then
     end
 end
 
+function Module:OnInitialize()
+    if Util.isDF then return; end
+    Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+        if not self:IsEnabled() or not self.db.exportOnDropdownRightClick then
+            self:OnLoadoutMenuOpen(dropdown, rootDescription);
+        end
+    end);
+end
+
 function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook();
@@ -50,7 +59,7 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if Util:GetTalentFrame() then
+    if Util:GetTalentFrame() and Util.isDF then
         Util:GetTalentFrame().LoadoutDropDown:SetRightClickCallback(nil);
     end
     if self.linkButton then self.linkButton:Hide(); end
@@ -116,10 +125,6 @@ function Module:SetupHook()
     if self.db.exportOnDropdownRightClick then
         if Util.isDF then
             self:SetupDropdownHook(talentsTab);
-        else
-            Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
-                self:OnLoadoutMenuOpen(dropdown, rootDescription);
-            end);
         end
     end
 
