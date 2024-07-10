@@ -27,6 +27,7 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook();
     end, 1); -- load before any other module
+    self:HandleActionBarEventTaintSpread();
 end
 
 function Module:OnDisable()
@@ -39,11 +40,11 @@ end
 function Module:GetDescription()
     return
         L['Implements various workarounds around taint.']
-        .. "\n\n" ..
+        .. '\n\n' ..
         (Util.isDF and L['Fully replace the loadout dropdown, to avoid tainting the edit mode dropdown.'] or '')
-        .. (Util.isDF and "\n\n" or '') ..
+        .. (Util.isDF and '\n\n' or '') ..
         L['A workaround for one of the ways that Talent Tree taint can block action buttons from working.']
-        .. "\n\n" ..
+        .. '\n\n' ..
         L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when needed.'];
 end
 
@@ -160,7 +161,7 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
         local loadoutString =
             self.cachedInspectExportString
             or (talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString());
-        if loadoutString and (loadoutString ~= "") then
+        if loadoutString and (loadoutString ~= '') then
             Util:CopyText(loadoutString, L['Inspected Build']);
         end
     end);
@@ -192,12 +193,12 @@ function Module:HandleMultiActionBarTaint()
         setfenv(talentContainerFrame.OnShow, makeFEnvReplacement(self.originalOnShowFEnv, {
             TalentMicroButton = {
                 EvaluateAlertVisibility = function()
-                    HelpTip:HideAllSystem("MicroButtons");
+                    HelpTip:HideAllSystem('MicroButtons');
                 end,
             },
             PlayerSpellsMicroButton = {
                 EvaluateAlertVisibility = function()
-                    HelpTip:HideAllSystem("MicroButtons");
+                    HelpTip:HideAllSystem('MicroButtons');
                 end,
             },
             MultiActionBar_ShowAllGrids = nop,
@@ -287,9 +288,9 @@ function Module:CreateReplacementDropDownControl(parent)
     local replacementDropDownControl = CreateFrame('Frame', nil, parent, 'TalentTreeTweaks_DropDownControlTemplate');
     replacementDropDownControl:SetSize(150, 30);
     replacementDropDownControl:SetPoint('LEFT');
-    replacementDropDownControl.DropDownMenu = LibDD:Create_UIDropDownMenu("TalentTreeTweaksDropDownMenu", parent);
+    replacementDropDownControl.DropDownMenu = LibDD:Create_UIDropDownMenu('TalentTreeTweaksDropDownMenu', parent);
     replacementDropDownControl.DropDownMenu:SetParent(replacementDropDownControl);
-    replacementDropDownControl.DropDownMenu:SetPoint("CENTER", 0, -2);
+    replacementDropDownControl.DropDownMenu:SetPoint('CENTER', 0, -2);
 
     return replacementDropDownControl;
 end
@@ -368,6 +369,44 @@ function Module:ShouldReplaceShareButton()
     return
         self.db.alwaysReplaceShareButton
         or not issecurevariable(Util:GetTalentFrame(), 'configID');
+end
+
+function Module:HandleActionBarEventTaintSpread()
+    local events = {
+        ['PLAYER_ENTERING_WORLD'] = true,
+        ['ACTIONBAR_SLOT_CHANGED'] = true,
+        ['UPDATE_BINDINGS'] = true,
+        ['GAME_PAD_ACTIVE_CHANGED'] = true,
+        ['UPDATE_SHAPESHIFT_FORM'] = true,
+        ['ACTIONBAR_UPDATE_COOLDOWN'] = true,
+        ['PET_BAR_UPDATE'] = true,
+        ['PLAYER_MOUNT_DISPLAY_CHANGED'] = true,
+    };
+    local petUnitEvents = {
+        ['UNIT_FLAGS'] = true,
+        ['UNIT_AURA'] = true,
+    }
+    for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
+        --@debug@
+        hooksecurefunc(actionButton, 'UnregisterEvent', function(_, event)
+            if events[event] then
+                Util:DebugPrint(actionButton:GetName(), 'UnregisterEvent', event);
+            end
+        end);
+        --@end-debug@
+        for event in pairs(events) do
+            actionButton:RegisterEvent(event);
+        end
+        for petUnitEvent in pairs(petUnitEvents) do
+            actionButton:RegisterUnitEvent(petUnitEvent, 'pet');
+        end
+    end
+    for event in pairs(events) do
+        ActionBarButtonEventsFrame:UnregisterEvent(event);
+    end
+    for petUnitEvent in pairs(petUnitEvents) do
+        ActionBarButtonEventsFrame:UnregisterEvent(petUnitEvent, 'pet');
+    end
 end
 
 function Module:SetActionBarHighlights(talentButton, shown)
