@@ -214,14 +214,15 @@ function Module:HandleMultiActionBarTaint()
         setfenv(talentContainerFrame.OnShow, self.originalOnShowFEnv);
         self:Unhook(FrameUtil, 'UnregisterFrameForEvents');
     end
+    local microButton = TalentMicroButton or PlayerSpellsMicroButton;
     if
         self.originalOnShowFEnv
-        and TalentMicroButton and TalentMicroButton.HasTalentAlertToShow
-        and not self:IsHooked(TalentMicroButton, 'HasTalentAlertToShow')
+        and microButton and microButton.HasTalentAlertToShow
+        and not self:IsHooked(microButton, 'HasTalentAlertToShow')
     then
-        self:SecureHook(TalentMicroButton, 'HasTalentAlertToShow', function()
-            purgeKey(TalentMicroButton, 'canUseTalentUI');
-            purgeKey(TalentMicroButton, 'canUseTalentSpecUI');
+        self:SecureHook(microButton, 'HasTalentAlertToShow', function()
+            purgeKey(microButton, 'canUseTalentUI');
+            purgeKey(microButton, 'canUseTalentSpecUI');
         end);
     end
 end
