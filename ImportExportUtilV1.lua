@@ -3,7 +3,7 @@ if C_Traits.GetLoadoutSerializationVersion() ~= LOADOUT_SERIALIZATION_VERSION th
 -- can be deleted once 11.0 is live
 
 local _, TTT = ...
---- @class TalentTreeTweaks_ImportExportUtil
+--- @class TalentTreeTweaks_ImportExportUtilV1
 local ImportExportUtil = {};
 TTT.ImportExportUtil = ImportExportUtil;
 

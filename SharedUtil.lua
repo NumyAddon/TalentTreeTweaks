@@ -3,7 +3,7 @@ local _, TTT = ...
 local Util = {};
 TTT.Util = Util;
 local L = TTT.L;
---- @type TalentTreeTweaks_ImportExportUtil
+--- @type TalentTreeTweaks_ImportExportUtilV1|TalentTreeTweaks_ImportExportUtilV2
 local ImportExportUtil = TTT.ImportExportUtil;
 
 local isDF = select(4, GetBuildInfo()) < 110000;

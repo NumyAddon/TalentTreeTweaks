@@ -2,7 +2,7 @@ local LOADOUT_SERIALIZATION_VERSION = 2;
 if C_Traits.GetLoadoutSerializationVersion() ~= LOADOUT_SERIALIZATION_VERSION then return; end -- Only load for serialization version 2
 
 local _, TTT = ...
---- @class TalentTreeTweaks_ImportExportUtil
+--- @class TalentTreeTweaks_ImportExportUtilV2
 local ImportExportUtil = {};
 TTT.ImportExportUtil = ImportExportUtil;
 
@@ -185,7 +185,6 @@ function ImportExportUtil:ReadLoadoutContent(importStream, treeID)
         result.choiceNodeSelection = choiceNodeSelection + 1;
         result.nodeID = nodeID;
         results[i] = result;
-
     end
 
     return results;
