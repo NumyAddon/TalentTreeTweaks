@@ -234,8 +234,8 @@ function Module:PurchaseTalents()
                         table.insert(purchasedEntries, nodeInfo.entryIDs[1]);
                     end
                 else
-                    -- Multiple entries, purchase the second one
-                    local entryID = nodeInfo.entryIDs[2];
+                    -- Multiple entries, purchase the first one
+                    local entryID = nodeInfo.entryIDs[1];
                     if C_Traits.SetSelection(self.configID, nodeID, entryID) then
                         availableCurrency = availableCurrency - nodeCost;
                         purchasedSomething = true;
