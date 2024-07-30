@@ -30,22 +30,19 @@ Module.overlayPool = {
         btn:Hide();
     end,
 };
-if not Util.isDF then
-    for i = 1, 50 do
-        local btn = CreateFrame('BUTTON');
-        btn:RegisterForClicks('RightButtonDown');
-        btn:RegisterForClicks('RightButtonUp');
-        btn:SetPassThroughButtons('LeftButton');
-        btn:SetPropagateMouseMotion(true);
-        btn:Hide();
-        Module.overlayPool.inactive[i] = btn;
-    end
+for i = 1, 50 do
+    local btn = CreateFrame('BUTTON');
+    btn:RegisterForClicks('RightButtonDown');
+    btn:RegisterForClicks('RightButtonUp');
+    btn:SetPassThroughButtons('LeftButton');
+    btn:SetPropagateMouseMotion(true);
+    btn:Hide();
+    Module.overlayPool.inactive[i] = btn;
 end
 
 function Module:OnInitialize()
-    if Util.isDF then return; end
     Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
-        if not self:IsEnabled() or not self.db.exportOnDropdownRightClick then
+        if self:IsEnabled() and self.db.exportOnDropdownRightClick then
             self:OnLoadoutMenuOpen(dropdown, rootDescription);
         end
     end);
@@ -59,9 +56,6 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if Util:GetTalentFrame() and Util.isDF then
-        Util:GetTalentFrame().LoadoutDropDown:SetRightClickCallback(nil);
-    end
     if self.linkButton then self.linkButton:Hide(); end
 end
 
@@ -121,12 +115,6 @@ end
 
 function Module:SetupHook()
     local talentsTab = Util:GetTalentFrame();
-
-    if self.db.exportOnDropdownRightClick then
-        if Util.isDF then
-            self:SetupDropdownHook(talentsTab);
-        end
-    end
 
     if self.db.showLinkInChatButton then
         self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
@@ -205,14 +193,13 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
         local configID = elementDescription:GetData();
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
         if ok and configInfo then
-            -- todo: replace with elementDescription:HookOnEnter
-            hooksecurefunc(elementDescription, 'onEnter', function(frame)
+            elementDescription:HookOnEnter(function(frame)
                 if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
                     GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
                 end
                 GameTooltip:AddLine(L["Right-click to share"]);
                 GameTooltip:Show();
-            end)
+            end);
             elementDescription:AddInitializer(function(button, description, menu)
                 -- all this crap, is only because blizzard doesn't reset the button's script when it's reused :/
                 local attachment = button:AttachFrame('FRAME');
@@ -221,50 +208,4 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
             end);
         end
     end
-end
-
-function Module:SetupDropdownHook(talentsTab)
-    local dropdown = talentsTab.LoadoutDropDown;
-    dropdown:SetRightClickCallback(function(configID)
-        local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
-        if not ok or not configInfo then return; end
-        local exportString = Util:GetLoadoutExportString(talentsTab, configID);
-        Util:CopyText(exportString, L['Talent Loadout String']);
-    end);
-    self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
-    self:HookCustomSetupCallback(dropdown.DropDownControl);
-end
-
-function Module:HookCustomSetupCallback(dropdownControl)
-    if not self:IsHooked(dropdownControl, 'customSetupCallback') then
-        self:SecureHook(dropdownControl, 'customSetupCallback', function(info)
-            local originalFuncOnEnter = info.funcOnEnter;
-            local originalFuncOnLeave = info.funcOnLeave;
-            info.funcOnEnter = function(dropdownButton, ...)
-                self:LoadoutDropdownOnEnter(dropdownButton);
-                if(originalFuncOnEnter) then originalFuncOnEnter(dropdownButton, ...); end
-            end
-            info.funcOnLeave = function(dropdownButton, ...)
-                self:LoadoutDropdownOnLeave(dropdownButton);
-                if(originalFuncOnLeave) then originalFuncOnLeave(dropdownButton, ...); end
-            end
-        end);
-    end
-end
-
-function Module:LoadoutDropdownOnEnter(dropdownButton)
-    local ok, configInfo = pcall(C_Traits.GetConfigInfo, dropdownButton.value);
-    if not ok or not configInfo then return; end
-
-    if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
-        self.tooltipShown = true;
-        GameTooltip:SetOwner(dropdownButton, "ANCHOR_RIGHT");
-    end
-    GameTooltip:AddLine(L["Right-click to share"]);
-    GameTooltip:Show();
-end
-
-function Module:LoadoutDropdownOnLeave(dropdownButton)
-    if self.tooltipShown then GameTooltip:Hide(); end
-    self.tooltipShown = false
 end
