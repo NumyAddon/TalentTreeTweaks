@@ -5,23 +5,29 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local TRAIT_SYSTEM_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TRAIT_SYSTEM_ID
-    or DRAGONRIDING_TRAIT_SYSTEM_ID or 1;
-local TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID
-    or DRAGONRIDING_TREE_ID or 672;
+local TRAIT_SYSTEM_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TRAIT_SYSTEM_ID or 1;
+local TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 
-local RIDE_ALONG_ENABLED = 1;
-local RIDE_ALONG_DISABLED = 2;
-local RIDE_ALONG_NOT_SET = 3;
+local CHOICE_NODE_OPTION_1 = 1;
+local CHOICE_NODE_OPTION_2 = 2;
+local CHOICE_NODE_NOT_SET = 3;
 
 local RIDE_ALONG_NODE_ID = 100167;
-local RIDE_ALONG_ENABLED_ENTRY_ID = 123785;
-local RIDE_ALONG_DISABLED_ENTRY_ID = 123784;
+local RIDE_ALONG_ENTRY_IDS = {
+    [CHOICE_NODE_OPTION_1] = 123785,
+    [CHOICE_NODE_OPTION_2] = 123784,
+};
 
-local GetSpellLink = GetSpellLink or C_Spell.GetSpellLink;
+local SURGE_NODE_ID = 100168;
+local SURGE_ENTRY_IDS = {
+    [CHOICE_NODE_OPTION_1] = 123787,
+    [CHOICE_NODE_OPTION_2] = 123786,
+};
 
---- @class TalentTreeTweaks_DragonRidingModule: AceModule, AceEvent-3.0
-local Module = Main:NewModule('DragonRiding Auto Purchaser', 'AceEvent-3.0');
+local GetSpellLink = C_Spell.GetSpellLink;
+
+--- @class TalentTreeTweaks_SkyridingModule: AceModule, AceEvent-3.0
+local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
 
 function Module:OnInitialize()
     self:RegisterEvent('SPELLS_CHANGED');
@@ -52,11 +58,11 @@ function Module:OnDisable()
 end
 
 function Module:GetName()
-    return L['DragonRiding Auto Purchaser'];
+    return L['Skyriding Auto Purchaser'];
 end
 
 function Module:GetDescription()
-    local text = L['Automatically purchases the DragonRiding talent when you have enough currency.'];
+    local text = L['Automatically purchases the Skyriding talent when you have enough currency.'];
     if self.disabledByRefund then
         text = text .. ' ' .. L['Temporarily |cffff0000disabled|r until next reload, because you refunded a talent.'];
     end
@@ -68,8 +74,10 @@ function Module:GetOptions(defaultOptionsTable, db)
     self.db = db;
     local defaults = {
         reportPurchases = true,
-        rideAlong = RIDE_ALONG_ENABLED,
+        rideAlong = CHOICE_NODE_OPTION_1,
         rideAlongCache = {},
+        surge = CHOICE_NODE_OPTION_1,
+        surgeCache = {},
     };
     for k, v in pairs(defaults) do
         if self.db[k] == nil then
@@ -85,6 +93,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     local increment = CreateCounter(5);
 
+    local addedToSpecialFrames;
     defaultOptionsTable.args.openUI = {
         type = 'execute',
         name = L['Toggle Skyriding UI'],
@@ -94,7 +103,11 @@ function Module:GetOptions(defaultOptionsTable, db)
             GenericTraitUI_LoadUI();
             GenericTraitFrame:SetSystemID(TRAIT_SYSTEM_ID);
             GenericTraitFrame:SetTreeID(TREE_ID);
-            ToggleFrame(GenericTraitFrame);
+            GenericTraitFrame:SetShown(not GenericTraitFrame:IsShown());
+            if not addedToSpecialFrames then
+                addedToSpecialFrames = true;
+                table.insert(UISpecialFrames, 'GenericTraitFrame');
+            end
         end,
     };
     defaultOptionsTable.args.reportPurchases = {
@@ -105,39 +118,64 @@ function Module:GetOptions(defaultOptionsTable, db)
         get = get,
         set = set,
     };
-    if not Util.isDF then
-        defaultOptionsTable.args.rideAlong = {
-            type = 'select',
-            style = 'radio',
-            name = L['Auto Ride Along'],
-            desc = L['Automatically enable/disable Ride Along the first time you log in on a character.'],
-            values = {
-                [RIDE_ALONG_ENABLED] = L['Enable Ride Along'],
-                [RIDE_ALONG_DISABLED] = L['Disable Ride Along'],
-                [RIDE_ALONG_NOT_SET] = L['Do Nothing'],
-            },
-            order = increment(),
-            get = get,
-            set = set,
-        };
-        defaultOptionsTable.args.resetRideALongCache = {
-            type = 'execute',
-            name = L['Reset Ride Along Cache'],
-            desc = L['Reset the Ride Along cache, so all characters will match the current setting on login.'],
-            order = increment(),
-            func = function()
-                self.db.rideAlongCache = {};
-                self:PurchaseTalents();
-            end,
-            width = 'double',
-        };
-    end
+    defaultOptionsTable.args.rideAlong = {
+        type = 'select',
+        style = 'radio',
+        name = L['Auto Ride Along'],
+        desc = L['Automatically enable/disable Ride Along the first time you log in on a character.'],
+        values = {
+            [CHOICE_NODE_OPTION_1] = L['Enable Ride Along'],
+            [CHOICE_NODE_OPTION_2] = L['Disable Ride Along'],
+            [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
+        },
+        order = increment(),
+        get = get,
+        set = set,
+    };
+    defaultOptionsTable.args.resetRideALongCache = {
+        type = 'execute',
+        name = L['Reset Ride Along Cache'],
+        desc = L['Reset the Ride Along cache, so all characters will match the current setting on login.'],
+        order = increment(),
+        func = function()
+            self.db.rideAlongCache = {};
+            self:PurchaseTalents();
+        end,
+        width = 'double',
+    };
+    defaultOptionsTable.args.surge = {
+        type = 'select',
+        style = 'radio',
+        name = L['Auto Surge Choice'],
+        desc = L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
+        values = function()
+            return {
+                [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
+                [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
+                [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
+            };
+        end,
+        order = increment(),
+        get = get,
+        set = set,
+    };
+    defaultOptionsTable.args.resetSurgeCache = {
+        type = 'execute',
+        name = L['Reset Surge Cache'],
+        desc = L['Reset the Surge cache, so all characters will match the current setting on login.'],
+        order = increment(),
+        func = function()
+            self.db.surgeCache = {};
+            self:PurchaseTalents();
+        end,
+        width = 'double',
+    };
 
     return defaultOptionsTable;
 end
 
 function Module:Print(...)
-    print('|cff33ff99TTT-DragonRiding Auto Purchaser:|r', ...);
+    print('|cff33ff99TTT-Skyriding Auto Purchaser:|r', ...);
 end
 
 function Module:SPELLS_CHANGED()
@@ -164,27 +202,26 @@ function Module:GetCurrencyInfo()
     return currencyInfo;
 end
 
-function Module:SetRideAlong()
-    if Util.isDF or self.purchasing or self.db.rideAlong == RIDE_ALONG_NOT_SET or self.db.rideAlongCache[Util.PlayerKey] then
+function Module:SetSpecialChoiceNode(settingName, cacheName, nodeID, choiceEntryList)
+    if self.purchasing or self.db[settingName] == CHOICE_NODE_NOT_SET or self.db[cacheName][Util.PlayerKey] then
         return;
     end
     self.purchasing = true;
-    local nodeID = RIDE_ALONG_NODE_ID;
     local nodeInfo = C_Traits.GetNodeInfo(self.configID, nodeID);
     if not nodeInfo then
         self.purchasing = false;
         return;
     end
-    local targetEntryID = self.db.rideAlong == RIDE_ALONG_ENABLED and RIDE_ALONG_ENABLED_ENTRY_ID or RIDE_ALONG_DISABLED_ENTRY_ID;
+    local targetEntryID = choiceEntryList[self.db[settingName]];
     if nodeInfo.activeEntry and nodeInfo.activeEntry.entryID == targetEntryID then
         self.purchasing = false;
         return;
     end
     if C_Traits.SetSelection(self.configID, nodeID, targetEntryID) then
         C_Traits.CommitConfig(self.configID);
-        self.db.rideAlongCache[Util.PlayerKey] = self.db.rideAlong;
+        self.db[cacheName][Util.PlayerKey] = self.db[settingName];
         if self.db.reportPurchases then
-            self:Print(L['Automatically set'], self:GetSpellIDFromEntryID(targetEntryID));
+            self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(targetEntryID));
         end
     end
 
@@ -193,7 +230,8 @@ end
 
 function Module:PurchaseTalents()
     if not self.configID then return; end
-    self:SetRideAlong();
+    self:SetSpecialChoiceNode('rideAlong', 'rideAlongCache', RIDE_ALONG_NODE_ID, RIDE_ALONG_ENTRY_IDS);
+    self:SetSpecialChoiceNode('surge', 'surgeCache', SURGE_NODE_ID, SURGE_ENTRY_IDS);
 
     if self.purchasing or self.disabledByRefund then
         -- Already purchasing or disabled by refund
@@ -223,6 +261,7 @@ function Module:PurchaseTalents()
                 nodeInfo
                 and nodeInfo.ID == nodeID
                 and nodeID ~= RIDE_ALONG_NODE_ID
+                and nodeID ~= SURGE_NODE_ID
                 and nodeInfo.canPurchaseRank
                 and (nodeCost == 0 or nodeCost <= availableCurrency)
             then
@@ -263,16 +302,17 @@ function Module:GetOrCacheNodeCost(nodeID)
     return self.nodeCostCache[nodeID];
 end
 
-function Module:GetSpellIDFromEntryID(entryID)
+function Module:GetSpellLinkFromEntryID(entryID)
+    if not self.configID then return; end
+
     local entryInfo = C_Traits.GetEntryInfo(self.configID, entryID);
     if entryInfo and entryInfo.definitionID then
         local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID);
         if definitionInfo and (definitionInfo.spellID or definitionInfo.overriddenSpellID) then
             local spellID = definitionInfo.spellID or definitionInfo.overriddenSpellID;
-            local spellLink = GetSpellLink(spellID);
-            if spellLink then
-                return spellLink
-            end
+            local spellLink = spellID and GetSpellLink(spellID);
+
+            return spellLink;
         end
     end
 end
@@ -283,7 +323,7 @@ function Module:ReportPurchases(entryIDs)
     end
     local spellLinks = {};
     for _, entryID in ipairs(entryIDs) do
-        local spellLink = self:GetSpellIDFromEntryID(entryID);
+        local spellLink = self:GetSpellLinkFromEntryID(entryID);
         if spellLink then
             table.insert(spellLinks, spellLink);
         end
