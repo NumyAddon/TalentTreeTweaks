@@ -22,8 +22,10 @@ Util.debug = true;
 --@end-debug@
 
 Util.specToClassMap = {};
+Util.classMap = {};
 do
     for classID = 1, GetNumClasses() do
+        Util.classMap[select(2, GetClassInfo(classID))] = classID;
         for specIndex = 1, GetNumSpecializationsForClassID(classID) do
             Util.specToClassMap[(GetSpecializationInfoForClassID(classID, specIndex))] = classID;
         end

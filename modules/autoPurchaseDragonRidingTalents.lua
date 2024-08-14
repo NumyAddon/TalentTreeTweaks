@@ -217,8 +217,7 @@ function Module:SetSpecialChoiceNode(settingName, cacheName, nodeID, choiceEntry
         self.purchasing = false;
         return;
     end
-    if C_Traits.SetSelection(self.configID, nodeID, targetEntryID) then
-        C_Traits.CommitConfig(self.configID);
+    if C_Traits.SetSelection(self.configID, nodeID, targetEntryID) and C_Traits.CommitConfig(self.configID) then
         self.db[cacheName][Util.PlayerKey] = self.db[settingName];
         if self.db.reportPurchases then
             self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(targetEntryID));

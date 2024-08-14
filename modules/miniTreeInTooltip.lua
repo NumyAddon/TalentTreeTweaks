@@ -378,10 +378,8 @@ function Module:OnHyperlinkEnter(chatFrame, link)
 
     self.showingTooltip = true;
     if not GameTooltip:IsShown() or GameTooltip:GetOwner() ~= chatFrame then
-        local classID = Util.specToClassMap[specID];
-        local className, classFileName = GetClassInfo(classID);
+        local _, specName, _, _, _, classFileName, className = GetSpecializationInfoByID(specID);
         local classColor = RAID_CLASS_COLORS[classFileName];
-        local specName = select(2, GetSpecializationInfoByID(specID));
         local prettyLinkText = classColor:WrapTextInColorCode(("%s %s (lvl %d)"):format(specName, className, level));
 
         GameTooltip:SetOwner(chatFrame, "ANCHOR_CURSOR");

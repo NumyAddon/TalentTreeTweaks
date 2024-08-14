@@ -75,7 +75,8 @@ function ImportExportUtil:ParseTalentBuildString(importString)
     local importStream = ExportUtil.MakeImportDataStream(importString);
 
     local headerValid, serializationVersion, specIDFromString, treeHash = self:ReadLoadoutHeader(importStream);
-    local classIDFromString = TTT.Util.specToClassMap[specIDFromString];
+    local classFileName = select(6, GetSpecializationInfoByID(specIDFromString));
+    local classIDFromString = TTT.Util.classMap[classFileName];
 
     if(not headerValid) then
         return false, LOADOUT_ERROR_BAD_STRING;
