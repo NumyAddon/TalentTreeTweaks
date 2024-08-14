@@ -25,6 +25,7 @@ function Module:OnDisable()
     self:UnhookAll();
     local talentFrame = Util:GetTalentFrame();
     if talentFrame then
+        self.gatePool:ReleaseAll();
         talentFrame:RefreshGates();
         if not Util.isDF and talentFrame.HeroTalentsContainer then
             talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -15, 0)
