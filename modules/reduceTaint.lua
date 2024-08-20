@@ -387,7 +387,7 @@ function Module:HandleActionBarEventTaintSpread()
         ['UNIT_FLAGS'] = true,
         ['UNIT_AURA'] = true,
     }
-    for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
+    local function registerActionButtonEvents(actionButton)
         --@debug@
         hooksecurefunc(actionButton, 'UnregisterEvent', function(_, event)
             if events[event] then
@@ -402,6 +402,12 @@ function Module:HandleActionBarEventTaintSpread()
             actionButton:RegisterUnitEvent(petUnitEvent, 'pet');
         end
     end
+    for _, actionButton in pairs(ActionBarButtonEventsFrame.frames) do
+        registerActionButtonEvents(actionButton);
+    end
+    hooksecurefunc(ActionBarButtonEventsFrame, 'RegisterFrame', function(_, actionButton)
+        registerActionButtonEvents(actionButton);
+    end);
     for event in pairs(events) do
         ActionBarButtonEventsFrame:UnregisterEvent(event);
     end
