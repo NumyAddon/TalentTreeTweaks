@@ -27,8 +27,8 @@ function Module:OnDisable()
     if talentFrame then
         self.gatePool:ReleaseAll();
         talentFrame:RefreshGates();
-        if not Util.isDF and talentFrame.HeroTalentsContainer then
-            talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -15, 0)
+        if talentFrame.HeroTalentsContainer then
+            talentFrame:UpdateSpecBackground();
         end
     end
 end
@@ -39,6 +39,24 @@ end
 
 function Module:GetName()
     return L['Always Show Gates'];
+end
+
+function Module:GetOptions(defaultOptionsTable, db)
+    self.db = Util:PrepareModuleDb(self, db, {
+        shiftHeroTrees = false,
+    });
+    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() self:UpdateHeroContainerPosition(); end);
+
+    defaultOptionsTable.args.shiftHeroTrees = {
+        order = increment(),
+        type = "toggle",
+        name = L["Shift Hero Talent Trees"],
+        desc = L["Shifts the Hero Talent Trees to the left to avoid overlapping with the gate text."],
+        get = getter,
+        set = setter,
+    }
+
+    return defaultOptionsTable;
 end
 
 function Module:SetupHook()
@@ -66,7 +84,7 @@ function Module:RefreshGates()
         return;
     end
 
-    for i, gateInfo in ipairs(talentFrame.talentTreeInfo.gates) do
+    for _, gateInfo in pairs(talentFrame.talentTreeInfo.gates) do
         local firstButton = talentFrame:GetTalentButtonByNodeID(gateInfo.topLeftNodeID);
         local condInfo = talentFrame:GetAndCacheCondInfo(gateInfo.conditionID);
         if firstButton and firstButton:IsVisible() and condInfo.isMet then
@@ -83,9 +101,17 @@ function Module:RefreshGates()
         end
     end
 
-    if not Util.isDF and talentFrame.HeroTalentsContainer then
-        -- shift the hero talents container to the left to make room for the longer gate text
-        talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -80, 0)
+    self:UpdateHeroContainerPosition();
+end
+
+function Module:UpdateHeroContainerPosition()
+    local talentFrame = Util:GetTalentFrame();
+    if talentFrame.HeroTalentsContainer then
+        if self.db.shiftHeroTrees then
+            talentFrame.HeroTalentsContainer:SetPoint("TOP", talentFrame.ButtonsParent, 'TOP', -80, 0);
+        else
+            talentFrame:UpdateSpecBackground();
+        end
     end
 end
 

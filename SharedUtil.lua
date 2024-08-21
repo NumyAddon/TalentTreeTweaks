@@ -3,12 +3,10 @@ local _, TTT = ...
 local Util = {};
 TTT.Util = Util;
 local L = TTT.L;
---- @type TalentTreeTweaks_ImportExportUtilV1|TalentTreeTweaks_ImportExportUtilV2
+--- @type TalentTreeTweaks_ImportExportUtilV2
 local ImportExportUtil = TTT.ImportExportUtil;
 
-local isDF = select(4, GetBuildInfo()) < 110000;
-Util.isDF = isDF;
-local talentAddonName = isDF and 'Blizzard_ClassTalentUI' or 'Blizzard_PlayerSpells';
+local talentAddonName = 'Blizzard_PlayerSpells';
 
 local LTT = LibStub('LibTalentTree-1.0');
 Util.LibTalentTree = LTT;
@@ -86,6 +84,10 @@ function Util:OnInitialize()
     self:RefreshConfigIDLookup();
 end
 
+--- @generic T: table
+--- @param db table
+--- @param defaults T
+--- @return T
 function Util:PrepareModuleDb(module, db, defaults)
     module.db = db;
     for k, v in pairs(defaults) do
@@ -93,6 +95,8 @@ function Util:PrepareModuleDb(module, db, defaults)
             db[k] = v;
         end
     end
+
+    return db;
 end
 
 function Util:GetterSetterIncrementFactory(db, postSetCallback)
@@ -144,7 +148,7 @@ function Util:CopyText(text, optionalTitleSuffix)
 end
 
 function Util:GetTalentContainerFrame(noAutoload)
-    local frameName = isDF and 'ClassTalentFrame' or 'PlayerSpellsFrame';
+    local frameName = 'PlayerSpellsFrame';
     if not _G[frameName] and not noAutoload then
         C_AddOns.LoadAddOn(talentAddonName);
     end

@@ -182,6 +182,7 @@ function Module:InitCheckbox(talentViewerFrame)
     end
 
     local checkbox = CreateFrame('CheckButton', nil, talentViewerFrame, 'UICheckButtonTemplate');
+    talentViewerFrame.TalentTreeTweaks_ShowDiffCheckbox = checkbox;
     checkbox:SetPoint('TOPLEFT', talentViewerFrame.IgnoreRestrictions, 'BOTTOMLEFT');
     checkbox:SetSize(25, 25);
     checkbox:SetScript('OnClick', function()

@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local LEVEL_CAP = Util.isDF and 70 or 80;
+local LEVEL_CAP = 80;
 
 --- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
@@ -143,6 +143,7 @@ end
 
 function Module:MakeLinkButton(talentsTab)
     local button = CreateFrame('Button', nil, talentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
+    talentsTab.TalentTreeTweaks_LinkToChatButton = button;
     button:SetText(TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']);
     button:SetSize(100, 22);
     button:SetPoint('BOTTOMLEFT', 47, 5);

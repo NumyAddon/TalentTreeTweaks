@@ -62,12 +62,10 @@ end
 function Module:OnInitialize()
     self.debug = false;
     self.containers = {};
-    if not Util.isDF then
-        Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
-            if not self:IsEnabled() then return; end
-            self:OnLoadoutMenuOpen(dropdown, rootDescription);
-        end);
-    end
+    Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
+        if not self:IsEnabled() then return; end
+        self:OnLoadoutMenuOpen(dropdown, rootDescription);
+    end);
 end
 
 function Module:OnEnable()
@@ -80,16 +78,7 @@ function Module:OnEnable()
         self:SecureHookScript(frame, "OnHyperlinkEnter");
         self:SecureHookScript(frame, "OnHyperlinkLeave");
     end)
-    self:SecureHook(GameTooltip, "Show", "OnTooltipShow")
-
-    Util:OnTalentUILoad(function()
-        local talentsTab = Util:GetTalentFrame();
-        if Util.isDF then -- todo: remove after 11.0 release
-            local dropdown = talentsTab.LoadoutDropDown;
-            self:SecureHook(dropdown.DropDownControl, 'SetCustomSetup', 'HookCustomSetupCallback');
-            self:HookCustomSetupCallback(dropdown.DropDownControl);
-        end
-    end)
+    self:SecureHook(GameTooltip, "Show", "OnTooltipShow");
 
     EventUtil.ContinueOnAddOnLoaded("Blizzard_InspectUI", function()
         self:HookInspectTalentsButton();
@@ -249,20 +238,18 @@ function Module:GetOptions(defaultOptionsTable, db)
         step = 0.1,
         get = getter,
         set = setter,
-    }
-    if not Util.isDF then
-        defaultOptionsTable.args.inactiveSubTreeAlpha = {
-            order = increment(),
-            type = "range",
-            name = L["Fade Inactive Hero Trees"],
-            desc = L["Fade Inactive Hero Trees, to more easily see which one is active."],
-            min = 0,
-            max = 1,
-            step = 0.1,
-            get = getter,
-            set = setter,
-        };
-    end
+    };
+    defaultOptionsTable.args.inactiveSubTreeAlpha = {
+        order = increment(),
+        type = "range",
+        name = L["Fade Inactive Hero Trees"],
+        desc = L["Fade Inactive Hero Trees, to more easily see which one is active."],
+        min = 0,
+        max = 1,
+        step = 0.1,
+        get = getter,
+        set = setter,
+    };
     defaultOptionsTable.args.example = {
         order = increment(),
         type = "execute",
@@ -280,7 +267,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             TalentTreeTweaks_EmbedMiniTreeIntoTooltip(ItemRefTooltip, nil, configID)
         end,
         disabled = function() return not C_ClassTalents.GetActiveConfigID(); end,
-    }
+    };
 
     return defaultOptionsTable;
 end
@@ -552,7 +539,7 @@ function containerMixin:Init()
     self.spacing = 20;
     self.dotSize = 12;
     self.expectedMaxRows = 10;
-    self.expectedMaxCols = Util.isDF and 20 or 23;
+    self.expectedMaxCols = 23;
 
     self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
     self:Hide();

@@ -47,15 +47,10 @@ function Module:SetupHook(addon)
     elseif addon == TALENT_TREE_VIEWER then
         talentFrame = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
     end
-    if Util.isDF and talentFrame and talentFrame.textSearch then
-        self:RawHook(talentFrame.textSearch, 'GetExactSearchMatchDescription', 'GetExactSearchMatchDescriptionHook', true);
-        self:RawHook(talentFrame.textSearch, 'GetSearchMatchTypeForEntry', 'GetSearchMatchTypeForEntryHook', true);
-    elseif not Util.isDF then
-        local searchController = talentFrame.searchController;
-        local textSearchFilter = searchController.searchFilters[SpellSearchUtil.FilterType.Text];
-        self:RawHook(textSearchFilter, 'InternalGetExactSearchMatchDescription', 'InternalGetExactSearchMatchDescriptionHook', true);
-        self:RawHook(textSearchFilter, 'DerivedGetMatchTypeForTraitNodeEntry', 'DerivedGetMatchTypeForTraitNodeEntryHook', true);
-    end
+    local searchController = talentFrame.searchController;
+    local textSearchFilter = searchController.searchFilters[SpellSearchUtil.FilterType.Text];
+    self:RawHook(textSearchFilter, 'InternalGetExactSearchMatchDescription', 'InternalGetExactSearchMatchDescriptionHook', true);
+    self:RawHook(textSearchFilter, 'DerivedGetMatchTypeForTraitNodeEntry', 'DerivedGetMatchTypeForTraitNodeEntryHook', true);
 end
 
 function Module:MatchesID(traitSearchSource, searchString, nodeID, specificEntryID)

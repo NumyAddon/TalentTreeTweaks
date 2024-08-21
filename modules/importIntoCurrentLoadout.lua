@@ -101,7 +101,7 @@ function Module:SetupHook()
 end
 
 function Module:OnUnlockImportButtonValueChanged()
-    if not Util.isDF then return; end -- todo: TWW compatibility
+    if true then return; end -- todo: TWW compatibility
     local dropdown = Util:GetTalentFrame().LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
         if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_IMPORT then
@@ -139,6 +139,7 @@ function Module:CreateCheckbox(dialog)
 
     local text = string.format(L['Import into current loadout (click "%s" afterwards)'], TALENT_FRAME_APPLY_BUTTON_TEXT);
     local checkbox = CreateFrame('CheckButton', nil, dialog, 'UICheckButtonTemplate');
+    dialog.TalentTreeTweaks_ImportIntoCurrentCheckbox = checkbox;
     checkbox:SetPoint('TOPLEFT', dialog.NameControl, 'BOTTOMLEFT', 0, 5);
     checkbox:SetSize(24, 24);
     checkbox:SetScript('OnClick', function(cb) self:OnCheckboxClick(cb); end);
@@ -167,6 +168,7 @@ function Module:CreateAcceptButton(dialog)
     end
 
     local acceptButton = CreateFrame('Button', nil, dialog, 'ClassTalentLoadoutDialogButtonTemplate');
+    dialog.TalentTreeTweaks_AcceptButton = acceptButton;
     acceptButton:SetPoint('BOTTOMRIGHT', dialog.ContentArea, 'BOTTOM', -5, 0);
     acceptButton:SetText(HUD_CLASS_TALENTS_IMPORT_LOADOUT_ACCEPT_BUTTON);
     acceptButton.disabledTooltip = HUD_CLASS_TALENTS_IMPORT_ERROR_IMPORT_STRING_AND_NAME;

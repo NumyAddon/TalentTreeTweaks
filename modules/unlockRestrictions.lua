@@ -86,7 +86,7 @@ function Module:SetupHook()
 end
 
 function Module:UpdateShareButton()
-    if not Util.isDF then return; end -- todo: TWW compatibility
+    if true then return; end -- todo: TWW compatibility
     local dropdown = Util:GetTalentFrame().LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
         if self.textsToUnlock[sentinelInfo.text] then
