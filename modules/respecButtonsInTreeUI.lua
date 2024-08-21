@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_RespecButtons: AceModule, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnEnable()
@@ -51,8 +52,9 @@ function Module:SetupHook()
     self:SecureHook(talentFrame, 'UpdateInspecting', function() self:UpdateRespecButtonContainer(); end);
 
     if self.respecButtonContainer then self:UpdateRespecButtonContainer(); return; end
-    self.respecButtonContainer = CreateFrame('Frame', nil, talentFrame);
-    local container = self.respecButtonContainer;
+    local container = CreateFrame('Frame', nil, talentFrame);
+    talentFrame.TalentTreeTweaks_RespecButtonContainer = container;
+    self.respecButtonContainer = container;
 
     -- create a respec button per spec, with icon and tooltip
     container.buttons = {};
@@ -127,6 +129,7 @@ function Module:MakeRespecButton(parent, specIndex)
     button:SetScript('OnClick', respecButtonMixin.OnClick);
     button:SetScript('OnEvent', respecButtonMixin.OnEvent);
     button:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
+    parent['RespecButton' .. specIndex] = button;
     parent.buttons[specIndex] = button;
     button:OnEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
 
