@@ -32,6 +32,7 @@ function Module:OnEnable()
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip) Module:OnTooltipPostCall(tooltip) end);
 end
 
 function Module:OnDisable()
@@ -39,8 +40,10 @@ function Module:OnDisable()
     self:DisableBinding();
     self:UnhookAll();
 
-    if Util:GetTalentFrame() then
-        Util:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    local talentFrame = Util:GetTalentFrame(true);
+    if talentFrame then
+        talentFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+        Util:GetTalentContainerFrame().SpellBookFrame.PagedSpellsFrame:UnregisterCallback('OnUpdate', self);
     end
     if GenericTraitFrame then
         GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
@@ -62,6 +65,8 @@ function Module:SetupHook(talentsTab)
         self:OnTalentButtonAcquired(talentButton);
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
+    Util:GetTalentContainerFrame().SpellBookFrame.PagedSpellsFrame:RegisterCallback('OnUpdate', self.OnSpellbookUpdate, self);
+    self:OnSpellbookUpdate();
 end
 
 function Module:EnableBinding()
@@ -117,11 +122,47 @@ function Module:OnShowSelections(talentsTab)
     end
 end
 
+function Module:OnSpellbookButtonEnter(button)
+    local spellFrame = button:GetParent();
+    local spellID = spellFrame.spellBookItemInfo and spellFrame.spellBookItemInfo.spellID;
+    if not spellID then return; end
+    self.textToCopy = spellID;
+    self:EnableBinding();
+end
+
+function Module:OnSpellbookButtonLeave()
+    self.textToCopy = nil;
+    self:DisableBinding();
+end
+
+Module.hookedTooltipFrames = {};
+function Module:OnSpellbookUpdate()
+    local spellBookFrame = Util:GetTalentContainerFrame().SpellBookFrame;
+    spellBookFrame:ForEachDisplayedSpell(function(spellFrame)
+        local button = spellFrame.Button;
+        if self:IsHooked(button, 'OnEnter') then
+            return;
+        end
+        self.hookedTooltipFrames[button] = true;
+        self:HookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
+        self:HookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
+    end);
+end
+
 function Module:OnTalentTooltipCreated(_, tooltip)
-    local text = string.format('|cFF00FF00|r%s', L['CTRL-C to copy spellID']);
+    local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-C to copy spellID']);
     if InCombatLockdown() then
         text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
     end
     tooltip:AddLine(text);
     tooltip:Show();
+end
+
+function Module:OnTooltipPostCall(tooltip)
+    if not self:IsEnabled() then return; end
+    if not tooltip or not tooltip:GetOwner() then return; end
+    local owner = tooltip:GetOwner();
+    if not self.hookedTooltipFrames[owner] then return; end
+
+    self:OnTalentTooltipCreated(nil, tooltip);
 end
