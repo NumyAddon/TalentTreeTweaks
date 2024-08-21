@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_ChangeBackground: AceModule, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('ChangeBackground', 'AceHook-3.0', 'AceEvent-3.0');
 Module.originalAlpha = {}
 
@@ -36,10 +37,14 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
+    --- @type TTT_ChangeBackgroundDB
     self.db = db;
+    --- @class TTT_ChangeBackgroundDB
     local defaults = {
         alpha = 1,
+        spellbookAlpha = 1,
         showAlphaInUI = true,
+        showAlphaInSpellbookUI = true,
         showAlphaInViewerUI = true,
     }
     for key, value in pairs(defaults) do
@@ -55,10 +60,12 @@ function Module:GetOptions(defaultOptionsTable, db)
         local setting = info[#info];
         self.db[setting] = value;
 
-        if setting == 'alpha' then
+        if setting == 'alpha' or setting == 'spellbookAlpha' then
             self:UpdateBackground();
         elseif setting == 'showAlphaInUI' and self.alphaSlider then
             self.alphaSlider:SetShown(value);
+        elseif setting == 'showAlphaInSpellbookUI' and self.spellbookAlphaSlider then
+            self.spellbookAlphaSlider:SetShown(value);
         elseif setting == 'showAlphaInViewerUI' and self.viewerAlphaSlider then
             self.viewerAlphaSlider:SetShown(value);
         end
@@ -82,12 +89,32 @@ function Module:GetOptions(defaultOptionsTable, db)
         step = 0.01,
         width = 'full',
     };
+    defaultOptionsTable.args.spellbookAlpha = {
+        type = 'range',
+        name = L['Spellbook Background Transparency'],
+        order = counter(),
+        get = get,
+        set = set,
+        min = 0,
+        max = 1,
+        step = 0.01,
+        width = 'full',
+    };
     defaultOptionsTable.args.showAlphaInUI = {
         type = 'toggle',
         name = L['Show a slider in the talent UI'],
         order = counter(),
         get = get,
         set = set,
+        width = 'double',
+    };
+    defaultOptionsTable.args.showAlphaInSpellbookUI = {
+        type = 'toggle',
+        name = L['Show a slider in the spellbook UI'],
+        order = counter(),
+        get = get,
+        set = set,
+        width = 'double',
     };
     defaultOptionsTable.args.showAlphaInViewerUI = {
         type = 'toggle',
@@ -96,6 +123,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         get = get,
         set = set,
         disabled = function() return not Main:IsTalentTreeViewerEnabled() end,
+        width = 'double',
     };
 
     return defaultOptionsTable;
@@ -112,6 +140,7 @@ end
 
 function Module:UpdateBackground(resetAlpha)
     local alpha = resetAlpha and 1 or self.db.alpha;
+    local spellbookAlpha = resetAlpha and 1 or self.db.spellbookAlpha;
     local talentContainerFrame = Util:GetTalentContainerFrame();
     if talentContainerFrame then
         local talentFrame = Util:GetTalentFrame();
@@ -119,6 +148,14 @@ function Module:UpdateBackground(resetAlpha)
         self:TrySetAlpha(talentFrame.BlackBG, alpha);
         self:TrySetAlpha(talentContainerFrame.Center, alpha); -- ElvUI background
         self:TrySetAlpha(_G[talentContainerFrame:GetName() .. 'Bg'], alpha);
+
+        local spellbookFrame = talentContainerFrame.SpellBookFrame;
+        if spellbookFrame then
+            self:TrySetAlpha(spellbookFrame.BookBGHalved, spellbookAlpha);
+            self:TrySetAlpha(spellbookFrame.BookBGLeft, spellbookAlpha);
+            self:TrySetAlpha(spellbookFrame.BookBGRight, spellbookAlpha);
+            self:TrySetAlpha(spellbookFrame.BookCornerFlipbook, spellbookAlpha * spellbookAlpha);
+        end
     end
 
     if TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame() then
@@ -141,6 +178,9 @@ function Module:UpdateBackground(resetAlpha)
     if self.alphaSlider then
         self.alphaSlider:SetValue(alpha);
     end
+    if self.spellbookAlphaSlider then
+        self.spellbookAlphaSlider:SetValue(spellbookAlpha);
+    end
     if self.viewerAlphaSlider then
         self.viewerAlphaSlider:SetValue(alpha);
     end
@@ -151,6 +191,9 @@ function Module:SetupDefaultUI()
     self.alphaSlider = self.alphaSlider or self:CreateSlider(Util:GetTalentFrame());
     self.alphaSlider:SetShown(self.db.showAlphaInUI);
 
+    self.spellbookAlphaSlider = self.spellbookAlphaSlider or self:CreateSlider(Util:GetTalentContainerFrame().SpellBookFrame, 'spellbookAlpha');
+    self.spellbookAlphaSlider:SetShown(self.db.showAlphaInSpellbookUI);
+
     RunNextFrame(function()
         -- give time for other addons that hook into Default UI to load up
         self:UpdateBackground();
@@ -160,7 +203,7 @@ end
 function Module:SetupTTVUI()
     self:UpdateBackground();
     local xOffset = 25;
-    self.viewerAlphaSlider = self.viewerAlphaSlider or self:CreateSlider(TalentViewer:GetTalentFrame(), xOffset);
+    self.viewerAlphaSlider = self.viewerAlphaSlider or self:CreateSlider(TalentViewer:GetTalentFrame(), nil, xOffset);
     self.viewerAlphaSlider:SetShown(self.db.showAlphaInViewerUI);
 
     RunNextFrame(function()
@@ -169,10 +212,13 @@ function Module:SetupTTVUI()
     end);
 end
 
-function Module:CreateSlider(talentFrame, xOffset)
-    local slider = CreateFrame('Slider', nil, talentFrame, 'MinimalSliderWithSteppersTemplate');
+--- @return Slider
+function Module:CreateSlider(parentFrame, alphaSetting, xOffset)
+    alphaSetting = alphaSetting or 'alpha';
+    local slider = CreateFrame('Slider', nil, parentFrame, 'MinimalSliderWithSteppersTemplate');
+    parentFrame.TalentTreeTweaks_TransparencySlider = slider;
     slider:OnLoad();
-    slider:SetPoint('BOTTOM', talentFrame.BottomBar, 'BOTTOM', xOffset or 0, 10);
+    slider:SetPoint('BOTTOM', parentFrame.BottomBar or parentFrame, 'BOTTOM', xOffset or 0, 10);
     local minValue = 0;
     local maxValue = 1;
     local steps = 40;
@@ -180,11 +226,11 @@ function Module:CreateSlider(talentFrame, xOffset)
         [MinimalSliderWithSteppersMixin.Label.Left] = function() return L['Transparency'] end,
         [MinimalSliderWithSteppersMixin.Label.Right] = function(value) return string.format('%.2f%%', value) end,
     }
-    slider:Init(self.db.alpha, minValue, maxValue, steps, formatters);
+    slider:Init(self.db[alphaSetting], minValue, maxValue, steps, formatters);
     slider:SetWidth(200);
     slider:SetHeight(16);
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        self.db.alpha = value;
+        self.db[alphaSetting] = value;
         self:UpdateBackground();
     end);
 
