@@ -101,9 +101,14 @@ function Module:GetOptions(defaultOptionsTable, db)
         order = increment(),
         func = function()
             GenericTraitUI_LoadUI();
+            --- @type Frame
+            local GenericTraitFrame = GenericTraitFrame;
             GenericTraitFrame:SetSystemID(TRAIT_SYSTEM_ID);
             GenericTraitFrame:SetTreeID(TREE_ID);
             GenericTraitFrame:SetShown(not GenericTraitFrame:IsShown());
+            if GenericTraitFrame:GetNumPoints() == 0 then
+                GenericTraitFrame:SetPoint('TOPLEFT', 16, -116); -- roughly where it would normally open
+            end
             if not addedToSpecialFrames then
                 addedToSpecialFrames = true;
                 table.insert(UISpecialFrames, 'GenericTraitFrame');
