@@ -66,7 +66,7 @@ function Module:SetupHeroTalentToggleButton(talentsTab)
     local button = container and container.HeroSpecButton;
     local btn = self.heroTalentToggleButton;
     if button and btn then
-        self:HookScript(button, 'OnEnter', function()
+        self:SecureHookScript(button, 'OnEnter', function()
             if
                 not container.activeSubTreeSelectionNodeInfo
                 or container:IsInspecting()
@@ -83,7 +83,7 @@ function Module:SetupHeroTalentToggleButton(talentsTab)
             ));
             GameTooltip:Show();
         end);
-        self:HookScript(button, 'OnLeave', function()
+        self:SecureHookScript(button, 'OnLeave', function()
             if GameTooltip:GetOwner() == button then
                 GameTooltip:Hide();
             end

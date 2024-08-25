@@ -32,7 +32,6 @@ function Module:OnEnable()
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip) Module:OnTooltipPostCall(tooltip) end);
 end
 
 function Module:OnDisable()
@@ -112,8 +111,8 @@ function Module:OnTalentButtonAcquired(talentButton)
     if self:IsHooked(talentButton, 'OnEnter') then
         return;
     end
-    self:HookScript(talentButton, 'OnEnter', 'OnTalentButtonEnter');
-    self:HookScript(talentButton, 'OnLeave', 'OnTalentButtonLeave');
+    self:SecureHookScript(talentButton, 'OnEnter', 'OnTalentButtonEnter');
+    self:SecureHookScript(talentButton, 'OnLeave', 'OnTalentButtonLeave');
 end
 
 function Module:OnShowSelections(talentsTab)
@@ -128,6 +127,7 @@ function Module:OnSpellbookButtonEnter(button)
     if not spellID then return; end
     self.textToCopy = spellID;
     self:EnableBinding();
+    self:OnTalentTooltipCreated(nil, GameTooltip);
 end
 
 function Module:OnSpellbookButtonLeave()
@@ -144,8 +144,8 @@ function Module:OnSpellbookUpdate()
             return;
         end
         self.hookedTooltipFrames[button] = true;
-        self:HookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
-        self:HookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
+        self:SecureHookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
+        self:SecureHookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
     end);
 end
 
@@ -156,13 +156,4 @@ function Module:OnTalentTooltipCreated(_, tooltip)
     end
     tooltip:AddLine(text);
     tooltip:Show();
-end
-
-function Module:OnTooltipPostCall(tooltip)
-    if not self:IsEnabled() then return; end
-    if not tooltip or not tooltip:GetOwner() then return; end
-    local owner = tooltip:GetOwner();
-    if not self.hookedTooltipFrames[owner] then return; end
-
-    self:OnTalentTooltipCreated(nil, tooltip);
 end
