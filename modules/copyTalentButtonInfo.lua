@@ -139,7 +139,6 @@ Module.hookedTooltipFrames = {};
 function Module:OnSpellbookUpdate()
     local spellBookFrame = Util:GetTalentContainerFrame().SpellBookFrame;
 
-	DevTool:AddData(Mixin({}, spellBookFrame.PagedSpellsFrame.frames));
 	for _, frame in pairs(spellBookFrame.PagedSpellsFrame.frames) do
 		if frame.elementData and frame.spellBookItemInfo then -- Avoid header or spacer frames
             local button = frame.Button;
