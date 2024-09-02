@@ -64,7 +64,7 @@ function Module:SetupHook(talentsTab)
         self:OnTalentButtonAcquired(talentButton);
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
-    Util:GetTalentContainerFrame().SpellBookFrame.PagedSpellsFrame:RegisterCallback('OnUpdate', self.OnSpellbookUpdate, self);
+    EventRegistry:RegisterCallback("PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", self.OnSpellbookUpdate, self);
     self:OnSpellbookUpdate();
 end
 
@@ -138,15 +138,19 @@ end
 Module.hookedTooltipFrames = {};
 function Module:OnSpellbookUpdate()
     local spellBookFrame = Util:GetTalentContainerFrame().SpellBookFrame;
-    spellBookFrame:ForEachDisplayedSpell(function(spellFrame)
-        local button = spellFrame.Button;
-        if self:IsHooked(button, 'OnEnter') then
-            return;
-        end
-        self.hookedTooltipFrames[button] = true;
-        self:SecureHookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
-        self:SecureHookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
-    end);
+
+	DevTool:AddData(Mixin({}, spellBookFrame.PagedSpellsFrame.frames));
+	for _, frame in pairs(spellBookFrame.PagedSpellsFrame.frames) do
+		if frame.elementData and frame.spellBookItemInfo then -- Avoid header or spacer frames
+            local button = frame.Button;
+            if self:IsHooked(button, 'OnEnter') then
+                return;
+            end
+            self.hookedTooltipFrames[button] = true;
+            self:SecureHookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
+            self:SecureHookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
+		end
+	end
 end
 
 function Module:OnTalentTooltipCreated(_, tooltip)
