@@ -147,6 +147,7 @@ function Util:CopyText(text, optionalTitleSuffix)
     StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
 end
 
+--- @return PlayerSpellsFrame|nil
 function Util:GetTalentContainerFrame(noAutoload)
     local frameName = 'PlayerSpellsFrame';
     if not _G[frameName] and not noAutoload then
@@ -156,11 +157,12 @@ function Util:GetTalentContainerFrame(noAutoload)
     return _G[frameName];
 end
 
+--- @return ClassTalentsFrameMixin|nil
 function Util:GetTalentFrame(noAutoload)
-    local talentFrame = self:GetTalentContainerFrame(noAutoload);
-    if not talentFrame then return; end
+    local containerFrame = self:GetTalentContainerFrame(noAutoload);
+    if not containerFrame then return; end
 
-    return talentFrame.TalentsTab or talentFrame.TalentsFrame;
+    return containerFrame.TalentsFrame;
 end
 
 function Util:RefreshConfigIDLookup()
