@@ -114,7 +114,8 @@ function Module:HandleOnBarHighlightMarkTaint()
 
     C_AddOns.LoadAddOn('Blizzard_ProfessionsBook');
     local name = 'TalentTreeTweaks_ActionBarHighlightMarkTaintCleanser';
-    local cleanser = CreateFrame('CheckButton', name, nil, 'ProfessionButtonTemplate');
+    --- @type ProfessionButtonTemplate|SecureHandlerBaseTemplate|table
+    local cleanser = CreateFrame('CheckButton', name, nil, 'ProfessionButtonTemplate,SecureHandlerBaseTemplate');
     cleanser.cooldown:Hide();
     for _, region in pairs({ cleanser:GetRegions() }) do
         if region.Hide then region:Hide(); end
@@ -133,7 +134,10 @@ function Module:HandleOnBarHighlightMarkTaint()
     end);
     cleanser:SetScript("OnHide", nil);
     cleanser:SetScript("OnClick", nil);
-    cleanser:SetScript("OnEnter", nil);
+    cleanser:SetScript("OnEnter", function()
+        if InCombatLockdown() then return; end
+        cleanser:Execute([[ self:Hide(); ]]);
+    end);
     cleanser:HookScript("OnLeave", function()
         Util:AddToCombatLockdownQueue(function()
             if issecurevariable('ON_BAR_HIGHLIGHT_MARKS') then
