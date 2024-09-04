@@ -143,6 +143,40 @@ function Util:RunOnLoadCallbacks()
     self:ResetRegistry();
 end
 
+local eventFrame = CreateFrame("Frame");
+do
+    eventFrame.combatLockdownQueue = {};
+    eventFrame:SetScript("OnEvent", function(self, event, ...)
+        if self[event] then
+            self[event](self, ...);
+        end
+    end);
+    function eventFrame:PLAYER_REGEN_ENABLED()
+        self:UnregisterEvent("PLAYER_REGEN_ENABLED");
+        if #self.combatLockdownQueue == 0 then return; end
+
+        for _, item in pairs(self.combatLockdownQueue) do
+            item.func(unpack(item.args));
+        end
+        self.combatLockdownQueue = {};
+    end
+end
+
+--- @param func function
+--- @param ... any # arguments
+function Util:AddToCombatLockdownQueue(func, ...)
+    if not InCombatLockdown() then
+        func(...);
+        return;
+    end
+    if #eventFrame.combatLockdownQueue == 0 then
+        eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
+    end
+
+    tinsert(eventFrame.combatLockdownQueue, { func = func, args = { ... } });
+end
+
+
 function Util:CopyText(text, optionalTitleSuffix)
     StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
 end

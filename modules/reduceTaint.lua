@@ -23,6 +23,7 @@ function Module:OnEnable()
         self:SetupHook();
     end, 1); -- load before any other module
     self:HandleActionBarEventTaintSpread();
+    self:HandleOnBarHighlightMarkTaint();
 end
 
 function Module:OnDisable()
@@ -106,6 +107,94 @@ function Module:SetupHook()
     self:ReplaceCopyLoadoutButton(talentsTab);
 
     self:HandleMultiActionBarTaint();
+end
+
+function Module:HandleOnBarHighlightMarkTaint()
+    -- this may not be needed anymore after 11.0.5
+
+    C_AddOns.LoadAddOn('Blizzard_ProfessionsBook');
+    local name = 'TalentTreeTweaks_ActionBarHighlightMarkTaintCleanser';
+    local cleanser = CreateFrame('CheckButton', name, nil, 'ProfessionButtonTemplate');
+    cleanser.cooldown:Hide();
+    for _, region in pairs({ cleanser:GetRegions() }) do
+        if region.Hide then region:Hide(); end
+    end
+    cleanser:Hide();
+    cleanser:ClearAllPoints();
+    cleanser:SetSize(2, 2);
+    cleanser:SetFrameStrata('TOOLTIP');
+    cleanser:ClearHighlightTexture();
+    cleanser:ClearDisabledTexture();
+    cleanser:ClearNormalTexture();
+    cleanser:SetScript("OnShow", function()
+        Util:AddToCombatLockdownQueue(function()
+            cleanser:SetAttribute('_wrapentered', true);
+        end);
+    end);
+    cleanser:SetScript("OnHide", nil);
+    cleanser:SetScript("OnClick", nil);
+    cleanser:SetScript("OnEnter", nil);
+    cleanser:HookScript("OnLeave", function()
+        Util:AddToCombatLockdownQueue(function()
+            if issecurevariable('ON_BAR_HIGHLIGHT_MARKS') then
+                cleanser:Hide();
+                cleanser:SetAttribute('_wrapentered', true);
+            end
+        end);
+    end);
+    -- the OnLeave script for ProfessionButtonTemplate will securely call `ClearOnBarHighlightMarks`, cleansing the taint.
+
+    -- sadly OnEnter and OnLeave will only ever be called securely if they're triggered by mouse motion,
+    -- so this fix requires the user to move their mouse a pixel or two
+    SecureHandlerWrapScript(cleanser, 'OnLeave', cleanser, [[
+        self:Hide();
+    ]]);
+    cleanser:SetAttribute('_wrapentered', true); -- ensures the secure wrapped OnLeave will actually run
+
+    --@debug@
+    --cleanser:SetSize(20, 20);
+    --cleanser:SetNormalTexture(134532);
+    --@end-debug@
+    local function tryClearTaint()
+        if issecurevariable('ON_BAR_HIGHLIGHT_MARKS') then return; end
+
+        if InCombatLockdown() then
+            Util:AddToCombatLockdownQueue(tryClearTaint);
+
+            return;
+        end
+        cleanser:SetAttribute('_wrapentered', true); -- ensures the secure wrapped OnLeave will actually run
+        cleanser:ClearAllPoints();
+        local x, y = GetCursorPosition();
+        cleanser:SetPoint('CENTER', nil, 'BOTTOMLEFT', x, y);
+        cleanser:Show();
+    end
+
+    Util:OnTalentUILoad(function()
+        Util:AddToCombatLockdownQueue(function()
+            local helper = CreateFrame('Frame', nil, Util:GetTalentContainerFrame(), 'SecureHandlerShowHideTemplate');
+            local nilOverlay = CreateFrame('Frame', nil, nil, 'SecureHandlerBaseTemplate');
+            nilOverlay:SetAllPoints();
+            helper:SetFrameRef('cleanser', cleanser);
+            helper:SetFrameRef('nilOverlay', nilOverlay);
+            helper:SetAttribute('_onhide', [[
+                if not PlayerInCombat() then return; end
+
+                local cleanser = self:GetFrameRef('cleanser');
+                local nilOverlay = self:GetFrameRef('nilOverlay');
+                local x, y = nilOverlay:GetMousePosition(); -- x and y are in the range of 0 to 1
+                local width, height = nilOverlay:GetWidth(), nilOverlay:GetHeight();
+                cleanser:ClearAllPoints();
+                cleanser:SetPoint('CENTER', nilOverlay, 'BOTTOMLEFT', width * x, height * y);
+                cleanser:Show();
+            ]]);
+        end);
+    end);
+
+    hooksecurefunc('ClearOnBarHighlightMarks', tryClearTaint);
+    hooksecurefunc('UpdateOnBarHighlightMarksBySpell', tryClearTaint);
+    hooksecurefunc('UpdateOnBarHighlightMarksByFlyout', tryClearTaint);
+    hooksecurefunc('UpdateOnBarHighlightMarksByPetAction', tryClearTaint);
 end
 
 function Module:OnUpdateInspecting(talentsTab)
