@@ -24,7 +24,7 @@ end
 function Module:OnDisable()
     if self.blizzMoveEnabled then return end
 
-    if Util:GetTalentContainerFrame(true) then Util:GetTalentContainerFrame(true):SetScale(1); end
+    if Util:GetTalentContainerFrame(true) and not InCombatLockdown() then Util:GetTalentContainerFrame(true):SetScale(1); end
     if TalentViewer_DF then TalentViewer_DF:SetScale(1); end
     self:UnhookAll();
 end
@@ -38,7 +38,7 @@ function Module:GetName()
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
-    self.blizzMoveEnabled = C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2;
+    self.blizzMoveEnabled = _G.BlizzMoveAPI or C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2;
     self.db = db;
 
     if self.blizzMoveEnabled then
@@ -62,7 +62,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             value = math.max(0.5, math.min(2, value));
             self.db[info[#info]] = value;
             local containerFrame = Util:GetTalentContainerFrame(true);
-            if containerFrame and containerFrame.SetScale then containerFrame:SetScale(value); end
+            if containerFrame and containerFrame.SetScale and not InCombatLockdown() then containerFrame:SetScale(value); end
         end,
         min = 0.5,
         max = 2,
@@ -84,6 +84,7 @@ function Module:SetupHook(addon)
         frame = TalentViewer:GetTalentFrame():GetParent();
         buttonsParent = TalentViewer:GetTalentFrame().ButtonsParent;
     end
+    if not frame then return; end
     if self.db[settingKey] == nil then
         self.db[settingKey] = frame:GetScale();
     end
@@ -92,19 +93,48 @@ function Module:SetupHook(addon)
     self:SecureHookScript(buttonsParent, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
     self:SecureHookScript(frame, 'OnShow', function() self:OnShow(frame, settingKey); end);
 
+    if frame:IsProtected() then
+        Util:AddToCombatLockdownQueue(function()
+            frame:SetScale(self.db[settingKey]);
+            local helper = CreateFrame('Frame', nil, frame, 'SecureHandlerShowHideTemplate');
+            frame.TTT_ScaleHelper = helper;
+            helper:SetFrameRef('frame', frame);
+            helper:SetAttribute('scale', self.db[settingKey]);
+            helper:SetAttribute('_onshow', [[
+                if not PlayerInCombat() then return; end
+
+                local frame = self:GetFrameRef('frame');
+                local scale = self:GetAttribute('scale');
+                frame:SetScale(scale);
+            ]]);
+        end);
+
+        return;
+    end
     frame:SetScale(self.db[settingKey]);
 end
 
+---@param frame Frame
+---@param settingKey string
 function Module:OnShow(frame, settingKey)
+    if frame:IsProtected() and InCombatLockdown() then return; end
+
     frame:SetScale(self.db[settingKey]);
 end
 
+---@param frame Frame
+---@param delta number
+---@param settingKey string
 function Module:OnMouseWheel(frame, delta, settingKey)
-    if not IsControlKeyDown() then return end
+    if not IsControlKeyDown() then return; end
 
     local scale = self.db[settingKey] or 1;
     scale = scale + delta * 0.05;
     scale = math.max(0.5, math.min(2, scale));
     self.db[settingKey] = scale;
+    if frame:IsProtected() and InCombatLockdown() then return; end
+    if frame.TTT_ScaleHelper then
+        frame.TTT_ScaleHelper:SetAttribute('scale', scale);
+    end
     frame:SetScale(scale);
 end
