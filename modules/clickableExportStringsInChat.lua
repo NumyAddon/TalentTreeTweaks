@@ -36,7 +36,7 @@ local events = {
     CHAT_MSG_YELL = true,
 };
 
-local function Filter(...) return Module:Filter(...) end
+local function Filter(_, _, message, ...) return false, Module:ReplaceChatMessage(message), ... end
 
 local LOADOUT_SERIALIZATION_VERSION;
 local SUPPORTED_SERIALIZATION_VERSIONS = {[1] = true, [2] = true};
@@ -241,7 +241,7 @@ end
 function Module:ReplaceChatMessage(message)
     message = message:gsub('(|Htalentbuild:(%d+):(%d+):([^|]+)|h)', '|Haddon:TalentTreeTweaks:%2:%3:%4|h');
     if self.db.disableDetectionFromStrings then
-        return message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16));
+        return (message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16)));
     end
 
     local importStringPattern = '([A-Za-z0-9+/=]+)';
@@ -315,11 +315,7 @@ function Module:ReplaceChatMessage(message)
         message = replaceSubString(message, item.rStart, item.rEnd, replacement);
     end
 
-    return message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16));
-end
-
-function Module:Filter(_, _, message, ...)
-    return false, self:ReplaceChatMessage(message), ...;
+    return (message:gsub('(|Haddon:TalentTreeTweaks:%d+:%d+:[^|]+%-LVL%-[^|]+|h%[)', '%1' .. CreateAtlasMarkup("GarrMission_CurrencyIcon-Xp", 16, 16)));
 end
 
 local validStringsCache = {};
