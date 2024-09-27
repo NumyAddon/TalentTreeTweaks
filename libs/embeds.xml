@@ -10,5 +10,5 @@
 	<Include file="AceLocale-3.0\AceLocale-3.0.xml"/>
 	<Include file="LibTalentTree-1.0\LibTalentTree-1.0.xml"/>
 	<Include file="LibUIDropDownMenu\LibUIDropDownMenu.xml"/>
-	<Include file="Taintless\Taintless.xml"/>
+	<Include file="TaintLess\TaintLess.xml"/>
 </Ui>
