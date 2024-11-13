@@ -19,7 +19,7 @@ end
 
 function Module:OnEnable()
     Util:OnTalentUILoad(function()
-        self:SetupHook(Util:GetTalentFrame());
+        self:SetupHook(Util:GetTalentFrame(), true);
     end);
     Util:ContinueOnAddonLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
@@ -58,14 +58,16 @@ function Module:GetName()
     return L['Copy SpellID on hover'];
 end
 
-function Module:SetupHook(talentsTab)
+function Module:SetupHook(talentsTab, isPlayerSpellsUI)
     talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
     for talentButton in talentsTab:EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
-    EventRegistry:RegisterCallback("PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", self.OnSpellbookUpdate, self);
-    self:OnSpellbookUpdate();
+    if isPlayerSpellsUI then
+        EventRegistry:RegisterCallback("PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", self.OnSpellbookUpdate, self);
+        self:OnSpellbookUpdate();
+    end
 end
 
 function Module:EnableBinding()
