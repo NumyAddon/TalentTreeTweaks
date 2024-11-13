@@ -31,6 +31,7 @@ do
 end
 
 Util.configIDLookup = {};
+Util.addonLoadedRegistry = {};
 
 function Util:DebugPrint(...)
     if not self.debug then return; end
@@ -76,6 +77,12 @@ function Util:OnInitialize()
                 eventFrame:UnregisterEvent('ADDON_LOADED');
                 self:RunOnLoadCallbacks();
             end
+            if self.addonLoadedRegistry[addonName] then
+                for _, callback in ipairs(self.addonLoadedRegistry[addonName]) do
+                    securecallfunction(callback);
+                end
+                self.addonLoadedRegistry[addonName] = nil;
+            end
         end
         if event == 'TRAIT_CONFIG_LIST_UPDATED' then
             self:RefreshConfigIDLookup();
@@ -105,6 +112,16 @@ function Util:GetterSetterIncrementFactory(db, postSetCallback)
     local increment = CreateCounter(5);
 
     return getter, setter, increment;
+end
+
+function Util:ContinueOnAddonLoaded(addonName, callback)
+    if C_AddOns.IsAddOnLoaded(addonName) then
+        callback();
+        return;
+    end
+
+    self.addonLoadedRegistry[addonName] = self.addonLoadedRegistry[addonName] or {};
+    table.insert(self.addonLoadedRegistry[addonName], callback);
 end
 
 function Util:ResetRegistry()

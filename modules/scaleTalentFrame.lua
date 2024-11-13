@@ -16,9 +16,9 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook(BLIZZARD_TALENT_UI);
     end);
-    EventUtil.ContinueOnAddOnLoaded(TALENT_TREE_VIEWER, function()
+    Util:ContinueOnAddonLoaded(TALENT_TREE_VIEWER, function()
         self:SetupHook(TALENT_TREE_VIEWER);
-    end)
+    end);
 end
 
 function Module:OnDisable()

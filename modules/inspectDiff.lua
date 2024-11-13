@@ -14,7 +14,7 @@ function Module:OnEnable()
     end);
 
     self.viewerButtonTextures = self.viewerButtonTextures or {};
-    EventUtil.ContinueOnAddOnLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
+    Util:ContinueOnAddonLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         self:SetupViewerHook();
     end);
 end

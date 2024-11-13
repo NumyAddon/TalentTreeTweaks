@@ -80,9 +80,9 @@ function Module:OnEnable()
     end)
     self:SecureHook(GameTooltip, "Show", "OnTooltipShow");
 
-    EventUtil.ContinueOnAddOnLoaded("Blizzard_InspectUI", function()
+    Util:ContinueOnAddonLoaded("Blizzard_InspectUI", function()
         self:HookInspectTalentsButton();
-    end)
+    end);
 end
 
 function Module:OnDisable()

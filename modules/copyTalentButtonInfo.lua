@@ -21,14 +21,14 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook(Util:GetTalentFrame());
     end);
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_GenericTraitUI', function()
+    Util:ContinueOnAddonLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
     end);
-    EventUtil.ContinueOnAddOnLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
+    Util:ContinueOnAddonLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
         if not talentsTab then return; end
         self:SetupHook(talentsTab);
-    end)
+    end);
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
@@ -127,7 +127,7 @@ function Module:OnSpellbookButtonEnter(button)
     if not spellID then return; end
     self.textToCopy = spellID;
     self:EnableBinding();
-    self:OnTalentTooltipCreated(nil, GameTooltip);
+    self:OnTalentTooltipCreated(nil, ElvUI_SpellBookTooltip or GameTooltip);
 end
 
 function Module:OnSpellbookButtonLeave()
