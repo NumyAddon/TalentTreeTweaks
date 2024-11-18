@@ -74,7 +74,6 @@ function Util:OnInitialize()
         if event == 'ADDON_LOADED' then
             local addonName = ...;
             if addonName == talentAddonName and self.classTalentUILoadCallbacks.registered then
-                eventFrame:UnregisterEvent('ADDON_LOADED');
                 self:RunOnLoadCallbacks();
             end
             if self.addonLoadedRegistry[addonName] then

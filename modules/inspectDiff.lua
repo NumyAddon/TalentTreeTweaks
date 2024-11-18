@@ -5,6 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_InspectDiff: AceModule, AceHook-3.0
 local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
 function Module:OnEnable()
