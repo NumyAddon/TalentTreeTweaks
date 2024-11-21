@@ -533,7 +533,7 @@ function Module:GetDiffForNode(nodeID, targetEntry, targetRank)
     return useCustomColors and self.customColors[diff] or diff;
 end
 
---- @class TalentTreeTweaks_TreeInMinimapContainerMixin
+--- @class TalentTreeTweaks_TreeInMinimapContainerMixin: Frame
 local containerMixin = {};
 function containerMixin:Init()
     self.spacing = 20;
@@ -544,7 +544,9 @@ function containerMixin:Init()
     self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
     self:Hide();
 
+    --- @type FramePool<Frame>
     self.dotPool = CreateFramePool("FRAME", self);
+    --- @type ObjectPool<Line>
     self.linePool = CreateObjectPool(
         function() return self:CreateLine(); end,
         function(_, line) line:Hide(); end
