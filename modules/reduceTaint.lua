@@ -5,9 +5,6 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @type LibUIDropDownMenuNumy-4.0
-local LibDD = LibStub('LibUIDropDownMenuNumy-4.0');
-
 --- @class TalentTreeTweaks_ReduceTaintModule: AceModule, AceHook-3.0
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
@@ -161,6 +158,8 @@ function Module:HandleOnBarHighlightMarkTaint()
     --@end-debug@
     local function tryClearTaint()
         if issecurevariable('ON_BAR_HIGHLIGHT_MARKS') then return; end
+
+        Util:DebugPrint('ON_BAR_HIGHLIGHT_MARKS is tainted, attempting to cleanse');
 
         if InCombatLockdown() then
             Util:AddToCombatLockdownQueue(tryClearTaint);
@@ -364,6 +363,9 @@ function Module:ShouldReplaceShareButton()
 end
 
 function Module:HandleActionBarEventTaintSpread()
+    -- no longer works after 11.1.0, but hopefully hasn't been needed since 11.0.7 either
+    if select(4, GetBuildInfo()) >= 110100 then return; end
+
     local events = {
         ['PLAYER_ENTERING_WORLD'] = true,
         ['ACTIONBAR_SLOT_CHANGED'] = true,
