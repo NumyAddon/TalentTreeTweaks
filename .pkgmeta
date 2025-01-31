@@ -14,3 +14,4 @@ externals:
     libs/TaintLess:
         url: https://www.townlong-yak.com/addons.git/taintless
         commit: default
+    libs/LibVersionCheck-1.0: https://github.com/NumyAddon/LibVersionCheck-1.0.git
