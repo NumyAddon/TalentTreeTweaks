@@ -5,6 +5,7 @@
 ## Notes: Various improvements and addition to the Dragonflight talent tree UI
 ## Version: @project-version@
 ## X-Curse-Project-ID: 678792
+## X-Wago-ID: qKQxm86x
 ## SavedVariables: TalentTreeTweaksDB
 ## OptionalDeps: TalentTreeViewer_Loader
 ## Category-enUS: Combat
