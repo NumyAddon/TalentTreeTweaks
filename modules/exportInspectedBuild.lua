@@ -10,6 +10,14 @@ local LEVEL_CAP = 80;
 --- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'AceEvent-3.0');
 
+--- @param unit string
+function TTT_InspectTalents(unit)
+    Module.inspecting[UnitGUID(unit)] = { unit = unit, name = UnitNameUnmodified(unit) };
+    NotifyInspect(unit);
+end
+
+local TTT_InspectTalents = TTT_InspectTalents;
+
 --- @type table<string, { unit: string, name: string }> # [guid] = info
 Module.inspecting = {};
 Module.overlayPool = {
@@ -141,9 +149,8 @@ function Module:OnUnitPopupMenu(rootDescription, contextData)
             rootDescription:Insert(MenuUtil.CreateButton(L['Inspect Talents'], function()
                 local unit = contextData.unit;
                 if not unit then return; end
-                local guid = contextData.playerLocation and contextData.playerLocation:GetGUID();
-                self.inspecting[guid] = { unit = unit, name = UnitNameUnmodified(unit) };
-                NotifyInspect(unit);
+
+                TTT_InspectTalents(unit);
             end), i + 1);
 
             break;
