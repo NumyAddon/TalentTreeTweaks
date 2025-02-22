@@ -7,9 +7,11 @@ local L = TTT.L;
 
 local LEVEL_CAP = 80;
 
---- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0
-local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0');
+--- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
+local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'AceEvent-3.0');
 
+--- @type table<string, { unit: string, name: string }> # [guid] = info
+Module.inspecting = {};
 Module.overlayPool = {
     --- @type table<BUTTON, true>
     active = {},
@@ -46,28 +48,39 @@ function Module:OnInitialize()
             self:OnLoadoutMenuOpen(dropdown, rootDescription);
         end
     end);
+    for which in pairs(UnitPopupMenus) do
+        Menu.ModifyMenu('MENU_UNIT_' .. which, function(dropdown, rootDescription, contextData)
+            if self:IsEnabled() and self.db.inspectTalentsMenuItem then
+                self:OnUnitPopupMenu(rootDescription, contextData);
+            end
+        end);
+    end
 end
 
 function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook();
     end);
+    self:RegisterEvent("INSPECT_READY");
 end
 
 function Module:OnDisable()
     self:UnhookAll();
     if self.linkButton then self.linkButton:Hide(); end
+    self:UnregisterAllEvents();
 end
 
 function Module:GetDescription()
     return
         L['Adds a right-click option to the loadout dropdown to export your build.']
         .. '\n\n' ..
-        L['Adds a button to link the currently shown build in chat.'];
+        L['Adds a button to link the currently shown build in chat.']
+        .. '\n\n' ..
+        L['Adds a right-click menu option to directly inspect a player\'s talents.'];
 end
 
 function Module:GetName()
-    return L['Export Loadouts'];
+    return L['Export / Inspect Loadouts'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -75,6 +88,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     local defaults = {
         exportOnDropdownRightClick = true,
         showLinkInChatButton = true,
+        inspectTalentsMenuItem = true,
     };
     for k, v in pairs(defaults) do
         if db[k] == nil then
@@ -107,11 +121,82 @@ function Module:GetOptions(defaultOptionsTable, db)
         order = counter(),
         get = get,
         set = set,
-    }
+    };
+    defaultOptionsTable.args.inspectTalentsMenuItem = {
+        type = 'toggle',
+        name = L['Inspect Talents'],
+        desc = L['Adds a right-click menu option to directly inspect a player\'s talents.'],
+        order = counter(),
+        get = get,
+        set = set,
+    };
 
     return defaultOptionsTable;
 end
 
+--- @param rootDescription RootMenuDescriptionProxy
+function Module:OnUnitPopupMenu(rootDescription, contextData)
+    for i, elementDescription in rootDescription:EnumerateElementDescriptions() do
+        if MenuUtil.GetElementText(elementDescription) == INSPECT then
+            rootDescription:Insert(MenuUtil.CreateButton(L['Inspect Talents'], function()
+                local unit = contextData.unit;
+                if not unit then return; end
+                local guid = contextData.playerLocation and contextData.playerLocation:GetGUID();
+                self.inspecting[guid] = { unit = unit, name = UnitNameUnmodified(unit) };
+                NotifyInspect(unit);
+            end), i + 1);
+
+            break;
+        end
+    end
+end
+
+--- @param unit string
+--- @param guid string
+--- @return string?
+local function checkUnitGuid(unit, guid)
+    if UnitGUID(unit) ~= guid then
+        unit = UnitTokenFromGUID(guid);
+        if not unit then
+            return nil;
+        end
+    end
+
+    return unit;
+end
+
+function Module:INSPECT_READY(_, guid)
+    local info = self.inspecting[guid];
+    if not info then return; end
+    self.inspecting[guid] = nil;
+    local unit = checkUnitGuid(info.unit, guid);
+    if not unit then
+        Main:Print(string.format(L['Failed to inspect %s'], info.name));
+        return;
+    end
+    local level = UnitLevel(unit);
+
+    local ticker;
+    local startTime = GetTime();
+    ticker = C_Timer.NewTicker(0, function()
+        local unit = checkUnitGuid(info.unit, guid);
+        if not unit or (GetTime() - startTime) > 10 then
+            Main:Print(string.format(L['Failed to inspect %s'], info.name));
+            ticker:Cancel();
+            return;
+        end
+        local exportString = C_Traits.GenerateInspectImportString(unit);
+        if not exportString or '' == exportString then return; end
+        ticker:Cancel();
+
+        local talentFrame = Util:GetTalentContainerFrame();
+        if not talentFrame or not talentFrame.SetInspectString then return end
+        talentFrame:SetInspectString(exportString, level);
+        if not talentFrame:IsShown() then
+            ShowUIPanel(talentFrame);
+        end
+    end);
+end
 
 function Module:SetupHook()
     local talentsTab = Util:GetTalentFrame();
