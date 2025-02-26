@@ -99,7 +99,7 @@ do
             ClassTalentHelper.SwitchToSpecializationByIndex(specIndex)
             return
         end
-        SetSpecialization(specIndex)
+        C_SpecializationInfo.SetSpecialization(specIndex)
         Util:GetTalentFrame():SetCommitStarted(0)
         Module:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED')
         Module:RegisterEvent('SPECIALIZATION_CHANGE_CAST_FAILED')
