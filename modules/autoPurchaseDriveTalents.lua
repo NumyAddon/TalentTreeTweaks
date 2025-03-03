@@ -21,7 +21,7 @@ end
 function Module:OnEnable()
     self.enabled = true;
     if self.configID then
-        self:PurchaseTalents();
+        self:SelectTalents();
     end
 end
 
@@ -30,11 +30,11 @@ function Module:OnDisable()
 end
 
 function Module:GetName()
-    return L['DRIVE Auto Purchaser'];
+    return L['DRIVE Auto Upgrades'];
 end
 
 function Module:GetDescription()
-    local text = L['Automatically purchases the DRIVE talents you want for all of your alts.'];
+    local text = L['Automatically selects the DRIVE upgrades you want for all of your alts.'];
 
     return text;
 end
@@ -94,7 +94,7 @@ function Module:BuildOptionsTable()
         defaultOptionsTable.args['node-'..nodeInfo.ID] = {
             type = 'select',
             name = L['Row %d']:format(index),
-            desc = L['Specify the talent you want to select on login.'],
+            desc = L['Specify the upgrade you want to select on login.'],
             values = values,
             sorting = order,
             order = increment(),
@@ -105,18 +105,18 @@ function Module:BuildOptionsTable()
     end
     defaultOptionsTable.args.setTalents = {
         type = 'execute',
-        name = L['Apply DRIVE Talents'],
-        desc = L['Force apply the selected DRIVE talents. This automatically happens on login as well.'],
+        name = L['Apply DRIVE Upgrades'],
+        desc = L['Force apply the selected DRIVE upgrades. This automatically happens on login as well.'],
         order = increment(),
         func = function()
-            self:PurchaseTalents();
+            self:SelectTalents();
         end,
         width = 'full',
     };
     defaultOptionsTable.args.openUI = {
         type = 'execute',
         name = L['Toggle D.R.I.V.E. UI'],
-        desc = L['Toggle the DRIVE UI to view and adjust talents.'],
+        desc = L['Toggle the DRIVE UI to view and adjust upgrades.'],
         order = increment(),
         func = function()
             GenericTraitUI_LoadUI();
@@ -133,8 +133,8 @@ function Module:BuildOptionsTable()
     };
     defaultOptionsTable.args.reportPurchases = {
         type = 'toggle',
-        name = L['Report Purchases'],
-        desc = L['Print in chat whenever a new talent is purchased.'],
+        name = L['Report On Selections'],
+        desc = L['Print in chat whenever a different upgrade is selected.'],
         order = increment(),
         get = get,
         set = set,
@@ -157,7 +157,7 @@ function Module:IterateNodes()
 end
 
 function Module:Print(...)
-    print('|cff33ff99TTT-' .. L['DRIVE Auto Purchaser:'] .. '|r', ...);
+    print('|cff33ff99TTT-' .. L['DRIVE Auto Selector:'] .. '|r', ...);
 end
 
 function Module:CheckConfig()
@@ -168,12 +168,12 @@ function Module:CheckConfig()
     Main:NotifyConfigChange();
 
     if self.enabled then
-        self:PurchaseTalents();
+        self:SelectTalents();
     end
     self:UnregisterAllEvents();
 end
 
-function Module:PurchaseTalents()
+function Module:SelectTalents()
     if not self.configID then return; end
 
     for _, nodeInfo in self:IterateNodes() do
