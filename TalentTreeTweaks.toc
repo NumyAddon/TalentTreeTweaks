@@ -51,3 +51,4 @@ modules\miniTreeInTooltip.lua
 modules\heroTalents.lua
 
 modules\autoPurchaseDragonRidingTalents.lua
+modules\autoPurchaseDriveTalents.lua

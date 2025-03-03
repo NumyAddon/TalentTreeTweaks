@@ -150,6 +150,10 @@ function Main:InitConfig()
     LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.configCategory);
 end
 
+function Main:NotifyConfigChange()
+    LibStub("AceConfigRegistry-3.0"):NotifyChange(self.configCategory)
+end
+
 function Main:OpenConfig()
     Settings.OpenToCategory(self.configCategory);
 end

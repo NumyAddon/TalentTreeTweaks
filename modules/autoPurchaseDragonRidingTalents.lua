@@ -93,7 +93,6 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     local increment = CreateCounter(5);
 
-    local addedToSpecialFrames;
     defaultOptionsTable.args.openUI = {
         type = 'execute',
         name = L['Toggle Skyriding UI'],
@@ -101,16 +100,13 @@ function Module:GetOptions(defaultOptionsTable, db)
         order = increment(),
         func = function()
             GenericTraitUI_LoadUI();
-            --- @type Frame
-            local GenericTraitFrame = GenericTraitFrame;
             GenericTraitFrame:SetSystemID(TRAIT_SYSTEM_ID);
             GenericTraitFrame:SetTreeID(TREE_ID);
             GenericTraitFrame:SetShown(not GenericTraitFrame:IsShown());
             if GenericTraitFrame:GetNumPoints() == 0 then
                 GenericTraitFrame:SetPoint('TOPLEFT', 16, -116); -- roughly where it would normally open
             end
-            if not addedToSpecialFrames then
-                addedToSpecialFrames = true;
+            if not tIndexOf(UISpecialFrames, 'GenericTraitFrame') then
                 table.insert(UISpecialFrames, 'GenericTraitFrame');
             end
         end,
@@ -180,7 +176,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:Print(...)
-    print('|cff33ff99TTT-Skyriding Auto Purchaser:|r', ...);
+    print('|cff33ff99TTT-' .. L['Skyriding Auto Purchaser:'] .. '|r', ...);
 end
 
 function Module:SPELLS_CHANGED()
