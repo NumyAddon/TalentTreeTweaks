@@ -103,6 +103,16 @@ function Module:BuildOptionsTable()
             width = 1.2,
         };
     end
+    defaultOptionsTable.args.refresh = {
+        type = 'execute',
+        name = L['Refresh Upgrades List'],
+        desc = L['Refresh the list of upgrades. May be useful if you have recently unlocked new upgrades.'],
+        order = increment(),
+        func = function()
+            self:BuildOptionsTable();
+            Main:NotifyConfigChange();
+        end,
+    };
     defaultOptionsTable.args.setTalents = {
         type = 'execute',
         name = L['Apply DRIVE Upgrades'],
