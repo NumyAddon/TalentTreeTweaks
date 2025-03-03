@@ -13,7 +13,9 @@ local DO_NOTHING = -1;
 local Module = Main:NewModule('Drive Auto Purchaser', 'AceEvent-3.0');
 
 function Module:OnInitialize()
-    self:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED');
+    self:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED', 'CheckConfig');
+    self:RegisterEvent('TRAIT_CONFIG_CREATED', 'CheckConfig');
+    self:RegisterEvent('PLAYER_ENTERING_WORLD', 'CheckConfig');
 end
 
 function Module:OnEnable()
@@ -158,7 +160,7 @@ function Module:Print(...)
     print('|cff33ff99TTT-' .. L['DRIVE Auto Purchaser:'] .. '|r', ...);
 end
 
-function Module:TRAIT_CONFIG_LIST_UPDATED()
+function Module:CheckConfig()
     self.configID = C_Traits.GetConfigIDBySystemID(TRAIT_SYSTEM_ID);
     if not self.configID then return end
 
@@ -168,7 +170,7 @@ function Module:TRAIT_CONFIG_LIST_UPDATED()
     if self.enabled then
         self:PurchaseTalents();
     end
-    self:UnregisterEvent('TRAIT_CONFIG_LIST_UPDATED');
+    self:UnregisterAllEvents();
 end
 
 function Module:PurchaseTalents()
