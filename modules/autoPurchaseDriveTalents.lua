@@ -18,7 +18,7 @@ end
 
 function Module:OnEnable()
     self.enabled = true;
-    if self.talentsLoaded then
+    if self.configID then
         self:PurchaseTalents();
     end
 end
@@ -159,8 +159,6 @@ function Module:Print(...)
 end
 
 function Module:TRAIT_CONFIG_LIST_UPDATED()
-    self.talentsLoaded = true;
-
     self.configID = C_Traits.GetConfigIDBySystemID(TRAIT_SYSTEM_ID);
     if not self.configID then return end
 
@@ -173,24 +171,6 @@ function Module:TRAIT_CONFIG_LIST_UPDATED()
     self:UnregisterEvent('TRAIT_CONFIG_LIST_UPDATED');
 end
 
-function Module:SetSpecialChoiceNode(settingName, cacheName, nodeID, choiceEntryList)
-    local nodeInfo = C_Traits.GetNodeInfo(self.configID, nodeID);
-    if not nodeInfo then
-        return;
-    end
-    local targetEntryID = choiceEntryList[self.db[settingName]];
-    if nodeInfo.activeEntry and nodeInfo.activeEntry.entryID == targetEntryID then
-        return;
-    end
-    if C_Traits.SetSelection(self.configID, nodeID, targetEntryID) and C_Traits.CommitConfig(self.configID) then
-        self.db[cacheName][Util.PlayerKey] = self.db[settingName];
-        if self.db.reportPurchases then
-            self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(targetEntryID));
-        end
-    end
-
-end
-
 function Module:PurchaseTalents()
     if not self.configID then return; end
 
@@ -201,13 +181,13 @@ function Module:PurchaseTalents()
         if
             (targetEntryID ~= DO_NOTHING and targetEntryID ~= activeEntryID)
             and C_Traits.SetSelection(self.configID, nodeInfo.ID, targetEntryID)
-            and C_Traits.CommitConfig(self.configID)
             and self.db.reportPurchases
         then
             self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(targetEntryID));
         end
     end
 
+    C_Traits.CommitConfig(self.configID)
 end
 
 function Module:GetSpellLinkFromEntryID(entryID)
