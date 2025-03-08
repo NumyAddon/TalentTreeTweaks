@@ -403,7 +403,6 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     end
     local specID = falseOrSpecID;
     local classID = errorOrClassID;
-    local treeID = LTT:GetClassTreeId(classID);
 
     local calculateDiff =
         (self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF or self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF)
@@ -426,9 +425,9 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
         local nodeID = nodeSelectionInfo.nodeID;
         if LTT:IsNodeVisibleForSpec(specID, nodeSelectionInfo.nodeID) then
-            local column, row = LTT:GetNodeGridPosition(treeID, nodeID);
+            local column, row = LTT:GetNodeGridPosition(nodeID);
             if column and row then
-                local nodeInfo = LTT:GetNodeInfo(treeID, nodeID);
+                local nodeInfo = LTT:GetNodeInfo(nodeID);
                 if nodeInfo.subTreeID and subTreeMap[nodeInfo.subTreeID] then
                     row = row + (subTreeMap[nodeInfo.subTreeID] - 1) * 5;
                 end
@@ -494,7 +493,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
         end
     end
     for nodeID, dot in pairs(dots) do
-        local edges = LTT:GetNodeEdges(treeID, nodeID);
+        local edges = LTT:GetNodeEdges(nodeID);
         for _, edge in pairs(edges or {}) do
             local targetDot = dots[edge.targetNode];
             if targetDot then

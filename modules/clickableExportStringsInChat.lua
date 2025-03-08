@@ -341,7 +341,7 @@ function Module:ParseImportString(importText)
         return false;
     end
 
-    local treeID = specID and Util.specToClassMap[specID] and LTT:GetClassTreeId(Util.specToClassMap[specID]);
+    local treeID = specID and Util.specToClassMap[specID] and LTT:GetClassTreeID(Util.specToClassMap[specID]);
     if (not treeID) then
         self:DebugPrint('Invalid tree ID');
         return false;
@@ -423,7 +423,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                     return false
                 end
 
-                local nodeInfo = LTT:GetLibNodeInfo(treeID, treeNodes[i]);
+                local nodeInfo = LTT:GetLibNodeInfo(treeNodes[i]);
                 local isClassNode = nodeInfo and nodeInfo.isClassNode;
                 local pointsSpent = nodeInfo and nodeInfo.maxRanks or 1;
 

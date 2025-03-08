@@ -54,7 +54,7 @@ function ImportExportUtil:GetLoadoutExportString(talentsTab, configIDOverride)
     local exportStream = ExportUtil.MakeExportDataStream();
     local configID = configIDOverride or talentsTab:GetConfigID();
     local currentSpecID = talentsTab:GetSpecID();
-    local treeID = LTT:GetClassTreeId(talentsTab:GetClassID())
+    local treeID = LTT:GetClassTreeID(talentsTab:GetClassID())
 
     -- write header
     exportStream:AddValue(self.bitWidthHeaderVersion, LOADOUT_SERIALIZATION_VERSION);
@@ -86,7 +86,7 @@ function ImportExportUtil:ParseTalentBuildString(importString)
         return false, LOADOUT_ERROR_SERIALIZATION_VERSION_MISMATCH;
     end
 
-    local treeID = LTT:GetClassTreeId(classIDFromString);
+    local treeID = LTT:GetClassTreeID(classIDFromString);
     if not self:IsHashValid(treeHash, treeID) then
         return false, LOADOUT_ERROR_TREE_CHANGED;
     end
