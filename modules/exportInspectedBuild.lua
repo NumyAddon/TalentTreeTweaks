@@ -196,6 +196,15 @@ function Module:INSPECT_READY(_, guid)
         if not exportString or '' == exportString then return; end
         ticker:Cancel();
 
+        if TalentViewerLoader then
+            TalentViewerLoader:LoadTalentViewer();
+        end
+        local TalentViewer = TalentViewerLoader and TalentViewerLoader:GetTalentViewer();
+        if TalentViewer and TalentViewer.ImportLoadout then
+            TalentViewer:ImportLoadout(exportString);
+            return;
+        end
+
         local talentFrame = Util:GetTalentContainerFrame();
         if not talentFrame or not talentFrame.SetInspectString then return end
         talentFrame:SetInspectString(exportString, level);
