@@ -296,6 +296,8 @@ function Module:MakeOnHideSafe()
         purgeKey(talentContainerFrame, 'inspectString');
         purgeKey(talentContainerFrame, 'inspectUnit');
         RunNextFrame(function()
+            -- Addons like NoAutoClose will allow calling this in combat, but otherwise we're screwed :/
+            if InCombatLockdown() and UIPanelWindows[talentContainerFrame:GetName()] then return; end
             talentContainerFrame:SetInspecting(nil, nil, nil);
         end);
     end
@@ -314,17 +316,19 @@ function Module:TriggerMicroButtonUpdate()
     LFDMicroButton:UnregisterEvent('CVAR_UPDATE');
 end
 
+--- @param frame Frame
 function Module:OnShowUIPanel(frame)
     if frame ~= Util:GetTalentContainerFrame(true) then return end
-    if (frame.IsShown and not frame:IsShown()) then
+    if not frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
         -- if possible, force show the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Show()
     end
 end
 
+--- @param frame Frame
 function Module:OnHideUIPanel(frame)
     if frame ~= Util:GetTalentContainerFrame(true) then return end
-    if (frame.IsShown and frame:IsShown()) then
+    if frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
         -- if possible, force hide the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Hide()
     end
