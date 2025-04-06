@@ -24,7 +24,7 @@ end
 function Module:OnDisable()
     if self.blizzMoveEnabled then return end
 
-    if Util:GetTalentContainerFrame(true) and not InCombatLockdown() then Util:GetTalentContainerFrame(true):SetScale(1); end
+    if Util:GetTalentContainerFrameIfLoaded() and not InCombatLockdown() then Util:GetTalentContainerFrame():SetScale(1); end
     if TalentViewer_DF then TalentViewer_DF:SetScale(1); end
     self:UnhookAll();
 end
@@ -61,7 +61,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         set = function(info, value)
             value = math.max(0.5, math.min(2, value));
             self.db[info[#info]] = value;
-            local containerFrame = Util:GetTalentContainerFrame(true);
+            local containerFrame = Util:GetTalentContainerFrameIfLoaded();
             if containerFrame and containerFrame.SetScale and not InCombatLockdown() then containerFrame:SetScale(value); end
         end,
         min = 0.5,

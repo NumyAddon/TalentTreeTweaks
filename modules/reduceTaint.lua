@@ -318,7 +318,7 @@ end
 
 --- @param frame Frame
 function Module:OnShowUIPanel(frame)
-    if frame ~= Util:GetTalentContainerFrame(true) then return end
+    if frame ~= Util:GetTalentContainerFrameIfLoaded() then return end
     if not frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
         -- if possible, force show the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Show()
@@ -327,7 +327,7 @@ end
 
 --- @param frame Frame
 function Module:OnHideUIPanel(frame)
-    if frame ~= Util:GetTalentContainerFrame(true) then return end
+    if frame ~= Util:GetTalentContainerFrameIfLoaded() then return end
     if frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
         -- if possible, force hide the frame, ignoring the INTERFACE_ACTION_BLOCKED message
         frame:Hide()

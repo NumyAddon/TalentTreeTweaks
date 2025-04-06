@@ -197,19 +197,29 @@ function Util:CopyText(text, optionalTitleSuffix)
     StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
 end
 
---- @return PlayerSpellsFrame|nil
-function Util:GetTalentContainerFrame(noAutoload)
+--- @return PlayerSpellsFrame
+function Util:GetTalentContainerFrame()
     local frameName = 'PlayerSpellsFrame';
-    if not _G[frameName] and not noAutoload then
+    if not _G[frameName] then
         C_AddOns.LoadAddOn(talentAddonName);
     end
 
     return _G[frameName];
 end
 
---- @return ClassTalentsFrameMixin|nil
-function Util:GetTalentFrame(noAutoload)
-    local containerFrame = self:GetTalentContainerFrame(noAutoload);
+--- @return PlayerSpellsFrame|nil
+function Util:GetTalentContainerFrameIfLoaded()
+    return PlayerSpellsFrame;
+end
+
+--- @return PlayerSpellsFrame_TalentsFrame
+function Util:GetTalentFrame()
+    return self:GetTalentContainerFrame().TalentsFrame;
+end
+
+--- @return PlayerSpellsFrame_TalentsFrame|nil
+function Util:GetTalentFrameIfLoaded()
+    local containerFrame = self:GetTalentContainerFrameIfLoaded();
     if not containerFrame then return; end
 
     return containerFrame.TalentsFrame;

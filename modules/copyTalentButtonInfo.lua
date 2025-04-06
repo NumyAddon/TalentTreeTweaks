@@ -39,7 +39,7 @@ function Module:OnDisable()
     self:DisableBinding();
     self:UnhookAll();
 
-    local talentFrame = Util:GetTalentFrame(true);
+    local talentFrame = Util:GetTalentFrameIfLoaded();
     if talentFrame then
         talentFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
         Util:GetTalentContainerFrame().SpellBookFrame.PagedSpellsFrame:UnregisterCallback('OnUpdate', self);
