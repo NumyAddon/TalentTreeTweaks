@@ -183,8 +183,8 @@ function Module:GetOptions(defaultOptionsTable, db)
                     type = 'select',
                     style = 'radio',
                     name = L['Auto Surge Choice'],
-                    desc = L
-                    ['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
+                    desc =
+                    L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
                     values = function()
                         return {
                             [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS
