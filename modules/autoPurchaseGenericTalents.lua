@@ -133,8 +133,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             args = {
                 loading = {
                     type = 'description',
-                    name = L['Loading...'] ..
-                    '\n' .. L['You have not unlocked the Skyriding system on this character yet.'],
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the Skyriding system on this character yet.'],
                     order = increment(),
                     hidden = isSkyridingLoaded,
                 },
@@ -183,14 +182,11 @@ function Module:GetOptions(defaultOptionsTable, db)
                     type = 'select',
                     style = 'radio',
                     name = L['Auto Surge Choice'],
-                    desc =
-                    L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
+                    desc = L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
                     values = function()
                         return {
-                            [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS
-                            [CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
-                            [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS
-                            [CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
+                            [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
+                            [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
                             [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
                         };
                     end,
@@ -219,8 +215,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             args = {
                 loading = {
                     type = 'description',
-                    name = L['Loading...'] ..
-                        '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.'],
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.'],
                     order = increment(),
                     hidden = isHorrificVisionsLoaded,
                 },
