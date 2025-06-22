@@ -7,6 +7,7 @@ local L = TTT.L;
 
 local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 local HORRIFIC_VISIONS_TREE_ID = 1057;
+local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
 
 local CHOICE_NODE_OPTION_1 = 1;
 local CHOICE_NODE_OPTION_2 = 2;
@@ -40,12 +41,19 @@ function Module:OnInitialize()
     end
     self.disabledByRefund = false;
     hooksecurefunc(C_Traits, 'RefundRank', function(configID)
-        if configID == self.skyridingConfigID or configID == self.horrificVisionsConfigID then
+        if
+            configID == self.skyridingConfigID
+            or configID == self.horrificVisionsConfigID
+            or configID == self.overchargedTitanConsoleConfigID
+        then
             self.disabledByRefund = true;
         end
     end);
     hooksecurefunc(C_Traits, 'SetSelection', function(configID, nodeID, entryID)
-        if (configID == self.skyridingConfigID or configID == self.horrificVisionsConfigID) and entryID == nil then
+        if
+            (configID == self.skyridingConfigID or configID == self.horrificVisionsConfigID or configID == self.overchargedTitanConsoleConfigID)
+            and entryID == nil
+        then
             self.disabledByRefund = true;
         end
     end);
@@ -89,6 +97,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         surge = CHOICE_NODE_OPTION_1,
         surgeCache = {},
         horrificVisionsEnabled = true,
+        overchargedTitanConsoleEnabled = true,
     };
     for k, v in pairs(defaults) do
         if self.db[k] == nil then
@@ -99,6 +108,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         self.enabledTreeIDs = {
             [SKYRIDING_TREE_ID] = self.db.skyridingEnabled or nil,
             [HORRIFIC_VISIONS_TREE_ID] = self.db.horrificVisionsEnabled or nil,
+            [OVERCHARGED_TITAN_CONSOLE_TREE_ID] = self.db.overchargedTitanConsoleEnabled or nil,
         };
     end
     setEnabledTreeIDs();
@@ -124,6 +134,7 @@ function Module:GetOptions(defaultOptionsTable, db)
     function Module:BuildOptionsTable()
         local isSkyridingLoaded = not not self.skyridingConfigID;
         local isHorrificVisionsLoaded = not not self.horrificVisionsConfigID;
+        local isOverchargedTitanConsoleLoaded = not not self.overchargedTitanConsoleConfigID;
 
         defaultOptionsTable.args.skyRiding = {
             type = 'group',
@@ -237,6 +248,36 @@ function Module:GetOptions(defaultOptionsTable, db)
                 },
             },
         };
+        defaultOptionsTable.args.overchargedTitanConsole = {
+            type = 'group',
+            inline = true,
+            name = GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE,
+            order = increment(),
+            args = {
+                loading = {
+                    type = 'description',
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
+                    order = increment(),
+                    hidden = isOverchargedTitanConsoleLoaded,
+                },
+                overchargedTitanConsoleEnabled = {
+                    type = 'toggle',
+                    name = L['Enable'],
+                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
+                    order = increment(),
+                    get = get,
+                    set = set,
+                },
+                openUI = {
+                    type = 'execute',
+                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
+                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
+                    order = increment(),
+                    func = function() self:ToggleTreeUI(OVERCHARGED_TITAN_CONSOLE_TREE_ID); end,
+                    disabled = not isOverchargedTitanConsoleLoaded,
+                },
+            },
+        };
     end
     self:BuildOptionsTable();
 
@@ -271,7 +312,12 @@ end
 function Module:CheckConfig()
     self.skyridingConfigID = C_Traits.GetConfigIDByTreeID(SKYRIDING_TREE_ID);
     self.horrificVisionsConfigID = C_Traits.GetConfigIDByTreeID(HORRIFIC_VISIONS_TREE_ID);
-    if not self.skyridingConfigID and not self.horrificVisionsConfigID then return; end
+    self.overchargedTitanConsoleConfigID = C_Traits.GetConfigIDByTreeID(OVERCHARGED_TITAN_CONSOLE_TREE_ID);
+    if
+        not self.skyridingConfigID
+        and not self.horrificVisionsConfigID
+        and not self.overchargedTitanConsoleConfigID
+    then return; end
 
     self:BuildOptionsTable();
     Main:NotifyConfigChange();
@@ -279,7 +325,11 @@ function Module:CheckConfig()
     if self.enabled then
         self:PurchaseTalents();
     end
-    if self.skyridingConfigID and self.horrificVisionsConfigID then
+    if
+        self.skyridingConfigID
+        and self.horrificVisionsConfigID
+        and self.overchargedTitanConsoleConfigID
+    then
         for _, event in pairs(self.checkConfigEvents) do
             self:UnregisterEvent(event);
         end
@@ -332,6 +382,9 @@ function Module:PurchaseTalents()
     if self.db.horrificVisionsEnabled then
         self:PurchaseHorrificVisionsTalents();
     end
+    if self.db.overchargedTitanConsoleEnabled then
+        self:PurchaseOverchargedTitanConsoleTalents();
+    end
 end
 
 function Module:PurchaseSkyridingTalents()
@@ -355,6 +408,15 @@ function Module:PurchaseHorrificVisionsTalents()
     local ignoredNodeIDs = {};
     local configID = self.horrificVisionsConfigID;
     local treeID = HORRIFIC_VISIONS_TREE_ID;
+    self:DoPurchase(configID, treeID, ignoredNodeIDs);
+end
+
+function Module:PurchaseOverchargedTitanConsoleTalents()
+    if not self.overchargedTitanConsoleConfigID then return; end
+
+    local ignoredNodeIDs = {};
+    local configID = self.overchargedTitanConsoleConfigID;
+    local treeID = OVERCHARGED_TITAN_CONSOLE_TREE_ID;
     self:DoPurchase(configID, treeID, ignoredNodeIDs);
 end
 
@@ -455,7 +517,7 @@ function Module:ReportPurchases(entryIDs)
     end
     self:Print(
         string.format(
-            L['Purchased %d new talents.'] .. '%s',
+            L['Purchased %d new talents.'] .. ' %s',
             #entryIDs,
             table.concat(spellLinks, ', ')
         )
