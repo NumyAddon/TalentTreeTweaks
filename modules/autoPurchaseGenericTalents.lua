@@ -8,6 +8,7 @@ local L = TTT.L;
 local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 local HORRIFIC_VISIONS_TREE_ID = 1057;
 local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
+local RESHII_WRAPS_TREE_ID = 1115;
 
 local CHOICE_NODE_OPTION_1 = 1;
 local CHOICE_NODE_OPTION_2 = 2;
@@ -45,13 +46,19 @@ function Module:OnInitialize()
             configID == self.skyridingConfigID
             or configID == self.horrificVisionsConfigID
             or configID == self.overchargedTitanConsoleConfigID
+            or configID == self.reshiiWrapsConfigID
         then
             self.disabledByRefund = true;
         end
     end);
     hooksecurefunc(C_Traits, 'SetSelection', function(configID, nodeID, entryID)
         if
-            (configID == self.skyridingConfigID or configID == self.horrificVisionsConfigID or configID == self.overchargedTitanConsoleConfigID)
+            (
+                configID == self.skyridingConfigID
+                or configID == self.horrificVisionsConfigID
+                or configID == self.overchargedTitanConsoleConfigID
+                or configID == self.reshiiWrapsConfigID
+            )
             and entryID == nil
         then
             self.disabledByRefund = true;
@@ -98,6 +105,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         surgeCache = {},
         horrificVisionsEnabled = true,
         overchargedTitanConsoleEnabled = true,
+        reshiiWrapsEnabled = true,
     };
     for k, v in pairs(defaults) do
         if self.db[k] == nil then
@@ -109,6 +117,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             [SKYRIDING_TREE_ID] = self.db.skyridingEnabled or nil,
             [HORRIFIC_VISIONS_TREE_ID] = self.db.horrificVisionsEnabled or nil,
             [OVERCHARGED_TITAN_CONSOLE_TREE_ID] = self.db.overchargedTitanConsoleEnabled or nil,
+            [RESHII_WRAPS_TREE_ID] = self.db.reshiiWrapsEnabled or nil,
         };
     end
     setEnabledTreeIDs();
@@ -130,11 +139,13 @@ function Module:GetOptions(defaultOptionsTable, db)
         get = get,
         set = set,
     };
+    local GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE or "Reshii Wraps (added in 11.2.0)"
 
     function Module:BuildOptionsTable()
         local isSkyridingLoaded = not not self.skyridingConfigID;
         local isHorrificVisionsLoaded = not not self.horrificVisionsConfigID;
         local isOverchargedTitanConsoleLoaded = not not self.overchargedTitanConsoleConfigID;
+        local isRishiiWrapsLoaded = not not self.reshiiWrapsConfigID;
 
         defaultOptionsTable.args.skyRiding = {
             type = 'group',
@@ -278,6 +289,36 @@ function Module:GetOptions(defaultOptionsTable, db)
                 },
             },
         };
+        defaultOptionsTable.args.reshiiWraps = {
+            type = 'group',
+            inline = true,
+            name = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE,
+            order = increment(),
+            args = {
+                loading = {
+                    type = 'description',
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    hidden = isRishiiWrapsLoaded,
+                },
+                reshiiWrapsEnabled = {
+                    type = 'toggle',
+                    name = L['Enable'],
+                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    get = get,
+                    set = set,
+                },
+                openUI = {
+                    type = 'execute',
+                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    func = function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
+                    disabled = not isRishiiWrapsLoaded,
+                },
+            },
+        };
     end
     self:BuildOptionsTable();
 
@@ -313,10 +354,12 @@ function Module:CheckConfig()
     self.skyridingConfigID = C_Traits.GetConfigIDByTreeID(SKYRIDING_TREE_ID);
     self.horrificVisionsConfigID = C_Traits.GetConfigIDByTreeID(HORRIFIC_VISIONS_TREE_ID);
     self.overchargedTitanConsoleConfigID = C_Traits.GetConfigIDByTreeID(OVERCHARGED_TITAN_CONSOLE_TREE_ID);
+    self.reshiiWrapsConfigID = C_Traits.GetConfigIDByTreeID(RESHII_WRAPS_TREE_ID);
     if
         not self.skyridingConfigID
         and not self.horrificVisionsConfigID
         and not self.overchargedTitanConsoleConfigID
+        and not self.reshiiWrapsConfigID
     then return; end
 
     self:BuildOptionsTable();
@@ -329,6 +372,7 @@ function Module:CheckConfig()
         self.skyridingConfigID
         and self.horrificVisionsConfigID
         and self.overchargedTitanConsoleConfigID
+        and self.reshiiWrapsConfigID
     then
         for _, event in pairs(self.checkConfigEvents) do
             self:UnregisterEvent(event);
@@ -385,6 +429,9 @@ function Module:PurchaseTalents()
     if self.db.overchargedTitanConsoleEnabled then
         self:PurchaseOverchargedTitanConsoleTalents();
     end
+    if self.db.reshiiWrapsEnabled then
+        self:PurchaseRishiiWrapsTalents();
+    end
 end
 
 function Module:PurchaseSkyridingTalents()
@@ -417,6 +464,15 @@ function Module:PurchaseOverchargedTitanConsoleTalents()
     local ignoredNodeIDs = {};
     local configID = self.overchargedTitanConsoleConfigID;
     local treeID = OVERCHARGED_TITAN_CONSOLE_TREE_ID;
+    self:DoPurchase(configID, treeID, ignoredNodeIDs);
+end
+
+function Module:PurchaseRishiiWrapsTalents()
+    if not self.reshiiWrapsConfigID then return; end
+
+    local ignoredNodeIDs = {};
+    local configID = self.reshiiWrapsConfigID;
+    local treeID = RESHII_WRAPS_TREE_ID;
     self:DoPurchase(configID, treeID, ignoredNodeIDs);
 end
 
