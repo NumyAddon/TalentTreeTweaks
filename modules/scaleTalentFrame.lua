@@ -8,6 +8,7 @@ local L = TTT.L;
 --- @class TalentTreeTweaks_ScaleTalentFrame: AceModule, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
+local SetScale = GetFrameMetatable().__index.SetScale
 local TALENT_TREE_VIEWER = TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer';
 local BLIZZARD_TALENT_UI = 2;
 
@@ -62,7 +63,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             value = math.max(0.5, math.min(2, value));
             self.db[info[#info]] = value;
             local containerFrame = Util:GetTalentContainerFrameIfLoaded();
-            if containerFrame and containerFrame.SetScale and not InCombatLockdown() then containerFrame:SetScale(value); end
+            if containerFrame and containerFrame.SetScale and not InCombatLockdown() then SetScale(containerFrame, value); end
         end,
         min = 0.5,
         max = 2,
@@ -89,13 +90,16 @@ function Module:SetupHook(addon)
         self.db[settingKey] = frame:GetScale();
     end
 
+    self:SecureHook(frame, 'SetScale', function()
+        self:OnShow(frame, settingKey);  -- Reset the scale if someone else tries to set it.
+    end);
     self:SecureHookScript(frame, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
     self:SecureHookScript(buttonsParent, 'OnMouseWheel', function(_, delta) self:OnMouseWheel(frame, delta, settingKey); end);
     self:SecureHookScript(frame, 'OnShow', function() self:OnShow(frame, settingKey); end);
 
     if frame:IsProtected() then
         Util:AddToCombatLockdownQueue(function()
-            frame:SetScale(self.db[settingKey]);
+            SetScale(frame, self.db[settingKey]);
             local helper = CreateFrame('Frame', nil, frame, 'SecureHandlerShowHideTemplate');
             frame.TTT_ScaleHelper = helper;
             helper:SetFrameRef('frame', frame);
@@ -108,10 +112,9 @@ function Module:SetupHook(addon)
                 frame:SetScale(scale);
             ]]);
         end);
-
-        return;
+    else
+        SetScale(frame, self.db[settingKey]);
     end
-    frame:SetScale(self.db[settingKey]);
 end
 
 ---@param frame Frame
@@ -119,7 +122,7 @@ end
 function Module:OnShow(frame, settingKey)
     if frame:IsProtected() and InCombatLockdown() then return; end
 
-    frame:SetScale(self.db[settingKey]);
+    SetScale(frame, self.db[settingKey]);
 end
 
 ---@param frame Frame
@@ -136,5 +139,5 @@ function Module:OnMouseWheel(frame, delta, settingKey)
     if frame.TTT_ScaleHelper then
         frame.TTT_ScaleHelper:SetAttribute('scale', scale);
     end
-    frame:SetScale(scale);
+    SetScale(frame, scale);
 end
