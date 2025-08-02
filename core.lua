@@ -140,7 +140,7 @@ function Main:InitConfig()
         local module = module;
         local copy = CopyTable(defaultModuleOptions);
         self.db.moduleDb[moduleName] = self.db.moduleDb[moduleName] or {};
-        local moduleOptions = module.GetOptions and module:GetOptions(copy, self.db.moduleDb[moduleName]) or copy;
+        local moduleOptions = module.GetOptions and securecall(module.GetOptions, module, copy, self.db.moduleDb[moduleName]) or copy;
         moduleOptions.order = increment();
         self.options.args.modules.args[moduleName] = moduleOptions;
     end
