@@ -50,5 +50,5 @@ modules\reduceSpam.lua
 modules\miniTreeInTooltip.lua
 modules\heroTalents.lua
 
-#modules\autoPurchaseGenericTalents.lua
+modules\autoPurchaseGenericTalents.lua
 modules\autoPurchaseDriveTalents.lua
