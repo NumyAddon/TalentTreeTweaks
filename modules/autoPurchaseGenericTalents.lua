@@ -1,3 +1,4 @@
+if true then return end
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
