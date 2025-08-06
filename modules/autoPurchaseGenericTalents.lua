@@ -1,4 +1,3 @@
-if true then return end
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
@@ -10,6 +9,8 @@ local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.Mount
 local HORRIFIC_VISIONS_TREE_ID = 1057;
 local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
 local RESHII_WRAPS_TREE_ID = 1115;
+
+local RESHII_QUEST_ID = 89561;
 
 local CHOICE_NODE_OPTION_1 = 1;
 local CHOICE_NODE_OPTION_2 = 2;
@@ -470,6 +471,10 @@ end
 
 function Module:PurchaseRishiiWrapsTalents()
     if not self.reshiiWrapsConfigID then return; end
+    if not C_QuestLog.IsQuestFlaggedCompleted(RESHII_QUEST_ID) then
+        -- must wait until the quest is complete, or you will not be able to progress the questline
+        return;
+    end
 
     local ignoredNodeIDs = {};
     local configID = self.reshiiWrapsConfigID;
