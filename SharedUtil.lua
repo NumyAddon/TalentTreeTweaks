@@ -44,20 +44,24 @@ function Util:OnInitialize()
     StaticPopupDialogs['TalentTreeTweaksCopyTextDialog'] = {
         text = L['CTRL-C to copy %s'],
         button1 = CLOSE,
+        --- @param dialog StaticPopupTemplate
+        --- @param data string
         OnShow = function(dialog, data)
             local function HidePopup()
                 dialog:Hide();
             end
-            dialog.editBox:SetScript('OnEscapePressed', HidePopup);
-            dialog.editBox:SetScript('OnEnterPressed', HidePopup);
-            dialog.editBox:SetScript('OnKeyUp', function(_, key)
+            --- @type StaticPopupTemplate_EditBox
+            local editBox = dialog.GetEditBox and dialog:GetEditBox() or dialog.editBox;
+            editBox:SetScript('OnEscapePressed', HidePopup);
+            editBox:SetScript('OnEnterPressed', HidePopup);
+            editBox:SetScript('OnKeyUp', function(_, key)
                 if IsControlKeyDown() and (key == 'C' or key == 'X') then
                     HidePopup();
                 end
             end);
-            dialog.editBox:SetMaxLetters(0);
-            dialog.editBox:SetText(data);
-            dialog.editBox:HighlightText();
+            editBox:SetMaxLetters(0);
+            editBox:SetText(data);
+            editBox:HighlightText();
         end,
         hasEditBox = true,
         editBoxWidth = 240,
