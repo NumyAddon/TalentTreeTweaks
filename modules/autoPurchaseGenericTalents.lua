@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+local LINK_NAME = 'TTT_TraitTooltip';
+
 local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 local HORRIFIC_VISIONS_TREE_ID = 1057;
 local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
@@ -32,6 +34,7 @@ local GetSpellLink = C_Spell.GetSpellLink;
 
 --- @class TalentTreeTweaks_GenericTalentModule: AceModule, AceEvent-3.0
 local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
+-- don't rename the module, the settings etc are stored there
 
 function Module:OnInitialize()
     self.checkConfigEvents = {
@@ -64,6 +67,24 @@ function Module:OnInitialize()
             and entryID == nil
         then
             self.disabledByRefund = true;
+        end
+    end);
+
+    EventRegistry:RegisterCallback('SetItemRef', function(_, link, text)
+        local linkType, addonName, linkData = strsplit(':', link)
+        if linkType == 'addon' and addonName == LINK_NAME then
+            local definitionInfo = C_Traits.GetDefinitionInfo(tonumber(linkData));
+            if not definitionInfo or not definitionInfo.overrideDescription then
+                return;
+            end
+
+            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_CURSOR');
+            ItemRefTooltip:AddLine('placeholder');
+            ItemRefTooltip:Show();
+            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_PRESERVE');
+            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode('Talent Tree Tweaks ') .. text);
+            ItemRefTooltip:AddLine(definitionInfo.overrideDescription, nil, nil, nil, true);
+            ItemRefTooltip:Show();
         end
     end);
 end
@@ -328,7 +349,7 @@ function Module:GetOptions(defaultOptionsTable, db)
 end
 
 function Module:Print(...)
-    print('|cff33ff99TTT-' .. L['Auto Talent Purchaser:'] .. '|r', ...);
+    print('|cff33ff99Talent Tree Tweaks-' .. L['Auto Talent Purchaser:'] .. '|r', ...);
 end
 
 function Module:TraitTreeExists(treeID)
@@ -534,7 +555,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs)
         end
     until (availableCurrency <= 0 or not purchasedSomething)
     if #purchasedEntries > 0 and C_Traits.CommitConfig(configID) then
-        self:ReportPurchases(purchasedEntries);
+        self:ReportPurchases(configID, purchasedEntries);
     end
 
     self.purchasing = false;
@@ -551,10 +572,8 @@ function Module:GetOrCacheNodeCost(nodeID)
     return self.nodeCostCache[nodeID];
 end
 
-function Module:GetSpellLinkFromEntryID(entryID)
-    if not self.skyridingConfigID then return; end
-
-    local entryInfo = C_Traits.GetEntryInfo(self.skyridingConfigID, entryID);
+function Module:GetSpellLinkFromEntryID(configID, entryID)
+    local entryInfo = C_Traits.GetEntryInfo(configID, entryID);
     if entryInfo and entryInfo.definitionID then
         local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID);
         if definitionInfo and (definitionInfo.spellID or definitionInfo.overriddenSpellID) then
@@ -562,17 +581,26 @@ function Module:GetSpellLinkFromEntryID(entryID)
             local spellLink = spellID and GetSpellLink(spellID);
 
             return spellLink;
+        elseif definitionInfo and definitionInfo.overrideName then
+            return string.format(
+                '|cff71d5ff|Haddon:%s:%d|h[%s]|h|r',
+                LINK_NAME,
+                entryInfo.definitionID,
+                definitionInfo.overrideName
+            );
         end
     end
+
+    return '[unknown talent]';
 end
 
-function Module:ReportPurchases(entryIDs)
+function Module:ReportPurchases(configID, entryIDs)
     if not self.db.reportPurchases then
         return;
     end
     local spellLinks = {};
     for _, entryID in ipairs(entryIDs) do
-        local spellLink = self:GetSpellLinkFromEntryID(entryID);
+        local spellLink = self:GetSpellLinkFromEntryID(configID, entryID);
         if spellLink then
             table.insert(spellLinks, spellLink);
         end
