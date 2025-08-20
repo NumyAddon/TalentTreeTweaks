@@ -230,8 +230,8 @@ function Module:GetOptions(defaultOptionsTable, db)
                     desc = L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
                     values = function()
                         return {
-                            [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
-                            [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
+                            [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(self.skyridingConfigID, SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
+                            [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(self.skyridingConfigID, SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
                             [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
                         };
                     end,
@@ -249,6 +249,36 @@ function Module:GetOptions(defaultOptionsTable, db)
                         self:PurchaseTalents();
                     end,
                     width = 'double',
+                },
+            },
+        };
+        defaultOptionsTable.args.reshiiWraps = {
+            type = 'group',
+            inline = true,
+            name = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE,
+            order = increment(),
+            args = {
+                loading = {
+                    type = 'description',
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    hidden = isRishiiWrapsLoaded,
+                },
+                reshiiWrapsEnabled = {
+                    type = 'toggle',
+                    name = L['Enable'],
+                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    get = get,
+                    set = set,
+                },
+                openUI = {
+                    type = 'execute',
+                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
+                    order = increment(),
+                    func = function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
+                    disabled = not isRishiiWrapsLoaded,
                 },
             },
         };
@@ -309,36 +339,6 @@ function Module:GetOptions(defaultOptionsTable, db)
                     order = increment(),
                     func = function() self:ToggleTreeUI(OVERCHARGED_TITAN_CONSOLE_TREE_ID); end,
                     disabled = not isOverchargedTitanConsoleLoaded,
-                },
-            },
-        };
-        defaultOptionsTable.args.reshiiWraps = {
-            type = 'group',
-            inline = true,
-            name = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE,
-            order = increment(),
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    hidden = isRishiiWrapsLoaded,
-                },
-                reshiiWrapsEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    func = function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
-                    disabled = not isRishiiWrapsLoaded,
                 },
             },
         };
@@ -435,7 +435,7 @@ function Module:SetSpecialChoiceNode(configID, settingName, cacheName, nodeID, c
     if C_Traits.SetSelection(configID, nodeID, targetEntryID) and C_Traits.CommitConfig(configID) then
         self.db[cacheName][Util.PlayerKey] = self.db[settingName];
         if self.db.reportPurchases then
-            self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(targetEntryID));
+            self:Print(L['Automatically set'], self:GetSpellLinkFromEntryID(configID, targetEntryID));
         end
     end
 
