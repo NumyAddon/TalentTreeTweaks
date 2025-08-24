@@ -37,6 +37,8 @@ local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
 -- don't rename the module, the settings etc are stored there
 
 function Module:OnInitialize()
+    --- @type table<number, boolean> # [configID] = true if currently purchasing
+    self.purchasing = {};
     self.checkConfigEvents = {
         'TRAIT_CONFIG_LIST_UPDATED',
         'TRAIT_CONFIG_CREATED',
@@ -404,7 +406,8 @@ function Module:CheckConfig()
 end
 
 function Module:TRAIT_TREE_CURRENCY_INFO_UPDATED(_, treeID)
-    if not self.purchasing and self.enabledTreeIDs[treeID] then
+    local configID = C_Traits.GetConfigIDByTreeID(treeID);
+    if not self.purchasing[configID] and self.enabledTreeIDs[treeID] then
         RunNextFrame(function() self:PurchaseTalents(); end);
     end
 end
@@ -418,18 +421,18 @@ function Module:GetCurrencyInfo(treeID)
 end
 
 function Module:SetSpecialChoiceNode(configID, settingName, cacheName, nodeID, choiceEntryList)
-    if self.purchasing or self.db[settingName] == CHOICE_NODE_NOT_SET or self.db[cacheName][Util.PlayerKey] then
+    if self.purchasing[configID] or self.db[settingName] == CHOICE_NODE_NOT_SET or self.db[cacheName][Util.PlayerKey] then
         return;
     end
-    self.purchasing = true;
+    self.purchasing[configID] = true;
     local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID);
     if not nodeInfo then
-        self.purchasing = false;
+        self.purchasing[configID] = false;
         return;
     end
     local targetEntryID = choiceEntryList[self.db[settingName]];
     if nodeInfo.activeEntry and nodeInfo.activeEntry.entryID == targetEntryID then
-        self.purchasing = false;
+        self.purchasing[configID] = false;
         return;
     end
     if C_Traits.SetSelection(configID, nodeID, targetEntryID) and C_Traits.CommitConfig(configID) then
@@ -439,7 +442,7 @@ function Module:SetSpecialChoiceNode(configID, settingName, cacheName, nodeID, c
         end
     end
 
-    self.purchasing = false;
+    self.purchasing[configID] = false;
 end
 
 function Module:PurchaseTalents()
@@ -500,11 +503,15 @@ function Module:PurchaseRishiiWrapsTalents()
     local ignoredNodeIDs = {};
     local configID = self.reshiiWrapsConfigID;
     local treeID = RESHII_WRAPS_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs);
+    self:DoPurchase(configID, treeID, ignoredNodeIDs, 1);
 end
 
-function Module:DoPurchase(configID, treeID, ignoredNodeIDs)
-    if self.purchasing or self.disabledByRefund then
+--- @param configID number
+--- @param treeID number
+--- @param ignoredNodeIDs table<number, boolean> # [nodeID] = true to ignore
+--- @param delayPurchases nil|number # if set, there will be x seconds delay between each purchase
+function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases)
+    if self.purchasing[configID] or self.disabledByRefund then
         -- Already purchasing or disabled by refund
         return;
     end
@@ -520,10 +527,12 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs)
     end
     local availableCurrency = currencyInfo[1].quantity;
 
-    self.purchasing = true;
+    self.purchasing[configID] = true;
     local nodes = C_Traits.GetTreeNodes(treeID);
     local purchasedEntries = {};
-    repeat
+    local purchasedCount = 0;
+    local innerDoPurchase;
+    innerDoPurchase = function()
         local purchasedSomething = false;
         for _, nodeID in ipairs(nodes) do
             local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID);
@@ -552,13 +561,29 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs)
                     end
                 end
             end
+            if purchasedSomething and delayPurchases then
+                purchasedSomething = C_Traits.CommitConfig(configID)
+                break; -- only one purchase at a time if delaying
+            end
         end
-    until (availableCurrency <= 0 or not purchasedSomething)
-    if #purchasedEntries > 0 and C_Traits.CommitConfig(configID) then
-        self:ReportPurchases(configID, purchasedEntries);
-    end
+        if purchasedSomething then
+            purchasedCount = purchasedCount + 1;
+        end
+        if purchasedSomething and availableCurrency > 0 then
+            if delayPurchases then
+                C_Timer.After(delayPurchases, innerDoPurchase);
+            else
+                innerDoPurchase();
+            end
+        else
+            if #purchasedEntries > 0 and (delayPurchases or C_Traits.CommitConfig(configID)) then
+                self:ReportPurchases(configID, purchasedEntries);
+            end
 
-    self.purchasing = false;
+            self.purchasing[configID] = false;
+        end
+    end
+    innerDoPurchase();
 end
 
 function Module:GetOrCacheNodeCost(nodeID)
