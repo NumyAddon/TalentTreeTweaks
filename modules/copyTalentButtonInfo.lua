@@ -24,11 +24,17 @@ function Module:OnEnable()
     Util:ContinueOnAddonLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
     end);
+    Util:ContinueOnAddonLoaded('Blizzard_RemixArtifactUI', function()
+        self:SetupHook(RemixArtifactFrame);
+    end);
     Util:ContinueOnAddonLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
         if not talentsTab then return; end
         self:SetupHook(talentsTab);
     end);
+    if TalentViewer then
+        TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
@@ -46,6 +52,9 @@ function Module:OnDisable()
     end
     if GenericTraitFrame then
         GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
+    if RemixArtifactFrame then
+        RemixArtifactFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
 end
@@ -141,8 +150,8 @@ Module.hookedTooltipFrames = {};
 function Module:OnSpellbookUpdate()
     local spellBookFrame = Util:GetTalentContainerFrame().SpellBookFrame;
 
-	for _, frame in pairs(spellBookFrame.PagedSpellsFrame.frames) do
-		if frame.elementData and frame.spellBookItemInfo then -- Avoid header or spacer frames
+    for _, frame in pairs(spellBookFrame.PagedSpellsFrame.frames) do
+        if frame.elementData and frame.spellBookItemInfo then -- Avoid header or spacer frames
             local button = frame.Button;
             if self:IsHooked(button, 'OnEnter') then
                 return;
@@ -150,8 +159,8 @@ function Module:OnSpellbookUpdate()
             self.hookedTooltipFrames[button] = true;
             self:SecureHookScript(button, 'OnEnter', 'OnSpellbookButtonEnter');
             self:SecureHookScript(button, 'OnLeave', 'OnSpellbookButtonLeave');
-		end
-	end
+        end
+    end
 end
 
 function Module:OnTalentTooltipCreated(_, tooltip)
