@@ -11,6 +11,7 @@ local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.Mount
 local HORRIFIC_VISIONS_TREE_ID = 1057;
 local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
 local RESHII_WRAPS_TREE_ID = 1115;
+local LEMIX_TREE_ID = 1161;
 
 local RESHII_QUEST_ID = 89561;
 
@@ -29,6 +30,9 @@ local SURGE_ENTRY_IDS = {
     [CHOICE_NODE_OPTION_1] = 123787,
     [CHOICE_NODE_OPTION_2] = 123786,
 };
+local LIMITS_UNBOUND_NODE_ID = 108700;
+
+local IS_LEMIX = PlayerGetTimerunningSeasonID() == 2;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
@@ -54,6 +58,7 @@ function Module:OnInitialize()
             or configID == self.horrificVisionsConfigID
             or configID == self.overchargedTitanConsoleConfigID
             or configID == self.reshiiWrapsConfigID
+            or configID == self.lemixConfigID
         then
             self.disabledByRefund = true;
         end
@@ -65,6 +70,7 @@ function Module:OnInitialize()
                 or configID == self.horrificVisionsConfigID
                 or configID == self.overchargedTitanConsoleConfigID
                 or configID == self.reshiiWrapsConfigID
+                or configID == self.lemixConfigID
             )
             and entryID == nil
         then
@@ -131,6 +137,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         horrificVisionsEnabled = true,
         overchargedTitanConsoleEnabled = true,
         reshiiWrapsEnabled = true,
+        lemixLimitsUnboundEnabled = true,
     };
     for k, v in pairs(defaults) do
         if self.db[k] == nil then
@@ -143,6 +150,7 @@ function Module:GetOptions(defaultOptionsTable, db)
             [HORRIFIC_VISIONS_TREE_ID] = self.db.horrificVisionsEnabled or nil,
             [OVERCHARGED_TITAN_CONSOLE_TREE_ID] = self.db.overchargedTitanConsoleEnabled or nil,
             [RESHII_WRAPS_TREE_ID] = self.db.reshiiWrapsEnabled or nil,
+            [LEMIX_TREE_ID] = IS_LEMIX and self.db.lemixLimitsUnboundEnabled or nil,
         };
     end
     setEnabledTreeIDs();
@@ -171,6 +179,7 @@ function Module:GetOptions(defaultOptionsTable, db)
         local isHorrificVisionsLoaded = not not self.horrificVisionsConfigID;
         local isOverchargedTitanConsoleLoaded = not not self.overchargedTitanConsoleConfigID;
         local isRishiiWrapsLoaded = not not self.reshiiWrapsConfigID;
+        local isLemixLoaded = not not self.lemixConfigID;
 
         defaultOptionsTable.args.skyRiding = {
             type = 'group',
@@ -251,6 +260,29 @@ function Module:GetOptions(defaultOptionsTable, db)
                         self:PurchaseTalents();
                     end,
                     width = 'double',
+                },
+            },
+        };
+        defaultOptionsTable.args.lemix = {
+            type = 'group',
+            inline = true,
+            name = L['Legion Remix: Limits Unbound'],
+            order = increment(),
+            hidden = not IS_LEMIX,
+            args = {
+                loading = {
+                    type = 'description',
+                    name = L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.'],
+                    order = increment(),
+                    hidden = isLemixLoaded,
+                },
+                lemixLimitsUnboundEnabled = {
+                    type = 'toggle',
+                    name = L['Enable'],
+                    desc = L['Automatically upgrade the final Limits Unbound talent when you have enough currency.'],
+                    order = increment(),
+                    get = get,
+                    set = set,
                 },
             },
         };
@@ -380,11 +412,13 @@ function Module:CheckConfig()
     self.horrificVisionsConfigID = C_Traits.GetConfigIDByTreeID(HORRIFIC_VISIONS_TREE_ID);
     self.overchargedTitanConsoleConfigID = C_Traits.GetConfigIDByTreeID(OVERCHARGED_TITAN_CONSOLE_TREE_ID);
     self.reshiiWrapsConfigID = C_Traits.GetConfigIDByTreeID(RESHII_WRAPS_TREE_ID);
+    self.lemixConfigID = C_Traits.GetConfigIDByTreeID(LEMIX_TREE_ID);
     if
         not self.skyridingConfigID
         and not self.horrificVisionsConfigID
         and not self.overchargedTitanConsoleConfigID
         and not self.reshiiWrapsConfigID
+        and not self.lemixConfigID
     then return; end
 
     self:BuildOptionsTable();
@@ -398,6 +432,7 @@ function Module:CheckConfig()
         and self.horrificVisionsConfigID
         and self.overchargedTitanConsoleConfigID
         and self.reshiiWrapsConfigID
+        and self.lemixConfigID
     then
         for _, event in pairs(self.checkConfigEvents) do
             self:UnregisterEvent(event);
@@ -458,6 +493,9 @@ function Module:PurchaseTalents()
     if self.db.reshiiWrapsEnabled then
         self:PurchaseRishiiWrapsTalents();
     end
+    if self.db.lemixLimitsUnboundEnabled then
+        self:PurchaseLemixLimitsUnboundTalent();
+    end
 end
 
 function Module:PurchaseSkyridingTalents()
@@ -504,6 +542,16 @@ function Module:PurchaseRishiiWrapsTalents()
     local configID = self.reshiiWrapsConfigID;
     local treeID = RESHII_WRAPS_TREE_ID;
     self:DoPurchase(configID, treeID, ignoredNodeIDs, 1);
+end
+
+function Module:PurchaseLemixLimitsUnboundTalent()
+    if not self.lemixConfigID or not IS_LEMIX then return; end
+
+    local ignoredNodeIDs = { [LIMITS_UNBOUND_NODE_ID] = false };
+    setmetatable(ignoredNodeIDs, { __index = function() return true; end }); -- ignore all other nodes
+    local configID = self.lemixConfigID;
+    local treeID = LEMIX_TREE_ID;
+    self:DoPurchase(configID, treeID, ignoredNodeIDs);
 end
 
 --- @param configID number
@@ -624,10 +672,18 @@ function Module:ReportPurchases(configID, entryIDs)
         return;
     end
     local spellLinks = {};
+    local entryIDCount = {};
+    for _, entryID in pairs(entryIDs) do
+        entryIDCount[entryID] = (entryIDCount[entryID] or 0) + 1;
+    end
     for _, entryID in ipairs(entryIDs) do
         local spellLink = self:GetSpellLinkFromEntryID(configID, entryID);
-        if spellLink then
+        if spellLink and entryIDCount[entryID] then
+            if entryIDCount[entryID] > 1 then
+                spellLink = spellLink .. ' x' .. entryIDCount[entryID];
+            end
             table.insert(spellLinks, spellLink);
+            entryIDCount[entryID] = nil; -- only add once
         end
     end
     self:Print(
