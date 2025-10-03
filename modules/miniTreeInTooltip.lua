@@ -74,10 +74,10 @@ function Module:OnEnable()
         self:SecureHookScript(frame, "OnHyperlinkEnter");
         self:SecureHookScript(frame, "OnHyperlinkLeave");
     end
-    self:SecureHook("FloatingChatFrame_OnLoad", function(frame)
-        self:SecureHookScript(frame, "OnHyperlinkEnter");
-        self:SecureHookScript(frame, "OnHyperlinkLeave");
-    end)
+    self:SecureHook('FloatingChatFrame_SetupScrolling', function(frame)
+        self:SecureHookScript(frame, 'OnHyperlinkEnter');
+        self:SecureHookScript(frame, 'OnHyperlinkLeave');
+    end);
     if Chattynator and Chattynator.API and Chattynator.API.GetHyperlinkHandler and Chattynator.API.GetHyperlinkHandler() then
         self:SecureHookScript(Chattynator.API.GetHyperlinkHandler(), 'OnHyperlinkEnter');
         self:SecureHookScript(Chattynator.API.GetHyperlinkHandler(), 'OnHyperlinkLeave');

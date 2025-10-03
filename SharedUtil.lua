@@ -24,7 +24,7 @@ Util.classMap = {};
 do
     for classID = 1, GetNumClasses() do
         Util.classMap[select(2, GetClassInfo(classID))] = classID;
-        for specIndex = 1, GetNumSpecializationsForClassID(classID) do
+        for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
             Util.specToClassMap[(GetSpecializationInfoForClassID(classID, specIndex))] = classID;
         end
     end
@@ -232,7 +232,7 @@ end
 function Util:RefreshConfigIDLookup()
     wipe(self.configIDLookup);
     local classID = PlayerUtil.GetClassID();
-    for specIndex = 1, GetNumSpecializationsForClassID(classID) do
+    for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
         local specID = GetSpecializationInfoForClassID(classID, specIndex);
         for _, configID in pairs(C_ClassTalents.GetConfigIDsBySpecID(specID)) do
         	self.configIDLookup[configID] = specID;
@@ -247,7 +247,7 @@ function Util:GetSpecIDFromConfigID(configID)
     local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
     if ok and configInfo and configInfo.type == 1 and configInfo.name then
         local classID = PlayerUtil.GetClassID();
-        for specIndex = 1, GetNumSpecializationsForClassID(classID) do
+        for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
             local specID, name = GetSpecializationInfoForClassID(classID, specIndex);
             if name == configInfo.name then
                 self.configIDLookup[configID] = specID;

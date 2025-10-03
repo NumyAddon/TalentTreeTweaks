@@ -94,7 +94,7 @@ do
     function respecButtonMixin:OnLeave() GameTooltip:Hide() end
     function respecButtonMixin:OnClick()
         local specIndex = self:GetID();
-        if GetSpecialization() == specIndex then return end
+        if C_SpecializationInfo.GetSpecialization() == specIndex then return end
         if ClassTalentHelper and ClassTalentHelper.SwitchToSpecializationByIndex then
             ClassTalentHelper.SwitchToSpecializationByIndex(specIndex)
             return
@@ -106,7 +106,7 @@ do
     end
     function respecButtonMixin:OnEvent()
         local specIndex = self:GetID();
-        if GetSpecialization() == specIndex then
+        if C_SpecializationInfo.GetSpecialization() == specIndex then
             self:Disable();
             self:DesaturateHierarchy(Module.db.inverseHighlight and 0 or 1);
         else
@@ -117,7 +117,7 @@ do
 end
 
 function Module:MakeRespecButton(parent, specIndex)
-    local _, name, _, icon, _ = GetSpecializationInfo(specIndex);
+    local _, name, _, icon, _ = C_SpecializationInfo.GetSpecializationInfo(specIndex);
     local button = CreateFrame('Button', nil, parent, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
     Mixin(button, respecButtonMixin);
     button:SetSize(40, 40);
