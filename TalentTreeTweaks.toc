@@ -1,4 +1,4 @@
-## Interface: @toc-version-retail@
+## Interface: @toc-version-retail@,@toc-version-midnight@
 ## Title: Talent Tree Tweaks
 ## Author: Numy
 ## IconTexture: Interface\Addons\TalentTreeTweaks\media\icon

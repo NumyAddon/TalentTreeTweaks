@@ -34,20 +34,6 @@ local DIFF_DEFAULT_RED = 2; -- you have a talent they don't
 local DIFF_DEFAULT_GREEN = 3; -- they have a talent you don't
 local DIFF_DEFAULT_ORANGE = 4; -- different talent choice/rank
 
-local GetSpellInfo;
-do -- todo: remove after 11.0 release
-	GetSpellInfo = _G.GetSpellInfo or function(spellID)
-		if not spellID then
-			return nil;
-		end
-
-		local spellInfo = C_Spell.GetSpellInfo(spellID);
-		if spellInfo then
-			return spellInfo.name, nil, spellInfo.iconID, spellInfo.castTime, spellInfo.minRange, spellInfo.maxRange, spellInfo.spellID, spellInfo.originalIconID;
-		end
-	end
-end
-
 function TalentTreeTweaks_EmbedMiniTreeIntoTooltip(tooltip, exportString, configID)
     if not exportString and configID then
         local ok, configInfo = pcall(C_Traits.GetConfigInfo, configID);
@@ -441,13 +427,13 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                 local entryInfo = LTT:GetEntryInfo(entryID);
                 local definitionInfo = entryInfo.definitionID and C_Traits.GetDefinitionInfo(entryInfo.definitionID);
                 local spellID = definitionInfo and definitionInfo.spellID;
-                local spellIcon = spellID and select(8, GetSpellInfo(spellID));
+                local spellIcon = spellID and C_Spell.GetSpellTexture(spellID);
                 local isAtlas = false;
 
-                if (
+                if
                     (nodeSelectionInfo.isNodeSelected and not nodeSelectionInfo.isChoiceNode and not nodeSelectionInfo.isPartiallyRanked)
                     or LTT:IsNodeGrantedForSpec(specID, nodeID)
-                ) then
+                then
                     style = VISUAL_STYLE_FULL;
                     rank = nodeInfo.maxRanks;
                 elseif nodeSelectionInfo.isPartiallyRanked then

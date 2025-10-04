@@ -5,7 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local GetSpellLink = GetSpellLink or C_Spell.GetSpellLink;
+local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink;
+local GetSpellLink = C_Spell and C_Spell.GetSpellLink or GetSpellLink;
 
 --- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');

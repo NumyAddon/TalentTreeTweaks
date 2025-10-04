@@ -5,6 +5,9 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink
+local ChatFrame_OpenChat = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame_OpenChat
+
 local LEVEL_CAP = 80;
 
 --- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
@@ -251,11 +254,11 @@ function Module:MakeLinkButton(talentsTab)
     button:SetScript('OnClick', function()
         local specID = self.cachedInspectSpecID or talentsTab:GetSpecID();
         local classID = self.cachedInspectClassID or talentsTab:GetClassID();
-	    local unitSex = self.cachedInspectUnitSex or Util:GetTalentContainerFrame():GetUnitSex();
+        local unitSex = self.cachedInspectUnitSex or Util:GetTalentContainerFrame():GetUnitSex();
         local exportString = self.cachedInspectExportString or Util:GetLoadoutExportString(talentsTab);
 
-	    local specName = select(2, GetSpecializationInfoByID(specID, unitSex));
-	    local classInfo = C_CreatureInfo.GetClassInfo(classID);
+        local specName = select(2, GetSpecializationInfoByID(specID, unitSex));
+        local classInfo = C_CreatureInfo.GetClassInfo(classID);
         local className = classInfo and classInfo.className;
         local classColor = RAID_CLASS_COLORS[classInfo and classInfo.classFile];
         local level = LEVEL_CAP;

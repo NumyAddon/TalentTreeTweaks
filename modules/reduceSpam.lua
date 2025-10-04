@@ -5,6 +5,10 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+local ChatFrame_AddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
+local ChatFrame_RemoveMessageEventFilter = ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter or ChatFrame_RemoveMessageEventFilter
+
+--- @class TTT_ReduceSpam: AceModule, AceHook-3.0
 local Module = Main:NewModule("ReduceSpam", "AceHook-3.0");
 
 function Module:OnEnable()
