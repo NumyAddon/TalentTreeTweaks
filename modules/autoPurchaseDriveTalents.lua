@@ -130,7 +130,11 @@ function Module:BuildOptionsTable()
         order = increment(),
         func = function()
             GenericTraitUI_LoadUI();
-            GenericTraitFrame:SetSystemID(TRAIT_SYSTEM_ID);
+            if GenericTraitFrame.SetConfigIDBySystemID then
+                GenericTraitFrame:SetConfigIDBySystemID(TRAIT_SYSTEM_ID);
+            else
+                GenericTraitFrame:SetSystemID(TRAIT_SYSTEM_ID);
+            end
             GenericTraitFrame:SetTreeID(TREE_ID);
             GenericTraitFrame:SetShown(not GenericTraitFrame:IsShown());
             if GenericTraitFrame:GetNumPoints() == 0 then

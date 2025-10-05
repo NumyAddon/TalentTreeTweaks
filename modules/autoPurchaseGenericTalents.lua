@@ -396,7 +396,11 @@ function Module:ToggleTreeUI(treeID)
     end
     GenericTraitUI_LoadUI();
     local systemID = C_Traits.GetSystemIDByTreeID(treeID);
-    GenericTraitFrame:SetSystemID(systemID);
+    if GenericTraitFrame.SetConfigIDBySystemID then
+        GenericTraitFrame:SetConfigIDBySystemID(systemID);
+    else
+        GenericTraitFrame:SetSystemID(systemID);
+    end
     GenericTraitFrame:SetTreeID(treeID);
     GenericTraitFrame:SetShown(not GenericTraitFrame:IsShown());
     if GenericTraitFrame:GetNumPoints() == 0 then
