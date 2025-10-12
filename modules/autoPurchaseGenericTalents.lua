@@ -32,7 +32,7 @@ local SURGE_ENTRY_IDS = {
 };
 local LIMITS_UNBOUND_NODE_ID = 108700;
 
-local IS_LEMIX = PlayerGetTimerunningSeasonID() == 2;
+local IS_LEMIX = C_TimerunningUI.GetActiveTimerunningSeasonID() == 2;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
