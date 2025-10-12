@@ -32,7 +32,8 @@ local SURGE_ENTRY_IDS = {
 };
 local LIMITS_UNBOUND_NODE_ID = 108700;
 
-local IS_LEMIX = C_TimerunningUI.GetActiveTimerunningSeasonID() == 2;
+local LEMIX_SEASON_ID = 2;
+local IS_LEMIX;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
@@ -41,6 +42,8 @@ local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
 -- don't rename the module, the settings etc are stored there
 
 function Module:OnInitialize()
+    IS_LEMIX = PlayerGetTimerunningSeasonID() == LEMIX_SEASON_ID;
+
     --- @type table<number, number> # [specID] = lemixConfigID
     self.lemixConfigIDBySpecID = {};
     --- @type table<number, boolean> # [configID] = true if currently purchasing
