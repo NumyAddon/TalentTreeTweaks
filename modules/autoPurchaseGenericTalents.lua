@@ -43,6 +43,7 @@ local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
 
 function Module:OnInitialize()
     IS_LEMIX = PlayerGetTimerunningSeasonID() == LEMIX_SEASON_ID;
+    RunNextFrame(function() IS_LEMIX = PlayerGetTimerunningSeasonID() == LEMIX_SEASON_ID; end);
 
     --- @type table<number, number> # [specID] = lemixConfigID
     self.lemixConfigIDBySpecID = {};
@@ -226,7 +227,6 @@ function Module:GetOptions(defaultOptionsTable, db)
                 },
                 rideAlong = {
                     type = 'select',
-                    style = 'radio',
                     name = L['Auto Ride Along'],
                     desc = L['Automatically enable/disable Ride Along the first time you log in on a character.'],
                     values = {
@@ -247,11 +247,9 @@ function Module:GetOptions(defaultOptionsTable, db)
                         self.db.rideAlongCache = {};
                         self:DefferPurchase();
                     end,
-                    width = 'double',
                 },
                 surge = {
                     type = 'select',
-                    style = 'radio',
                     name = L['Auto Surge Choice'],
                     desc = L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
                     values = function()
@@ -274,7 +272,6 @@ function Module:GetOptions(defaultOptionsTable, db)
                         self.db.surgeCache = {};
                         self:DefferPurchase();
                     end,
-                    width = 'double',
                 },
             },
         };
@@ -301,8 +298,8 @@ function Module:GetOptions(defaultOptionsTable, db)
                 },
                 openUI = {
                     type = 'execute',
-                    name = L['Toggle Artifact Traits UI'],
-                    desc = L['Toggle the Legion Remix Artifact traits UI to view and adjust talents.'],
+                    name = L['Open Artifact Traits UI'],
+                    desc = L['Open the Legion Remix Artifact traits UI to view and adjust talents.'],
                     order = increment(),
                     func = function() SocketInventoryItem(16); end,
                     disabled = not isLemixLoaded,
@@ -442,7 +439,9 @@ function Module:GetLemixConfigID()
         SocketInventoryItem(16);
 
         self.lemixConfigIDBySpecID[specID] = RemixArtifactFrame:GetConfigID();
-        RemixArtifactFrame:SetShown(shown);
+        if not shown then
+            HideUIPanel(RemixArtifactFrame);
+        end
     end
 
     return self.lemixConfigIDBySpecID[specID];
