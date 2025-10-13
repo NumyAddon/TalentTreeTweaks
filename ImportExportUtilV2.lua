@@ -14,29 +14,29 @@ ImportExportUtil.bitWidthSpecID = 16;
 ImportExportUtil.bitWidthRanksPurchased = 6;
 
 local function fixLoadoutString(loadoutString, specID)
-   local exportStream = ExportUtil.MakeExportDataStream();
-   local importStream = ExportUtil.MakeImportDataStream(loadoutString);
+    local exportStream = ExportUtil.MakeExportDataStream();
+    local importStream = ExportUtil.MakeImportDataStream(loadoutString);
 
-   if importStream:ExtractValue(ImportExportUtil.bitWidthHeaderVersion) ~= LOADOUT_SERIALIZATION_VERSION then
-      return nil; -- only version 2 is supported
-   end
+    if importStream:ExtractValue(ImportExportUtil.bitWidthHeaderVersion) ~= LOADOUT_SERIALIZATION_VERSION then
+        return nil; -- only version 2 is supported
+    end
 
-   local headerSpecID = importStream:ExtractValue(ImportExportUtil.bitWidthSpecID);
-   if headerSpecID == specID then
-      return loadoutString; -- no update needed
-   end
+    local headerSpecID = importStream:ExtractValue(ImportExportUtil.bitWidthSpecID);
+    if headerSpecID == specID then
+        return loadoutString; -- no update needed
+    end
 
-   exportStream:AddValue(ImportExportUtil.bitWidthHeaderVersion, LOADOUT_SERIALIZATION_VERSION);
-   exportStream:AddValue(ImportExportUtil.bitWidthSpecID, specID);
-   local remainingBits = importStream:GetNumberOfBits() - ImportExportUtil.bitWidthHeaderVersion - ImportExportUtil.bitWidthSpecID;
-   -- copy the remaining bits in batches of 16
-   while remainingBits > 0 do
-      local bitsToCopy = math.min(remainingBits, 16);
-      exportStream:AddValue(bitsToCopy, importStream:ExtractValue(bitsToCopy));
-      remainingBits = remainingBits - bitsToCopy;
-   end
+    exportStream:AddValue(ImportExportUtil.bitWidthHeaderVersion, LOADOUT_SERIALIZATION_VERSION);
+    exportStream:AddValue(ImportExportUtil.bitWidthSpecID, specID);
+    local remainingBits = importStream:GetNumberOfBits() - ImportExportUtil.bitWidthHeaderVersion - ImportExportUtil.bitWidthSpecID;
+    -- copy the remaining bits in batches of 16
+    while remainingBits > 0 do
+        local bitsToCopy = math.min(remainingBits, 16);
+        exportStream:AddValue(bitsToCopy, importStream:ExtractValue(bitsToCopy));
+        remainingBits = remainingBits - bitsToCopy;
+    end
 
-   return exportStream:GetExportString();
+    return exportStream:GetExportString();
 end
 
 function ImportExportUtil:GetLoadoutExportString(talentsTab, configIDOverride)
