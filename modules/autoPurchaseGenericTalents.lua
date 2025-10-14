@@ -88,8 +88,8 @@ function Module:OnInitialize()
     self.defferedPurchaseFrame = CreateFrame('Frame');
     self.defferedPurchaseFrame:Hide();
     self.defferedPurchaseFrame:SetScript('OnUpdate', function()
-        self:PurchaseTalents();
         self.defferedPurchaseFrame:Hide();
+        self:PurchaseTalents();
     end);
 
     EventRegistry:RegisterCallback('SetItemRef', function(_, link, text)
@@ -437,6 +437,7 @@ function Module:GetLemixConfigID()
     if not self.lemixConfigIDBySpecID[specID] then
         local shown = RemixArtifactFrame and RemixArtifactFrame:IsShown();
         SocketInventoryItem(16);
+        if not RemixArtifactFrame then return; end -- happens when you don't have the artifact weapon yet
 
         self.lemixConfigIDBySpecID[specID] = RemixArtifactFrame:GetConfigID();
         if not shown then
