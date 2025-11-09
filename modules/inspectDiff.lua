@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_InspectDiff: AceModule, AceHook-3.0
+--- @class TTT_InspectDiff: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
 function Module:OnEnable()
@@ -22,12 +22,12 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if(self.blizzardButtonTextures) then
+    if self.blizzardButtonTextures then
         for _, texture in pairs(self.blizzardButtonTextures) do
             texture:Hide();
         end
     end
-    if(self.viewerButtonTextures) then
+    if self.viewerButtonTextures then
         for _, texture in pairs(self.viewerButtonTextures) do
             texture:Hide();
         end
@@ -42,9 +42,11 @@ function Module:GetName()
     return L['Inspect Diff'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_InspectDiffDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
-
+    --- @class TTT_InspectDiffDB
     local defaults = {
         colorGreen = {
             r = 0,
@@ -66,66 +68,29 @@ function Module:GetOptions(defaultOptionsTable, db)
         },
         enableTalentTreeViewerDiff = true,
     }
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
+    configBuilder:SetDefaults(defaults, true);
 
-    local function GetColor(info)
-        local color = self.db[info[#info]];
-        return color.r, color.g, color.b, color.a;
-    end
-    local function SetColor(info, r, g, b, a)
-        local color = self.db[info[#info]];
-        color.r, color.g, color.b, color.a = r, g, b, a;
+    local function onColorChange()
         self:UpdateBlizzardColors();
         self:UpdateViewerColors();
     end
-    defaultOptionsTable.args.colorRed = {
-        type = 'color',
-        name = L['You have a talent they don\'t'],
-        hasAlpha = true,
-        get = GetColor,
-        set = SetColor,
-        order = 5,
-    };
-    defaultOptionsTable.args.colorGreen = {
-        type = 'color',
-        name = L['They have a talent you don\'t'],
-        hasAlpha = true,
-        get = GetColor,
-        set = SetColor,
-        order = 6,
-    };
-    defaultOptionsTable.args.colorYellow = {
-        type = 'color',
-        name = L['You have selected a different choice, or different number of points in a talent'],
-        hasAlpha = true,
-        get = GetColor,
-        set = SetColor,
-        order = 7,
-    };
-    defaultOptionsTable.args.reset = {
-        type = 'execute',
-        name = RESET,
-        desc = L['Reset the colors to default'],
-        func = function()
-            self.db.colorRed = defaults.colorRed;
-            self.db.colorGreen = defaults.colorGreen;
-            self.db.colorYellow = defaults.colorYellow;
-            self:UpdateBlizzardColors();
-            self:UpdateViewerColors();
-        end,
-        order = 10,
-    };
-    defaultOptionsTable.args.enableTalentTreeViewerDiff = {
-        type = 'toggle',
-        name = L['Enable Talent Tree Viewer Diff'],
-        desc = L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'],
-        get = function() return self.db.enableTalentTreeViewerDiff end,
-        set = function(_, value)
-            self.db.enableTalentTreeViewerDiff = value
+
+    configBuilder:MakeColorPicker(L['You have a talent they don\'t'], 'colorRed', nil, onColorChange);
+    configBuilder:MakeColorPicker(L['They have a talent you don\'t'], 'colorGreen', nil, onColorChange);
+    configBuilder:MakeColorPicker(L['You have selected a different choice, or different number of points in a talent'], 'colorYellow', nil, onColorChange);
+
+    configBuilder:MakeButton(RESET, function()
+        self.db.colorRed = defaults.colorRed;
+        self.db.colorGreen = defaults.colorGreen;
+        self.db.colorYellow = defaults.colorYellow;
+        onColorChange();
+    end, L['Reset the colors to default']);
+
+    local initializer = configBuilder:MakeCheckbox(
+        L['Enable Talent Tree Viewer Diff'],
+        'enableTalentTreeViewerDiff',
+        L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'],
+        function(_, value)
             if self.viewerButtonTextures then
                 if not value then
                     for _, texture in pairs(self.viewerButtonTextures) do
@@ -135,13 +100,9 @@ function Module:GetOptions(defaultOptionsTable, db)
                     self:UpdateViewerColors();
                 end
             end
-        end,
-        disabled = function() return not Main:IsTalentTreeViewerEnabled() end,
-        width = 'full',
-        order = 15,
-    };
-
-    return defaultOptionsTable;
+        end
+    );
+    initializer:AddModifyPredicate(function() return Main:IsTalentTreeViewerEnabled(); end);
 end
 
 function Module:SetupBlizzardHook()

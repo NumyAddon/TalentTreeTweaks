@@ -1,10 +1,12 @@
 local LOADOUT_SERIALIZATION_VERSION = 2;
 if C_Traits.GetLoadoutSerializationVersion() ~= LOADOUT_SERIALIZATION_VERSION then return; end -- Only load for serialization version 2
 
-local _, TTT = ...
+--- @class TTT_NS
+local ns = select(2, ...);
+
 --- @class TalentTreeTweaks_ImportExportUtilV2
 local ImportExportUtil = {};
-TTT.ImportExportUtil = ImportExportUtil;
+ns.ImportExportUtil = ImportExportUtil;
 
 local LTT = LibStub('LibTalentTree-1.0');
 ImportExportUtil.LibTalentTree = LTT;
@@ -40,8 +42,8 @@ local function fixLoadoutString(loadoutString, specID)
 end
 
 function ImportExportUtil:GetLoadoutExportString(talentsTab, configIDOverride)
-    if (TTT.Util:GetSpecIDFromConfigID(configIDOverride)) then
-        local specID = TTT.Util:GetSpecIDFromConfigID(configIDOverride);
+    if (ns.Util:GetSpecIDFromConfigID(configIDOverride)) then
+        local specID = ns.Util:GetSpecIDFromConfigID(configIDOverride);
         local loadoutString = C_Traits.GenerateImportString(configIDOverride);
         if loadoutString and loadoutString ~= '' then
             return fixLoadoutString(loadoutString, specID);
@@ -70,13 +72,13 @@ end
 
 --- @return false|number # specID or false on error
 --- @return number|string # classID or errorMessage on error
---- @return nil|TalentTreeTweaks_Util_LoadoutContent[] # loadoutInfo or nothing on error
+--- @return nil|TTT_Util_LoadoutContent[] # loadoutInfo or nothing on error
 function ImportExportUtil:ParseTalentBuildString(importString)
     local importStream = ExportUtil.MakeImportDataStream(importString);
 
     local headerValid, serializationVersion, specIDFromString, treeHash = self:ReadLoadoutHeader(importStream);
     local classFileName = select(6, GetSpecializationInfoByID(specIDFromString));
-    local classIDFromString = TTT.Util.classMap[classFileName];
+    local classIDFromString = ns.Util.classMap[classFileName];
 
     if(not headerValid) then
         return false, LOADOUT_ERROR_BAD_STRING;

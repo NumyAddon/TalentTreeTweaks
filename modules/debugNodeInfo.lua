@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_DebugNodeInfo: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TTT_DebugNodeInfo: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('DebugNodeInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnInitialize()
@@ -66,72 +66,45 @@ function Module:GetName()
     return L['Debug Talent.nodeInfo'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    local defaultDb = {
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_DebugNodeInfoDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_DebugNodeInfoDB
+    local defaults = {
         tinspect = true,
         viragDevTool = true,
         luaBrowser = true,
         slashDump = false,
-    }
-    self.db = db;
-    for k, v in pairs(defaultDb) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
+    };
+    configBuilder:SetDefaults(defaults, true);
 
-    local set = function(info, value)
-        self.db[info[#info]] = value;
-    end;
-    local get = function(info)
-        return self.db[info[#info]];
-    end;
-    local order = 5;
-    local function increment()
-        order = order + 1; return order;
-    end;
+    configBuilder:MakeText(L['You can toggle any of the following on/off to enable/disable the integration with that debug tool.']);
 
-    defaultOptionsTable.args.extraDescription = {
-        type = 'description',
-        name = L['You can toggle any of the following on/off to enable/disable the integration with that debug tool.'],
-        order = increment(),
-    };
-    defaultOptionsTable.args.tinspect = {
-        type = 'toggle',
-        name = '/tinspect',
-        desc = L['Opens Blizzard\'s table inspect window.'],
-        get = get,
-        set = set,
-        order = increment(),
-    };
-    defaultOptionsTable.args.viragDevTool = {
-        type = 'toggle',
-        name = '(Virag-)DevTool',
-        desc = L['Use (Virag-)DevTool to inspect the nodeInfo table.'],
-        get = get,
-        set = set,
-        disabled = not select(4, C_AddOns.GetAddOnInfo('ViragDevTool')) and not select(4, C_AddOns.GetAddOnInfo('DevTool')), -- 4-> loadable
-        order = increment(),
-    };
-    defaultOptionsTable.args.luaBrowser = {
-        type = 'toggle',
-        name = 'LuaBrowser',
-        desc = L['Use LuaBrowser to inspect the nodeInfo table.'],
-        get = get,
-        set = set,
-        disabled = not select(4, C_AddOns.GetAddOnInfo('LuaBrowser')), -- 4-> loadable
-        order = increment(),
-    };
-    defaultOptionsTable.args.slashDump = {
-        type = 'toggle',
-        name = '/dump',
-        desc = L['Dump the nodeInfo table to chat.'],
-        get = get,
-        set = set,
-        order = increment(),
-    };
-
-    return defaultOptionsTable;
+    configBuilder:MakeCheckbox(
+        '/tinspect',
+        'tinspect',
+        L['Opens Blizzard\'s table inspect window.']
+    );
+    configBuilder:MakeCheckbox(
+        '(Virag-)DevTool',
+        'viragDevTool',
+        L['Use (Virag-)DevTool to inspect the nodeInfo table.']
+    ):AddModifyPredicate(function()
+        return select(4, C_AddOns.GetAddOnInfo('ViragDevTool')) or select(4, C_AddOns.GetAddOnInfo('DevTool')); -- 4-> loadable
+    end);
+    configBuilder:MakeCheckbox(
+        'LuaBrowser',
+        'luaBrowser',
+        L['Use LuaBrowser to inspect the nodeInfo table.']
+    ):AddModifyPredicate(function()
+        return select(4, C_AddOns.GetAddOnInfo('LuaBrowser')); -- 4-> loadable
+    end);
+    configBuilder:MakeCheckbox(
+        '/dump',
+        'slashDump',
+        L['Dump the nodeInfo table to chat.']
+    );
 end
 
 function Module:SetupHook(talentsTab)
@@ -207,8 +180,13 @@ end
 function Module:ShowDebugInfo(buttonFrame)
     local nodeInfo = buttonFrame.nodeInfo or buttonFrame.GetNodeInfo and buttonFrame:GetNodeInfo() or {};
     nodeInfo = Mixin({}, nodeInfo);
-    nodeInfo._button = buttonFrame;
     nodeInfo._entryInfo = buttonFrame.entryInfo or buttonFrame.GetEntryInfo and buttonFrame:GetEntryInfo() or nil;
+
+    if self.db.slashDump then
+        DevTools_Dump(nodeInfo, 'value');
+    end
+
+    nodeInfo._button = buttonFrame;
 
     if self.db.tinspect then
         UIParentLoadAddOn("Blizzard_DebugTools");
@@ -225,9 +203,5 @@ function Module:ShowDebugInfo(buttonFrame)
     if self.db.luaBrowser and SlashCmdList.LuaBrowser then
         _G['TalentTreeTweaksDebugNodeInfo'] = nodeInfo;
         SlashCmdList.LuaBrowser('code TalentTreeTweaksDebugNodeInfo');
-    end
-
-    if self.db.slashDump then
-        DevTools_Dump(nodeInfo, 'value');
     end
 end

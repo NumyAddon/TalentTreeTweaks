@@ -1,4 +1,6 @@
-local _, TTT = ...;
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
@@ -10,10 +12,10 @@ local ChatFrame_OpenChat = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame
 
 local LEVEL_CAP = 80;
 
---- @class TalentTreeTweaks_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TTT_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'AceEvent-3.0');
 
---- @param unit string
+--- @param unit UnitToken
 function TTT_InspectTalents(unit)
     Module.inspecting[UnitGUID(unit)] = { unit = unit, name = UnitNameUnmodified(unit) };
     NotifyInspect(unit);
@@ -21,39 +23,42 @@ end
 
 local TTT_InspectTalents = TTT_InspectTalents;
 
---- @type table<string, { unit: string, name: string }> # [guid] = info
-Module.inspecting = {};
-Module.overlayPool = {
-    --- @type table<BUTTON, true>
-    active = {},
-    --- @type BUTTON[]
-    inactive = {},
-    --- @return BUTTON?
-    Acquire = function(self)
-        local btn = table.remove(self.inactive);
-        if not btn then return; end
-        self.active[btn] = true;
-        return btn;
-    end,
-    --- @param btn BUTTON
-    Release = function(self, btn)
-        self.active[btn] = nil;
-        table.insert(self.inactive, btn);
-        btn:ClearAllPoints();
-        btn:Hide();
-    end,
-};
-for i = 1, 50 do
-    local btn = CreateFrame('BUTTON');
-    btn:RegisterForClicks('RightButtonDown');
-    btn:RegisterForClicks('RightButtonUp');
-    btn:SetPassThroughButtons('LeftButton');
-    btn:SetPropagateMouseMotion(true);
-    btn:Hide();
-    Module.overlayPool.inactive[i] = btn;
-end
-
 function Module:OnInitialize()
+    --- @type table<string, { unit: string, name: string }> # [guid] = info
+    self.inspecting = {};
+    --- @class TTT_ExportInspectedBuild_Pool
+    self.overlayPool = {
+        --- @type table<BUTTON, true>
+        active = {},
+        --- @type BUTTON[]
+        inactive = {},
+        --- @param pool TTT_ExportInspectedBuild_Pool
+        --- @return BUTTON?
+        Acquire = function(pool)
+            local btn = table.remove(pool.inactive);
+            if not btn then return; end
+            pool.active[btn] = true;
+            return btn;
+        end,
+        --- @param pool TTT_ExportInspectedBuild_Pool
+        --- @param btn BUTTON
+        Release = function(pool, btn)
+            pool.active[btn] = nil;
+            table.insert(pool.inactive, btn);
+            btn:ClearAllPoints();
+            btn:Hide();
+        end,
+    };
+    for i = 1, 50 do
+        local btn = CreateFrame('BUTTON');
+        btn:RegisterForClicks('RightButtonDown');
+        btn:RegisterForClicks('RightButtonUp');
+        btn:SetPassThroughButtons('LeftButton');
+        btn:SetPropagateMouseMotion(true);
+        btn:Hide();
+        self.overlayPool.inactive[i] = btn;
+    end
+
     Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
         if self:IsEnabled() and self.db.exportOnDropdownRightClick then
             self:OnLoadoutMenuOpen(dropdown, rootDescription);
@@ -69,9 +74,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(); end);
     self:RegisterEvent("INSPECT_READY");
 end
 
@@ -94,55 +97,39 @@ function Module:GetName()
     return L['Export / Inspect Loadouts'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ExportInspectedBuildDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
+    --- @class TTT_ExportInspectedBuildDB
     local defaults = {
         exportOnDropdownRightClick = true,
         showLinkInChatButton = true,
         inspectTalentsMenuItem = true,
     };
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
-
-    local counter = CreateCounter(10);
-
-    local get = function(info)
-        return self.db[info[#info]];
-    end
-    local set = function(info, value)
-        self.db[info[#info]] = value;
+    configBuilder:SetDefaults(defaults, true);
+    local function callback()
         self:OnDisable();
         self:OnEnable();
     end
-    defaultOptionsTable.args.exportOnDropdownRightClick = {
-        type = 'toggle',
-        name = L['Export on Right-Click'],
-        desc = L['Adds a right-click option to the loadout dropdown to export your build.'],
-        order = counter(),
-        get = get,
-        set = set,
-    };
-    defaultOptionsTable.args.showLinkInChatButton = {
-        type = 'toggle',
-        name = string.format(L['Show %s Button'], TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']),
-        desc = L['Adds a button to link the currently shown build in chat.'],
-        order = counter(),
-        get = get,
-        set = set,
-    };
-    defaultOptionsTable.args.inspectTalentsMenuItem = {
-        type = 'toggle',
-        name = L['Inspect Talents'],
-        desc = L['Adds a right-click menu option to directly inspect a player\'s talents.'],
-        order = counter(),
-        get = get,
-        set = set,
-    };
-
-    return defaultOptionsTable;
+    configBuilder:MakeCheckbox(
+        L['Export on Right-Click'],
+        'exportOnDropdownRightClick',
+        L['Adds a right-click option to the loadout dropdown to export your build.'],
+        callback
+    );
+    configBuilder:MakeCheckbox(
+        string.format(L['Show %s Button'], TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']),
+        'showLinkInChatButton',
+        L['Adds a button to link the currently shown build in chat.'],
+        callback
+    );
+    configBuilder:MakeCheckbox(
+        L['Inspect Talents'],
+        'inspectTalentsMenuItem',
+        L['Adds a right-click menu option to directly inspect a player\'s talents.'],
+        callback
+    );
 end
 
 --- @param rootDescription RootMenuDescriptionProxy

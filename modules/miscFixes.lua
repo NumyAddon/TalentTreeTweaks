@@ -1,21 +1,19 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
 local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink;
-local GetSpellLink = C_Spell and C_Spell.GetSpellLink or GetSpellLink;
+local GetSpellLink = C_Spell.GetSpellLink;
 
---- @class TalentTreeTweaks_MiscFixes: AceModule, AceHook-3.0
+--- @class TTT_MiscFixes: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
 function Module:OnEnable()
     EventRegistry:RegisterCallback('TalentButton.OnClick', self.OnButtonClick, self);
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(); end);
 end
 
 function Module:OnDisable()
@@ -31,44 +29,33 @@ function Module:GetName()
     return L['Misc Fixes'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_MiscFixesDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
-
+    --- @class TTT_MiscFixesDB
     local defaults = {
         dropdownUpdateOnLoadConfigFix = true,
         linkChoiceNodeInChatFix = true,
-    }
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
-
-    local get = function(info)
-        return self.db[info[#info]];
-    end
-    local set = function(info, value)
-        self:UpdateSetting(info[#info], value);
-    end
-
-    defaultOptionsTable.args.dropdownUpdateOnLoadConfigFix = {
-        type = 'toggle',
-        name = L['Fix issue with the loadout dropdown not updating'],
-        desc = L['Macros and certain addons that change loadouts, cause the dropdown to not update properly in some situations. This fixes that.'],
-        get = get,
-        set = set,
-        order = 10,
     };
+    configBuilder:SetDefaults(defaults, true);
 
-    defaultOptionsTable.args.linkChoiceNodeInChatFix = {
-        type = 'toggle',
-        name = L['Fix issue that prevents linking choice talents in chat, when inspecting a build'],
-        get = get,
-        set = set,
-        order = 15,
-    }
-
-    return defaultOptionsTable;
+    configBuilder:MakeCheckbox(
+        L['Fix issue with the loadout dropdown not updating'],
+        'dropdownUpdateOnLoadConfigFix',
+        L['Macros and certain addons that change loadouts, cause the dropdown to not update properly in some situations. This fixes that.'],
+        function(_, value)
+            if value then
+                self:SetupDropDownUpdateHook();
+            else
+                self:UnhookDropDownUpdateHook();
+            end
+        end
+    );
+    configBuilder:MakeCheckbox(
+        L['Fix issue that prevents linking choice talents in chat, when inspecting a build'],
+        'linkChoiceNodeInChatFix'
+    );
 end
 
 function Module:UpdateSetting(key, value)

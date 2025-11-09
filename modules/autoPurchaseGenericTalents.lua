@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
-local LINK_NAME = 'TTT_TraitTooltip';
+local LINK_NAME = 'TalentTreeTweaks_TraitTooltip';
 
 local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 local HORRIFIC_VISIONS_TREE_ID = 1057;
@@ -30,6 +30,8 @@ local SURGE_ENTRY_IDS = {
     [CHOICE_NODE_OPTION_1] = 123787,
     [CHOICE_NODE_OPTION_2] = 123786,
 };
+local WHIRLING_SURGE_SPELL_ID = 447981;
+local LIGHTNING_SURGE_SPELL_ID = 447982;
 local LIMITS_UNBOUND_NODE_ID = 108700;
 
 local LEMIX_SEASON_ID = 2;
@@ -37,7 +39,7 @@ local IS_LEMIX;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
---- @class TalentTreeTweaks_GenericTalentModule: AceModule, AceEvent-3.0
+--- @class TTT_GenericTalentModule: TTT_Module, AceEvent-3.0
 local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
 -- don't rename the module, the settings etc are stored there
 
@@ -139,10 +141,11 @@ function Module:GetDescription()
     return text;
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    --- @type TalentTreeTweaks_GenericTalentModuleDB
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_GenericTalentModuleDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
-    --- @class TalentTreeTweaks_GenericTalentModuleDB
+    --- @class TTT_GenericTalentModuleDB
     local defaults = {
         reportPurchases = true,
         skyridingEnabled = true,
@@ -155,11 +158,8 @@ function Module:GetOptions(defaultOptionsTable, db)
         reshiiWrapsEnabled = true,
         lemixLimitsUnboundEnabled = true,
     };
-    for k, v in pairs(defaults) do
-        if self.db[k] == nil then
-            self.db[k] = v;
-        end
-    end
+    configBuilder:SetDefaults(defaults, true);
+
     local function setEnabledTreeIDs()
         self.enabledTreeIDs = {
             [SKYRIDING_TREE_ID] = self.db.skyridingEnabled or nil,
@@ -171,235 +171,141 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     setEnabledTreeIDs();
 
-    local function get(info)
-        return self.db[info[#info]];
+    configBuilder:MakeCheckbox(
+        L['Report Purchases'],
+        'reportPurchases',
+        L['Print in chat whenever a new talent is purchased.']
+    );
+
+    do
+        local function isLoaded() return not not self.skyridingConfigID; end;
+        local function isNotLoaded() return not isLoaded; end;
+        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Skyriding system on this character yet.']);
+        loading:AddShownPredicate(isNotLoaded);
+        configBuilder:MakeCheckbox(
+            ENABLE,
+            'skyridingEnabled',
+            L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE)
+        );
+        configBuilder:MakeButton(
+            L['Toggle UI'],
+            function() self:ToggleTreeUI(SKYRIDING_TREE_ID); end,
+            L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE)
+        ):AddModifyPredicate(isLoaded);
+        configBuilder:MakeDropdown(
+            L['Auto Ride Along'],
+            'rideAlong',
+            L['Automatically enable/disable Ride Along the first time you log in on a character.'],
+            {
+                { value = CHOICE_NODE_OPTION_1, text = L['Enable Ride Along'], },
+                { value = CHOICE_NODE_OPTION_2, text = L['Disable Ride Along'], },
+                { value = CHOICE_NODE_NOT_SET,  text = L['Do Nothing'], },
+            },
+            setEnabledTreeIDs
+        );
+        configBuilder:MakeButton(
+            L['Reset Ride Along Cache'],
+            function()
+                self.db.rideAlongCache = {};
+                self:DefferPurchase();
+            end,
+            L['Reset the Ride Along cache, so all characters will match the current setting on login.']
+        );
+        configBuilder:MakeDropdown(
+            L['Auto Surge Choice'],
+            'surge',
+            L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
+            {
+                { value = CHOICE_NODE_OPTION_1, text = StripHyperlinks(C_Spell.GetSpellLink(WHIRLING_SURGE_SPELL_ID)) or 'Whirling Surge', },
+                { value = CHOICE_NODE_OPTION_2, text = StripHyperlinks(C_Spell.GetSpellLink(LIGHTNING_SURGE_SPELL_ID)) or 'Lightning Surge', },
+                { value = CHOICE_NODE_NOT_SET,  text = L['Do Nothing'], },
+            },
+            setEnabledTreeIDs
+        );
+        configBuilder:MakeButton(
+            L['Reset Surge Cache'],
+            function()
+                self.db.surgeCache = {};
+                self:DefferPurchase();
+            end,
+            L['Reset the Surge cache, so all characters will match the current setting on login.']
+        );
     end
-    local function set(info, value)
-        self.db[info[#info]] = value;
-        setEnabledTreeIDs();
+    do
+        local function isLoaded() return not not self:GetLemixConfigID(); end;
+        local function isNotLoaded() return not isLoaded(); end;
+        local function isLemix() return IS_LEMIX; end;
+        configBuilder:MakeHeader(L['Legion Remix: Limits Unbound']):AddShownPredicate(isLemix);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.']);
+        loading:AddShownPredicate(isNotLoaded);
+        loading:AddShownPredicate(isLemix);
+
+        configBuilder:MakeCheckbox(
+            ENABLE,
+            'lemixLimitsUnboundEnabled',
+            L['Automatically upgrade the final Limits Unbound talent when you have enough currency.']
+        ):AddShownPredicate(isLemix);
+        local openUI = configBuilder:MakeButton(
+            L['Open Artifact Traits UI'],
+            function() SocketInventoryItem(16); end,
+            L['Open the Legion Remix Artifact traits UI to view and adjust talents.']
+        );
+        openUI:AddModifyPredicate(isLoaded)
+        openUI:AddShownPredicate(isLemix);
     end
-    local increment = CreateCounter(5);
-
-    defaultOptionsTable.args.reportPurchases = {
-        type = 'toggle',
-        name = L['Report Purchases'],
-        desc = L['Print in chat whenever a new talent is purchased.'],
-        order = increment(),
-        get = get,
-        set = set,
-    };
-    local GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE or "Reshii Wraps (added in 11.2.0)"
-
-    function Module:BuildOptionsTable(initial)
-        local isSkyridingLoaded = not not self.skyridingConfigID;
-        local isHorrificVisionsLoaded = not not self.horrificVisionsConfigID;
-        local isOverchargedTitanConsoleLoaded = not not self.overchargedTitanConsoleConfigID;
-        local isRishiiWrapsLoaded = not not self.reshiiWrapsConfigID;
-        local isLemixLoaded = not initial and not not self:GetLemixConfigID();
-
-        defaultOptionsTable.args.skyRiding = {
-            type = 'group',
-            inline = true,
-            name = L['Skyriding'],
-            order = increment(),
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the Skyriding system on this character yet.'],
-                    order = increment(),
-                    hidden = isSkyridingLoaded,
-                },
-                skyridingEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically purchase Skyriding talents when you have enough currency.'],
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Toggle Skyriding UI'],
-                    desc = L['Toggle the Skyriding UI to view and adjust talents.'],
-                    order = increment(),
-                    func = function() self:ToggleTreeUI(SKYRIDING_TREE_ID); end,
-                    disabled = not isSkyridingLoaded,
-                },
-                rideAlong = {
-                    type = 'select',
-                    name = L['Auto Ride Along'],
-                    desc = L['Automatically enable/disable Ride Along the first time you log in on a character.'],
-                    values = {
-                        [CHOICE_NODE_OPTION_1] = L['Enable Ride Along'],
-                        [CHOICE_NODE_OPTION_2] = L['Disable Ride Along'],
-                        [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
-                    },
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                resetRideALongCache = {
-                    type = 'execute',
-                    name = L['Reset Ride Along Cache'],
-                    desc = L['Reset the Ride Along cache, so all characters will match the current setting on login.'],
-                    order = increment(),
-                    func = function()
-                        self.db.rideAlongCache = {};
-                        self:DefferPurchase();
-                    end,
-                },
-                surge = {
-                    type = 'select',
-                    name = L['Auto Surge Choice'],
-                    desc = L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
-                    values = function()
-                        return {
-                            [CHOICE_NODE_OPTION_1] = StripHyperlinks(self:GetSpellLinkFromEntryID(self.skyridingConfigID, SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_1]) or 'Whirling Surge'),
-                            [CHOICE_NODE_OPTION_2] = StripHyperlinks(self:GetSpellLinkFromEntryID(self.skyridingConfigID, SURGE_ENTRY_IDS[CHOICE_NODE_OPTION_2]) or 'Lightning Surge'),
-                            [CHOICE_NODE_NOT_SET] = L['Do Nothing'],
-                        };
-                    end,
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                resetSurgeCache = {
-                    type = 'execute',
-                    name = L['Reset Surge Cache'],
-                    desc = L['Reset the Surge cache, so all characters will match the current setting on login.'],
-                    order = increment(),
-                    func = function()
-                        self.db.surgeCache = {};
-                        self:DefferPurchase();
-                    end,
-                },
-            },
-        };
-        defaultOptionsTable.args.lemix = {
-            type = 'group',
-            inline = true,
-            name = L['Legion Remix: Limits Unbound'],
-            order = increment(),
-            hidden = not IS_LEMIX,
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.'],
-                    order = increment(),
-                    hidden = isLemixLoaded,
-                },
-                lemixLimitsUnboundEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically upgrade the final Limits Unbound talent when you have enough currency.'],
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Open Artifact Traits UI'],
-                    desc = L['Open the Legion Remix Artifact traits UI to view and adjust talents.'],
-                    order = increment(),
-                    func = function() SocketInventoryItem(16); end,
-                    disabled = not isLemixLoaded,
-                },
-            },
-        };
-        defaultOptionsTable.args.reshiiWraps = {
-            type = 'group',
-            inline = true,
-            name = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE,
-            order = increment(),
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    hidden = isRishiiWrapsLoaded,
-                },
-                reshiiWrapsEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE),
-                    order = increment(),
-                    func = function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
-                    disabled = not isRishiiWrapsLoaded,
-                },
-            },
-        };
-        defaultOptionsTable.args.horrificVisions = {
-            type = 'group',
-            inline = true,
-            name = L['Horrific Visions'],
-            order = increment(),
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.'],
-                    order = increment(),
-                    hidden = isHorrificVisionsLoaded,
-                },
-                horrificVisionsEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically purchase Horrific Visions talents when you have enough currency.'],
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Toggle Horrific Visions UI'],
-                    desc = L['Toggle the Horrific Visions UI to view and adjust talents.'],
-                    order = increment(),
-                    func = function() self:ToggleTreeUI(HORRIFIC_VISIONS_TREE_ID); end,
-                    disabled = not isHorrificVisionsLoaded,
-                },
-            },
-        };
-        defaultOptionsTable.args.overchargedTitanConsole = {
-            type = 'group',
-            inline = true,
-            name = GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE,
-            order = increment(),
-            args = {
-                loading = {
-                    type = 'description',
-                    name = L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
-                    order = increment(),
-                    hidden = isOverchargedTitanConsoleLoaded,
-                },
-                overchargedTitanConsoleEnabled = {
-                    type = 'toggle',
-                    name = L['Enable'],
-                    desc = L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
-                    order = increment(),
-                    get = get,
-                    set = set,
-                },
-                openUI = {
-                    type = 'execute',
-                    name = L['Toggle %s UI']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
-                    desc = L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE),
-                    order = increment(),
-                    func = function() self:ToggleTreeUI(OVERCHARGED_TITAN_CONSOLE_TREE_ID); end,
-                    disabled = not isOverchargedTitanConsoleLoaded,
-                },
-            },
-        };
+    do
+        local function isLoaded() return not not self.reshiiWrapsConfigID; end;
+        local function isNotLoaded() return not isLoaded(); end;
+        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE));
+        loading:AddShownPredicate(isNotLoaded);
+        configBuilder:MakeCheckbox(
+            ENABLE,
+            'reshiiWrapsEnabled',
+            L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE)
+        );
+        configBuilder:MakeButton(
+            L['Toggle UI'],
+            function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
+            L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE)
+        ):AddModifyPredicate(isLoaded);
     end
-    self:BuildOptionsTable(true);
-
-    return defaultOptionsTable;
+    do
+        local HORRIFIC_VISIONS_TITLE = SPLASH_BATTLEFORAZEROTH_8_3_0_FEATURE1_TITLE or L['Horrific Visions'];
+        local function isLoaded() return not not self.horrificVisionsConfigID; end;
+        local function isNotLoaded() return not isLoaded(); end;
+        configBuilder:MakeHeader(HORRIFIC_VISIONS_TITLE);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.']);
+        loading:AddShownPredicate(isNotLoaded);
+        configBuilder:MakeCheckbox(
+            ENABLE,
+            'horrificVisionsEnabled',
+            L['Automatically purchase Horrific Visions talents when you have enough currency.']
+        );
+        configBuilder:MakeButton(
+            L['Toggle UI'],
+            function() self:ToggleTreeUI(HORRIFIC_VISIONS_TREE_ID); end,
+            L['Toggle the %s UI to view and adjust talents.']:format(HORRIFIC_VISIONS_TITLE)
+        ):AddModifyPredicate(isLoaded);
+    end
+    do
+        local function isLoaded() return not not self.overchargedTitanConsoleConfigID; end;
+        local function isNotLoaded() return not isLoaded(); end;
+        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE));
+        loading:AddShownPredicate(isNotLoaded);
+        configBuilder:MakeCheckbox(
+            ENABLE,
+            'overchargedTitanConsoleEnabled',
+            L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE)
+        );
+        configBuilder:MakeButton(
+            L['Toggle UI'],
+            function() self:ToggleTreeUI(OVERCHARGED_TITAN_CONSOLE_TREE_ID); end,
+            L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE)
+        ):AddModifyPredicate(isLoaded);
+    end
 end
 
 function Module:Print(...)
@@ -463,8 +369,6 @@ function Module:CheckConfig()
         return;
     end
 
-    self:BuildOptionsTable();
-    Main:NotifyConfigChange();
     self.talentsLoaded = true;
     if self.enabled then
         self:DefferPurchase();

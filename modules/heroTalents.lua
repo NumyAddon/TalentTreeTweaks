@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_HeroTalents: AceModule, AceHook-3.0
+--- @class TTT_HeroTalents: AceModule, AceHook-3.0
 local Module = Main:NewModule('HeroTalents', 'AceHook-3.0');
 
 local function RunScript(frame, script, ...)
@@ -32,9 +32,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(); end);
 end
 
 function Module:OnDisable()
@@ -43,18 +41,12 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return
-        L['Allows you to right-click the Hero Talent button to quickly switch hero specs.'];
+    return L['Allows you to right-click the Hero Talent button to quickly switch hero specs.'];
 end
 
 function Module:GetName()
     return L['Hero Talents'];
 end
-
-function Module:GetOptions(defaultOptionsTable, db)
-    return defaultOptionsTable;
-end
-
 
 function Module:SetupHook()
     local talentsTab = Util:GetTalentFrame();

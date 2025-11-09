@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_MiniTreeInTooltip: AceModule, AceHook-3.0
+--- @class TTT_MiniTreeInTooltip: AceModule, AceHook-3.0
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
 local LTT = Util.LibTalentTree;
@@ -20,7 +20,7 @@ local VISUAL_STYLE_RIGHT = 5;
 local VISUAL_STYLE_ONE_THIRD = 6;
 local VISUAL_STYLE_TWO_THIRD = 7;
 
-local TEXTURE_FILE = [[interface\addons\talenttreetweaks\media\mini-tree-orbs]]
+local TEXTURE_FILE = [[interface\addons\talenttreetweaks\media\mini-tree-orbs]];
 
 -- these strings are saved as settings
 local DISPLAY_STYLE_SIMPLE = 'simple';
@@ -87,23 +87,22 @@ function Module:GetName()
     return L["Mini Tree in Tooltips"];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_MiniTreeInTooltipDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_MiniTreeInTooltipDB
     local defaults = {
         displayStyle = DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF,
         upgradedDisplayStyle = 0,
         scale = 1,
-        diffGreen = {r = 0, g = 1, b = 0},
-        diffOrange = {r = 1, g = 1, b = 0},
-        diffRed = {r = 1, g = 0, b = 0},
-        diffYellow = {r = 1, g = 1, b = 1},
+        diffGreen = { r = 0, g = 1, b = 0 },
+        diffOrange = { r = 1, g = 1, b = 0 },
+        diffRed = { r = 1, g = 0, b = 0 },
+        diffYellow = { r = 1, g = 1, b = 1 },
         inactiveSubTreeAlpha = 0.5,
-    }
-    self.db = db;
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
+    };
+    configBuilder:SetDefaults(defaults, true);
     if self.db.upgradedDisplayStyle < 1 then
         self.db.upgradedDisplayStyle = 1;
         if self.db.displayStyle == DISPLAY_STYLE_SIMPLE then
@@ -115,137 +114,72 @@ function Module:GetOptions(defaultOptionsTable, db)
         [DIFF_DEFAULT_GREEN] = self.db.diffGreen,
         [DIFF_DEFAULT_ORANGE] = self.db.diffOrange,
         [DIFF_DEFAULT_YELLOW] = self.db.diffYellow,
-    }
+    };
 
-    local increment = CreateCounter(5);
+    configBuilder:MakeDropdown(
+        L['Display Style'],
+        'displayStyle',
+        L["Choose how the mini tree is displayed."],
+        {
+            { value = DISPLAY_STYLE_SIMPLE, text = L["Simple dots"] },
+            { value = DISPLAY_STYLE_SPELL_ICON, text = L["Spell Icon"] },
+            { value = DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF, text = L["Simple dots with default diff colors"], tooltip = L["Shows the difference between your current build and the build in the tooltip"] },
+            { value = DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF, text = L["Simple dots with custom diff colors"], tooltip = L["Shows the difference between your current build and the build in the tooltip"] },
+        }
+    );
+    do
+        local warning = configBuilder:MakeText(L['Warning: Custom colors may look weird, this cannot be fixed.']);
+        warning:AddShownPredicate(function() return self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end);
 
-    local function getColor(info)
-        local color = self.db[info[#info]];
-        return color.r, color.g, color.b, color.a;
+        configBuilder:MakeColorPicker(
+            L['You have a talent they don\'t'],
+            'diffRed'
+        ):AddShownPredicate(function() return self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end);
+        configBuilder:MakeColorPicker(
+            L['They have a talent you don\'t'],
+            'diffGreen'
+        ):AddShownPredicate(function() return self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end);
+        configBuilder:MakeColorPicker(
+            L['You have selected a different choice, or different number of points in a talent'],
+            'diffOrange'
+        ):AddShownPredicate(function() return self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end);
+        configBuilder:MakeColorPicker(
+            L['You have the same talents'],
+            'diffYellow'
+        ):AddShownPredicate(function() return self.db.displayStyle == DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end);
+        configBuilder:MakeButton(
+            RESET,
+            function()
+                self.db.diffRed = defaults.diffRed;
+                self.db.diffGreen = defaults.diffGreen;
+                self.db.diffOrange = defaults.diffOrange;
+                self.db.diffYellow = defaults.diffYellow;
+                self.customColors = {
+                    [DIFF_DEFAULT_RED] = self.db.diffRed,
+                    [DIFF_DEFAULT_GREEN] = self.db.diffGreen,
+                    [DIFF_DEFAULT_ORANGE] = self.db.diffOrange,
+                    [DIFF_DEFAULT_YELLOW] = self.db.diffYellow,
+                }
+            end,
+            L['Reset the colors to default']
+        );
     end
-    local function setColor(info, r, g, b)
-        local color = self.db[info[#info]];
-        color.r, color.g, color.b = r, g, b;
-    end
-    local getter = function(info)
-        return self.db[info[#info]];
-    end;
-    local setter = function(info, value)
-        self.db[info[#info]] = value;
-    end;
 
-    defaultOptionsTable.args.displayStyle = {
-        order = increment(),
-        type = "select",
-        name = L["Display Style"],
-        desc = L["Choose how the mini tree is displayed. 'with diff' means that the mini tree will show the difference between your current build and the build in the tooltip."],
-        values = {
-            [DISPLAY_STYLE_SIMPLE] = L["Simple dots"],
-            [DISPLAY_STYLE_SPELL_ICON] = L["Spell Icon"],
-            [DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF] = L["Simple dots with default diff colors"],
-            [DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF] = L["Simple dots with custom diff colors"],
-        },
-        sorting = {
-            DISPLAY_STYLE_SIMPLE,
-            DISPLAY_STYLE_SPELL_ICON,
-            DISPLAY_STYLE_SIMPLE_WITH_DEFAULT_DIFF,
-            DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF,
-        },
-        width = "double",
-        get = getter,
-        set = setter,
-    }
-
-    defaultOptionsTable.args.customDiffWarning = {
-        order = increment(),
-        type = 'description',
-        name = L['Warning: Custom colors may look weird, this cannot be fixed.'],
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-    };
-    defaultOptionsTable.args.diffRed = {
-        order = increment(),
-        type = 'color',
-        name = L['You have a talent they don\'t'],
-        hasAlpha = false,
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-        get = getColor,
-        set = setColor,
-    };
-    defaultOptionsTable.args.diffGreen = {
-        order = increment(),
-        type = 'color',
-        name = L['They have a talent you don\'t'],
-        hasAlpha = false,
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-        get = getColor,
-        set = setColor,
-    };
-    defaultOptionsTable.args.diffOrange = {
-        order = increment(),
-        type = 'color',
-        name = L['You have selected a different choice, or different number of points in a talent'],
-        hasAlpha = false,
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-        get = getColor,
-        set = setColor,
-    };
-    defaultOptionsTable.args.diffYellow = {
-        order = increment(),
-        type = 'color',
-        name = L['You have the same talents'],
-        hasAlpha = false,
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-        get = getColor,
-        set = setColor,
-    };
-    defaultOptionsTable.args.reset = {
-        order = increment(),
-        type = 'execute',
-        name = RESET,
-        desc = L['Reset the colors to default'],
-        hidden = function() return self.db.displayStyle ~= DISPLAY_STYLE_SIMPLE_WITH_CUSTOM_DIFF; end,
-        func = function()
-            self.db.diffRed = defaults.diffRed;
-            self.db.diffGreen = defaults.diffGreen;
-            self.db.diffOrange = defaults.diffOrange;
-            self.db.diffYellow = defaults.diffYellow;
-            self.customColors = {
-                [DIFF_DEFAULT_RED] = self.db.diffRed,
-                [DIFF_DEFAULT_GREEN] = self.db.diffGreen,
-                [DIFF_DEFAULT_ORANGE] = self.db.diffOrange,
-                [DIFF_DEFAULT_YELLOW] = self.db.diffYellow,
-            }
-        end,
-    };
-
-    defaultOptionsTable.args.scale = {
-        order = increment(),
-        type = "range",
-        name = L["Scale"],
-        desc = L["Scale of the mini tree."],
-        min = 0.5,
-        max = 2,
-        step = 0.1,
-        get = getter,
-        set = setter,
-    };
-    defaultOptionsTable.args.inactiveSubTreeAlpha = {
-        order = increment(),
-        type = "range",
-        name = L["Fade Inactive Hero Trees"],
-        desc = L["Fade Inactive Hero Trees, to more easily see which one is active."],
-        min = 0,
-        max = 1,
-        step = 0.1,
-        get = getter,
-        set = setter,
-    };
-    defaultOptionsTable.args.example = {
-        order = increment(),
-        type = "execute",
-        name = L["Show Example"],
-        desc = L["Show an example of the mini tree for your current spec."],
-        func = function()
+    configBuilder:MakeSlider(
+        L['Scale'],
+        'scale',
+        L["Scale of the mini tree."],
+        configBuilder:MakeSliderOptions(0.5, 2, 0.1, function(value) return ('%.1fx'):format(value); end)
+    );
+    configBuilder:MakeSlider(
+        L['Fade Inactive Hero Trees'],
+        'inactiveSubTreeAlpha',
+        L["Fade Inactive Hero Trees, to more easily see which one is active."],
+        configBuilder:MakeSliderOptions(0, 1, 0.1, function(value) return ('%.1f%%'):format(100 * value); end)
+    );
+    configBuilder:MakeButton(
+        L['Show Example'],
+        function()
             local configID = C_ClassTalents.GetActiveConfigID();
             if not configID then return end;
             ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_CURSOR');
@@ -256,10 +190,8 @@ function Module:GetOptions(defaultOptionsTable, db)
             ItemRefTooltip:Show();
             TalentTreeTweaks_EmbedMiniTreeIntoTooltip(ItemRefTooltip, nil, configID)
         end,
-        disabled = function() return not C_ClassTalents.GetActiveConfigID(); end,
-    };
-
-    return defaultOptionsTable;
+        L["Show an example of the mini tree for your current spec."]
+    ):AddModifyPredicate(function() return not not C_ClassTalents.GetActiveConfigID(); end);
 end
 
 function Module:DebugPrint(...)
@@ -411,7 +343,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     table.sort(subTrees);
     local subTreeMap = tInvert(subTrees);
 
-    --- @type TalentTreeTweaks_Util_LoadoutContent
+    --- @type TTT_Util_LoadoutContent
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
         local nodeID = nodeSelectionInfo.nodeID;
         if LTT:IsNodeVisibleForSpec(specID, nodeSelectionInfo.nodeID) then

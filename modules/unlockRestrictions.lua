@@ -1,26 +1,20 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_UnlockRestrictions: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
     [ERR_TALENT_FAILED_IN_COMBAT] = true,
 };
-Module.textsToUnlock = {};
-
-function Module:OnInitialize()
-    local texts = {
-        TALENT_FRAME_DROP_DOWN_EXPORT,
-        TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD,
-        TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK,
-    };
-    for _, text in pairs(texts) do
-        self.textsToUnlock[text] = true;
-    end
-end
+Module.textsToUnlock = {
+    [TALENT_FRAME_DROP_DOWN_EXPORT] = true,
+    [TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD] = true,
+    [TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK] = true,
+};
 
 function Module:OnEnable()
     self.enabled = true;
@@ -42,41 +36,26 @@ function Module:GetName()
     return L['Unlock Restrictions'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    self.db = db
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_UnlockRestrictionsDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_UnlockRestrictionsDB
     local defaults = {
         unlockShareButton = true,
         unlockInCombatSpending = true,
     };
-    for key, value in pairs(defaults) do
-        if db[key] == nil then
-            db[key] = value;
-        end
-    end
-
-    local get = function(info) return self.db[info[#info]] end
-    local set = function(info, value) self.db[info[#info]] = value end
-
-    defaultOptionsTable.args.unlockShareButton = {
-        type = 'toggle',
-        name = L['Unlock Share Button'],
-        desc = L['Unlocks the share button, so you can share your build without spending all points.'],
-        order = 5,
-        width = 'double',
-        get = get,
-        set = set,
-    };
-    defaultOptionsTable.args.unlockInCombatSpending = {
-        type = 'toggle',
-        name = L['Unlock In Combat Spending'],
-        desc = L['Unlocks the talent buttons, so you can reallocate points while in combat.'],
-        order = 6,
-        width = 'double',
-        get = get,
-        set = set,
-    };
-
-    return defaultOptionsTable;
+    configBuilder:SetDefaults(defaults, true);
+    configBuilder:MakeCheckbox(
+        L['Unlock Share Button'],
+        'unlockShareButton',
+        L['Unlocks the share button, so you can share your build without spending all points.']
+    );
+    configBuilder:MakeCheckbox(
+        L['Unlock In Combat Spending'],
+        'unlockInCombatSpending',
+        L['Unlocks the talent buttons, so you can reallocate points while in combat.']
+    );
 end
 
 function Module:SetupHook()

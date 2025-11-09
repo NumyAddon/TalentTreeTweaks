@@ -1,7 +1,7 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
@@ -9,7 +9,7 @@ local TRAIT_SYSTEM_ID = 19;
 local TREE_ID = 1056;
 local DO_NOTHING = -1;
 
---- @class TalentTreeTweaks_DriveModule: AceModule, AceEvent-3.0
+--- @class TTT_DriveModule: TTT_Module, AceEvent-3.0
 local Module = Main:NewModule('Drive Auto Purchaser', 'AceEvent-3.0');
 
 function Module:OnInitialize()
@@ -34,101 +34,63 @@ function Module:GetName()
 end
 
 function Module:GetDescription()
-    local text = L['Automatically selects the DRIVE upgrades you want for all of your alts.'];
-
-    return text;
+    return L['Automatically selects the DRIVE upgrades you want for all of your alts.'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_DriveModuleDB
+function Module:BuildConfig(configBuilder, db)
+    self.configBuilder = configBuilder;
     self.db = db;
+    --- @class TTT_DriveModuleDB
     local defaults = {
         reportPurchases = true,
     };
-    for k, v in pairs(defaults) do
-        if self.db[k] == nil then
-            self.db[k] = v;
-        end
-    end
+    configBuilder:SetDefaults(defaults, true);
 
-    local increment = CreateCounter(5);
-
-    self.optionsTable = defaultOptionsTable;
-
-    defaultOptionsTable.args.enable.width = 'full';
-
-    defaultOptionsTable.args.loading = {
-        type = 'description',
-        name = L['Loading...'] .. '\n' .. L['This module is only available for characters that have unlocked to the DRIVE system.'],
-        order = increment(),
-        hidden = function() return self.configID; end,
-    };
-
-    return defaultOptionsTable;
+    local initializer = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['This module is only available for characters that have unlocked to the DRIVE system.']);
+    initializer:AddShownPredicate(function() return not self.configID; end);
 end
 
-function Module:BuildOptionsTable()
-    local defaultOptionsTable = self.optionsTable;
-
-    local function get(info)
-        return self.db[info[#info]];
-    end
-    local function set(info, value)
-        self.db[info[#info]] = value;
-    end
-    local increment = CreateCounter(10);
+function Module:RebuildConfig()
+    local configBuilder = self.configBuilder;
+    if self.initializers then configBuilder:RemoveInitializers(self.initializers); end
+    self.initializers = {};
 
     for index, nodeInfo in self:IterateNodes() do
-        local values = { [DO_NOTHING] = L['Do Nothing'] };
-        local order = { DO_NOTHING };
+        local options = { { value = DO_NOTHING, text = L['Do Nothing'], }, };
         for _, entryID in ipairs(nodeInfo.entryIDs) do
             local spellLink = self:GetSpellLinkFromEntryID(entryID);
             if spellLink then
-                values[entryID] = spellLink;
-                table.insert(order, entryID);
+                table.insert(options, { value = entryID, text = spellLink, });
             end
         end
-        local dbKey = 'node-'..nodeInfo.ID;
+        local dbKey = 'node-' .. nodeInfo.ID;
         if nil == self.db[dbKey] then
             self.db[dbKey] = (nodeInfo.activeEntry and nodeInfo.activeEntry.entryID) or (nodeInfo.entryIDs and nodeInfo.entryIDs[1]) or DO_NOTHING;
         end
-        defaultOptionsTable.args['node-'..nodeInfo.ID] = {
-            type = 'select',
-            name = L['Row %d']:format(index),
-            desc = L['Specify the upgrade you want to select on login.'],
-            values = values,
-            sorting = order,
-            order = increment(),
-            get = get,
-            set = set,
-            width = 1.2,
-        };
+        table.insert(self.initializers, (configBuilder:MakeDropdown(
+            L['Row %d']:format(index),
+            dbKey,
+            L['Specify the upgrade you want to select on login.'],
+            options,
+            nil,
+            DO_NOTHING
+        )));
     end
-    defaultOptionsTable.args.refresh = {
-        type = 'execute',
-        name = L['Refresh Upgrades List'],
-        desc = L['Refresh the list of upgrades. May be useful if you have recently unlocked new upgrades.'],
-        order = increment(),
-        func = function()
-            self:BuildOptionsTable();
-            Main:NotifyConfigChange();
-        end,
-    };
-    defaultOptionsTable.args.setTalents = {
-        type = 'execute',
-        name = L['Apply DRIVE Upgrades'],
-        desc = L['Force apply the selected DRIVE upgrades. This automatically happens on login as well.'],
-        order = increment(),
-        func = function()
-            self:SelectTalents();
-        end,
-        width = 'full',
-    };
-    defaultOptionsTable.args.openUI = {
-        type = 'execute',
-        name = L['Toggle D.R.I.V.E. UI'],
-        desc = L['Toggle the DRIVE UI to view and adjust upgrades.'],
-        order = increment(),
-        func = function()
+    table.insert(self.initializers, configBuilder:MakeButton(
+        L['Refresh Upgrades List'],
+        function() self:RebuildConfig(); end,
+        L['Refresh the list of upgrades. May be useful if you have recently unlocked new upgrades.']
+    ));
+    table.insert(self.initializers, configBuilder:MakeButton(
+        L['Apply DRIVE Upgrades'],
+        function() self:SelectTalents(); end,
+        L['Force apply the selected DRIVE upgrades. This automatically happens on login as well.']
+    ));
+    table.insert(self.initializers, configBuilder:MakeButton(
+        L['Toggle D.R.I.V.E. UI'],
+        function()
             GenericTraitUI_LoadUI();
             if GenericTraitFrame.SetConfigIDBySystemID then
                 GenericTraitFrame:SetConfigIDBySystemID(TRAIT_SYSTEM_ID);
@@ -144,15 +106,15 @@ function Module:BuildOptionsTable()
                 table.insert(UISpecialFrames, 'GenericTraitFrame');
             end
         end,
-    };
-    defaultOptionsTable.args.reportPurchases = {
-        type = 'toggle',
-        name = L['Report On Selections'],
-        desc = L['Print in chat whenever a different upgrade is selected.'],
-        order = increment(),
-        get = get,
-        set = set,
-    };
+        L['Toggle the DRIVE UI to view and adjust upgrades.']
+    ));
+    table.insert(self.initializers, (configBuilder:MakeCheckbox(
+        L['Report On Selections'],
+        'reportPurchases',
+        L['Print in chat whenever a different upgrade is selected.']
+    )));
+
+    configBuilder:MoveInitializersAfter(self.initializers);
 end
 
 function Module:IterateNodes()
@@ -178,8 +140,7 @@ function Module:CheckConfig()
     self.configID = C_Traits.GetConfigIDBySystemID(TRAIT_SYSTEM_ID);
     if not self.configID then return end
 
-    self:BuildOptionsTable();
-    Main:NotifyConfigChange();
+    self:RebuildConfig();
 
     if self.enabled then
         self:SelectTalents();

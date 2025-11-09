@@ -28,8 +28,10 @@ core.lua
 ImportExportUtilV2.lua
 SharedUtil.lua
 
+settingsTemplates.xml
+config.lua
+
 modules\reduceTaint.lua
-modules\dropdownReplacement.xml
 
 modules\tooltipIds.lua
 modules\exportInspectedBuild.lua

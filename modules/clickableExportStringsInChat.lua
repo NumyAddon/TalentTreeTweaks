@@ -1,7 +1,7 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
@@ -9,7 +9,7 @@ local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEd
 local ChatFrame_AddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
 local ChatFrame_RemoveMessageEventFilter = ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter or ChatFrame_RemoveMessageEventFilter
 
---- @class TalentTreeTweaks_ClickableExportStringsInChat: AceModule, AceHook-3.0
+--- @class TTT_ClickableExportStringsInChat: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
 Module.bitWidthSpecID = 16;
@@ -43,10 +43,10 @@ local events = {
 local function Filter(_, _, message, ...) return false, Module:ReplaceChatMessage(message), ... end
 
 local LOADOUT_SERIALIZATION_VERSION;
-local SUPPORTED_SERIALIZATION_VERSIONS = {[1] = true, [2] = true};
+local SUPPORTED_SERIALIZATION_VERSIONS = { [1] = false, [2] = true };
 function Module:OnInitialize()
     self.debug = false;
-    LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
+    LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 2;
 end
 
 function Module:OnEnable()
@@ -84,29 +84,25 @@ function Module:GetName()
     return L['Improved Loadout Links'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    Util:PrepareModuleDb(self, db, {
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ClickableExportStringsInChatDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_ClickableExportStringsInChatDB
+    local defaults = {
         disableDetectionFromStrings = true,
-    });
-
-    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() end);
-    defaultOptionsTable.args.disableDetectionFromStrings = {
-        order = increment(),
-        type = 'toggle',
-        width = 'double',
-        name = L['Disable detection for loadout strings in chat'],
-        desc = L['Disables the module from scanning your chat for any loadout string that was sent as normal regular text. This can potentially reduce performance issues, especially on bussier realms.'],
-        get = getter,
-        set = setter,
     };
+    configBuilder:SetDefaults(defaults, true);
 
-    defaultOptionsTable.args.showExample = {
-        order = increment(),
-        type = 'execute',
-        width = 'double',
-        name = L['Show Example link in chat'],
-        desc = L['Shows an example of a clickable link in chat.'],
-        func = function()
+    configBuilder:MakeCheckbox(
+        L['Disable detection for loadout strings in chat'],
+        'disableDetectionFromStrings',
+        L['Disables the module from scanning your chat for any loadout string that was sent as normal regular text. This can potentially reduce performance issues, especially on bussier realms.']
+    );
+
+    configBuilder:MakeButton(
+        L['Show Example link in chat'],
+        function()
             local talentTab = Util:GetTalentFrame();
             local exportString = Util:GetLoadoutExportString(talentTab);
             print(L['Example of a regular string'], self:ReplaceChatMessage(exportString), self.db.disableDetectionFromStrings and '' or L['(was %s)']:format(exportString));
@@ -116,9 +112,8 @@ function Module:GetOptions(defaultOptionsTable, db)
             local chatLink = PlayerUtil.GetClassColor():WrapTextInColorCode(linkText);
             print(L['Example of a loadout link'], self:ReplaceChatMessage(chatLink), L['(was %s)']:format(chatLink));
         end,
-    };
-
-    return defaultOptionsTable;
+        L['Shows an example of a clickable link in chat.']
+    );
 end
 
 function Module:DebugPrint(...)
@@ -243,7 +238,7 @@ function Module:OpenInDefaultUI(level, exportString)
 end
 
 local function replaceSubString(str, sStart, sEnd, replacement)
-    return string.sub(str, 1, sStart-1) .. replacement .. string.sub(str, sEnd+1)
+    return string.sub(str, 1, sStart - 1) .. replacement .. string.sub(str, sEnd + 1)
 end
 
 function Module:ReplaceChatMessage(message)
@@ -263,7 +258,7 @@ function Module:ReplaceChatMessage(message)
     while (sStart) do
         local lStart;
         if prefixExistsSomewhere then
-            lStart = message:sub(lEnd or 1, sStart-1):find(prefixPattern);
+            lStart = message:sub(lEnd or 1, sStart - 1):find(prefixPattern);
             if lStart then
                 lStart = lStart + (lEnd or 1) - 1;
                 lEnd = message:sub(lStart):find('|h');
@@ -301,7 +296,7 @@ function Module:ReplaceChatMessage(message)
             end
         end
 
-        sStart, sEnd, importString = message:find(importStringPattern, sEnd+1);
+        sStart, sEnd, importString = message:find(importStringPattern, sEnd + 1);
     end
 
     for i = #toReplace, 1, -1 do
@@ -334,17 +329,17 @@ function Module:ParseImportString(importText)
     local headerValid, serializationVersion, specID, treeHash = self:ReadLoadoutHeader(importStream);
     self:DebugPrint('serialization version:', serializationVersion, 'specID:', specID)
 
-    if(not headerValid) then
+    if (not headerValid) then
         self:DebugPrint('Invalid header');
         return false;
     end
 
-    if(serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
+    if (serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
         self:DebugPrint('Invalid serialization version');
         return false;
     end
 
-    if(not SUPPORTED_SERIALIZATION_VERSIONS[serializationVersion]) then
+    if (not SUPPORTED_SERIALIZATION_VERSIONS[serializationVersion]) then
         self:DebugPrint('Unsupported serialization version');
         return false;
     end
@@ -355,7 +350,7 @@ function Module:ParseImportString(importText)
         return false;
     end
 
-    if(not self:IsHashValid(treeHash, treeID)) then
+    if (not self:IsHashValid(treeHash, treeID)) then
         self:DebugPrint('Invalid tree hash');
         return false;
     end
@@ -366,7 +361,7 @@ function Module:ParseImportString(importText)
         return false;
     end
 
-    validStringsCache[importText] = {true, specID, pointsSpent};
+    validStringsCache[importText] = { true, specID, pointsSpent };
 
     return true, specID, pointsSpent;
 end
@@ -374,7 +369,7 @@ end
 function Module:ReadLoadoutHeader(importStream)
     local headerBitWidth = self.bitWidthHeaderVersion + self.bitWidthSpecID + 128;
     local importStreamTotalBits = importStream:GetNumberOfBits();
-    if( importStreamTotalBits < headerBitWidth) then
+    if (importStreamTotalBits < headerBitWidth) then
         return false, 0, 0, 0;
     end
     local serializationVersion = importStream:ExtractValue(self.bitWidthHeaderVersion);
@@ -382,7 +377,7 @@ function Module:ReadLoadoutHeader(importStream)
 
     -- treeHash is a 128bit hash, passed as an array of 16, 8-bit values
     local treeHash = {};
-    for i=1,16,1 do
+    for i = 1, 16, 1 do
         treeHash[i] = importStream:ExtractValue(8);
     end
     return true, serializationVersion, specID, treeHash;
@@ -414,7 +409,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
             return false
         end
 
-        if(nodeSelectedValue == 1) then
+        if (nodeSelectedValue == 1) then
             local isNodePurchased = true;
             if LOADOUT_SERIALIZATION_VERSION == 2 then
                 local isNodePurchasedValue = importStream:ExtractValue(1);
@@ -435,7 +430,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                 local isClassNode = nodeInfo and nodeInfo.isClassNode;
                 local pointsSpent = nodeInfo and nodeInfo.maxRanks or 1;
 
-                if(isPartiallyRankedValue == 1) then
+                if (isPartiallyRankedValue == 1) then
                     local partialRanksPurchased = importStream:ExtractValue(self.bitWidthRanksPurchased);
                     if partialRanksPurchased == nil then
                         self:DebugPrint('Invalid partialRanksPurchased value', i);
@@ -449,7 +444,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                     self:DebugPrint('Invalid isChoiceNode value', i);
                     return false
                 end
-                if(isChoiceNodeValue == 1) then
+                if (isChoiceNodeValue == 1) then
                     local choiceNodeSelection = importStream:ExtractValue(2);
                     -- 0-indexed, so only 0 and 1 are valid
                     if choiceNodeSelection == nil or choiceNodeSelection > 1 then
@@ -458,7 +453,7 @@ function Module:ValidateLoadoutContent(importStream, treeID)
                     end
                 end
 
-                if(isClassNode) then
+                if (isClassNode) then
                     classPointsSpent = classPointsSpent + pointsSpent;
                 else
                     specPointsSpent = specPointsSpent + pointsSpent;

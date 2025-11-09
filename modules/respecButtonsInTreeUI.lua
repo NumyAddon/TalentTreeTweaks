@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_RespecButtons: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TTT_RespecButtons: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnEnable()
@@ -16,7 +16,7 @@ end
 
 function Module:OnDisable()
     self:UnhookAll();
-    if(self.respecButtonContainer) then
+    if self.respecButtonContainer then
         self.respecButtonContainer:Hide();
     end
 end
@@ -29,22 +29,20 @@ function Module:GetName()
     return L['Respec Buttons'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    Util:PrepareModuleDb(self, db, {
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_RespecButtonsDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_RespecButtonsDB
+    local defaults = {
         inverseHighlight = false,
-    });
-    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() self:UpdateRespecButtonContainer(); end);
-
-    defaultOptionsTable.args.inverseHighlight = {
-        order = increment(),
-        type = "toggle",
-        name = L["Invert highlight"],
-        desc = L["Grey out inactive spec buttons, rather than the active spec button."],
-        get = getter,
-        set = setter,
-    }
-
-    return defaultOptionsTable;
+    };
+    configBuilder:SetDefaults(defaults, true);
+    configBuilder:MakeCheckbox(
+        L['Invert highlight'],
+        'inverseHighlight',
+        L['Grey out inactive spec buttons, rather than the active spec button.']
+    );
 end
 
 function Module:SetupHook()

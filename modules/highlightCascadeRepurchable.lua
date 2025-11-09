@@ -1,24 +1,23 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_HighlightCascadeRepurchable: TTT_Module
 local Module = Main:NewModule('HighlightCascadeRepurchable');
 Module.enabled = false;
 
 function Module:OnEnable()
     self.enabled = true;
     self.buttonTextures = self.buttonTextures or {};
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(); end);
 end
 
 function Module:OnDisable()
     self.enabled = false;
-    if(self.buttonTextures) then
+    if self.buttonTextures then
         for _, texture in pairs(self.buttonTextures) do
             texture:Hide();
         end
@@ -36,9 +35,11 @@ function Module:GetName()
     return L['Highlight Cascade Repurchable'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_HighlightCascadeRepurchableDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
-
+    --- @class TTT_HighlightCascadeRepurchableDB
     local defaults = {
         color = {
             r = 0,
@@ -46,43 +47,22 @@ function Module:GetOptions(defaultOptionsTable, db)
             b = 1,
             a = 0.5,
         },
-    }
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
-
-    local function GetColor(info)
-        local color = self.db[info[#info]];
-        return color.r, color.g, color.b, color.a;
-    end
-    local function SetColor(info, r, g, b, a)
-        local color = self.db[info[#info]];
-        color.r, color.g, color.b, color.a = r, g, b, a;
-        self:UpdateColors();
-    end
-    defaultOptionsTable.args.color = {
-        type = 'color',
-        name = COLOR,
-        desc = L['Color of the highlight'],
-        hasAlpha = true,
-        get = GetColor,
-        set = SetColor,
-        order = 5,
     };
-    defaultOptionsTable.args.reset = {
-        type = 'execute',
-        name = RESET,
-        desc = L['Reset the color to default'],
-        func = function()
+    configBuilder:SetDefaults(defaults, true);
+    configBuilder:MakeColorPicker(
+        COLOR,
+        'color',
+        L['Color of the highlight'],
+        function() self:UpdateColors(); end
+    );
+    configBuilder:MakeButton(
+        RESET,
+        function()
             self.db.color = defaults.color;
             self:UpdateColors();
         end,
-        order = 6,
-    };
-
-    return defaultOptionsTable;
+        L['Reset the color to default']
+    );
 end
 
 function Module:SetupHook()

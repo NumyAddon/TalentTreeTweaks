@@ -1,10 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
+--- @class TTT_ImportIntoCurrentLoadout: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('ImportIntoCurrentLoadout', 'AceHook-3.0');
 
 local LOADOUT_SERIALIZATION_VERSION;
@@ -24,9 +25,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(); end);
 end
 
 function Module:OnDisable()
@@ -46,47 +45,38 @@ function Module:GetName()
     return L['Import into current loadout'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ImportIntoCurrentLoadoutDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
+    --- @class TTT_ImportIntoCurrentLoadoutDB
     local defaults = {
         defaultCheckboxState = false,
         unlockImportButton = true,
     };
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
+    configBuilder:SetDefaults(defaults, true);
 
-    defaultOptionsTable.args.defaultCheckboxState = {
-        type = 'toggle',
-        name = L['Import into current loadout by default'],
-        desc = L['When enabled, the "Import into current loadout" checkbox will be checked by default.'],
-        width = 'double',
-        get = function() return db.defaultCheckboxState; end,
-        set = function(_, value)
-            db.defaultCheckboxState = value;
+    configBuilder:MakeCheckbox(
+        L['Import into current loadout by default'],
+        'defaultCheckboxState',
+        L['When enabled, the "Import into current loadout" checkbox will be checked by default.'],
+        function(_, value)
             if self.checkbox then
                 self.checkbox:SetChecked(value);
                 self:OnCheckboxClick(self.checkbox);
             end
-        end,
-    };
-    defaultOptionsTable.args.unlockImportButton = {
-        type = 'toggle',
-        name = L['Unlocks the import button, even if at max loadouts'],
-        desc = L['When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout'],
-        width = 'double',
-        get = function() return db.unlockImportButton; end,
-        set = function(_, value)
-            db.unlockImportButton = value;
+        end
+    );
+    configBuilder:MakeCheckbox(
+        L['Unlocks the import button, even if at max loadouts'],
+        'unlockImportButton',
+        L['When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout'],
+        function()
             if self.checkbox then
                 self:OnUnlockImportButtonValueChanged();
             end
-        end,
-    };
-
-    return defaultOptionsTable;
+        end
+    );
 end
 
 function Module:SetupHook()
@@ -214,9 +204,9 @@ function Module:DoImport(loadoutEntryInfo)
         return false;
     end
     C_Traits.ResetTree(configID, self:GetTreeID());
-    while(true) do
+    while (true) do
         local removed = self:PurchaseLoadoutEntryInfo(configID, loadoutEntryInfo);
-        if(removed == 0) then
+        if (removed == 0) then
             break;
         end
     end
@@ -243,17 +233,17 @@ function Module:ImportLoadout(importText)
 
     local headerValid, serializationVersion, specID, treeHash = ImportExportMixin:ReadLoadoutHeader(importStream);
 
-    if(not headerValid) then
+    if (not headerValid) then
         self:ShowImportError(LOADOUT_ERROR_BAD_STRING);
         return false;
     end
 
-    if(serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
+    if (serializationVersion ~= LOADOUT_SERIALIZATION_VERSION) then
         self:ShowImportError(LOADOUT_ERROR_SERIALIZATION_VERSION_MISMATCH);
         return false;
     end
 
-    if(specID ~= PlayerUtil.GetCurrentSpecID()) then
+    if (specID ~= PlayerUtil.GetCurrentSpecID()) then
         self:ShowImportError(LOADOUT_ERROR_WRONG_SPEC);
         return false;
     end

@@ -1,11 +1,12 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
 local L = TTT.L;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local LTT = Util.LibTalentTree;
 
+--- @class TTT_TooltipIds: TTT_Module
 local Module = Main:NewModule('TooltipIds');
 
 function Module:OnEnable()
@@ -28,8 +29,12 @@ function Module:GetName()
     return L['Tooltip IDs'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    local defaultDb = {
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_TooltipIdsDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_TooltipIdsDB
+    local defaults = {
         talentTooltip = {
             enabled = true,
             nodeId = true,
@@ -45,56 +50,40 @@ function Module:GetOptions(defaultOptionsTable, db)
             definitionId = false,
             spellId = true,
         },
-    }
-    self.db = db;
-    for k, v in pairs(defaultDb) do
+    };
+    configBuilder:SetDefaults(defaults);
+    for k, v in pairs(defaults) do
         if db[k] == nil then
             db[k] = v;
+        elseif type(v) == 'table' then
+            for kk, vv in pairs(v) do
+                if db[k][kk] == nil then
+                    db[k][kk] = vv;
+                end
+            end
         end
     end
 
-    local increment = CreateCounter(5);
-
-    local getter = function(info, key)
-        return self.db[info[#info]][key];
-    end;
-    local setter = function(info, key, value)
-        self.db[info[#info]][key] = value;
-    end;
-
-    defaultOptionsTable.args.talentTooltip = {
-        order = increment(),
-        type = 'multiselect',
-        name = L['Talent Tooltip'],
-        desc = L['Toggles for the Talent Tooltips.'],
-        values = {
-            enabled = L['Enabled'],
-            nodeId = 'Node ID', -- don't translate
-            entryId = 'Entry ID', -- don't translate
-            definitionId = 'Definition ID', -- don't translate
-            spellId = L['Spell ID'],
-            rowColInfo = L['Row/Col Info'],
-        },
-        get = getter,
-        set = setter,
-    };
-    defaultOptionsTable.args.professionTooltip = {
-        order = increment(),
-        type = 'multiselect',
-        name = L['Professions Tooltip'],
-        desc = L['Toggles for the Professions Tooltips.'],
-        values = {
-            enabled = L['Enabled'],
-            nodeId = 'Node ID', -- don't translate
-            entryId = 'Entry ID', -- don't translate
-            definitionId = 'Definition ID', -- don't translate
-            spellId = L['Spell ID'],
-        },
-        get = getter,
-        set = setter,
-    };
-
-    return defaultOptionsTable;
+    local function makeSubCheckbox(label, key, tableKey, tooltip)
+        configBuilder:MakeCheckbox(label, key, tooltip, nil, defaults[tableKey][key], db[tableKey]);
+    end
+    do
+        configBuilder:MakeText(L['Talent Tooltip']);
+        makeSubCheckbox(ENABLE, 'enabled', 'talentTooltip', L['Toggles for the Talent Tooltips.']);
+        makeSubCheckbox('Node ID', 'nodeId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox('Entry ID', 'entryId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox('Definition ID', 'definitionId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox(L['Spell ID'], 'spellId', 'talentTooltip');
+        makeSubCheckbox(L['Row/Col Info'], 'rowColInfo', 'talentTooltip');
+    end
+    do
+        configBuilder:MakeText(L['Professions Tooltip']);
+        makeSubCheckbox(ENABLE, 'enabled', 'professionTooltip', L['Toggles for the Professions Tooltips.']);
+        makeSubCheckbox('Node ID', 'nodeId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox('Entry ID', 'entryId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox('Definition ID', 'definitionId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox(L['Spell ID'], 'spellId', 'professionTooltip');
+    end
 end
 
 function Module:AlreadyAdded(textLine, tooltip)
@@ -102,9 +91,9 @@ function Module:AlreadyAdded(textLine, tooltip)
         return false
     end
 
-    for i = 1,15 do
+    for i = 1, 15 do
         local tooltipFrame = _G[tooltip:GetName() .. "TextLeft" .. i]
-        local textRight = _G[tooltip:GetName().."TextRight"..i]
+        local textRight = _G[tooltip:GetName() .. "TextRight" .. i]
         local text, right
         if tooltipFrame then text = tooltipFrame:GetText() end
         if text and string.find(text, textLine, 1, true) then return true end
@@ -118,7 +107,7 @@ function Module:AddItemToTooltip(idName, value, tooltip)
         return
     end
     local text = "|cFFEE6161" .. idName .. "|r " .. value
-    if(not self:AlreadyAdded(text, tooltip)) then
+    if (not self:AlreadyAdded(text, tooltip)) then
         tooltip:AddLine(text)
     end
     tooltip:Show()

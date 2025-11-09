@@ -1,10 +1,11 @@
-local _, TTT = ...
+--- @class TTT_NS
+local ns = select(2, ...);
+
 --- @class TalentTreeTweaks_Util
 local Util = {};
-TTT.Util = Util;
-local L = TTT.L;
---- @type TalentTreeTweaks_ImportExportUtilV2
-local ImportExportUtil = TTT.ImportExportUtil;
+ns.Util = Util;
+local L = ns.L;
+local ImportExportUtil = ns.ImportExportUtil;
 
 local talentAddonName = 'Blizzard_PlayerSpells';
 
@@ -92,29 +93,6 @@ function Util:OnInitialize()
         end
     end);
     self:RefreshConfigIDLookup();
-end
-
---- @generic T: table
---- @param db table
---- @param defaults T
---- @return T
-function Util:PrepareModuleDb(module, db, defaults)
-    module.db = db;
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
-
-    return db;
-end
-
-function Util:GetterSetterIncrementFactory(db, postSetCallback)
-    local getter = function(info) return db[info[#info]]; end
-    local setter = function(info, value) db[info[#info]] = value; if postSetCallback then postSetCallback(); end end
-    local increment = CreateCounter(5);
-
-    return getter, setter, increment;
 end
 
 function Util:ContinueOnAddonLoaded(addonName, callback)
@@ -273,7 +251,7 @@ end
 
 --- @return false|number # specID or false on error
 --- @return number|string # classID or errorMessage on error
---- @return nil|TalentTreeTweaks_Util_LoadoutContent[] # loadoutInfo or nothing on error
+--- @return nil|TTT_Util_LoadoutContent[] # loadoutInfo or nothing on error
 function Util:ParseTalentBuildString(importString)
     return ImportExportUtil:ParseTalentBuildString(importString);
 end

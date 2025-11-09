@@ -1,20 +1,23 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_CopyTalentButtonInfo: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TalentTreeTweaks_CopyTalentButtonInfo: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('CopyTalentButtonInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnInitialize()
+    self.hooked = {};
     self.bindingButton = CreateFrame('Button', 'TalentTreeTweaks_CopyTalentButtonInfoButton');
     self.bindingButton:SetScript('OnClick', function()
         if self.textToCopy then
             Util:CopyText(self.textToCopy, L['SpellID']);
         end
     end);
+    self:RegisterEvent('PLAYER_REGEN_DISABLED');
+    self:RegisterEvent('PLAYER_REGEN_ENABLED');
 end
 
 function Module:OnEnable()
@@ -32,11 +35,6 @@ function Module:OnEnable()
         if not talentsTab then return; end
         self:SetupHook(talentsTab);
     end);
-    if TalentViewer then
-        TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
-    end
-    self:RegisterEvent('PLAYER_REGEN_DISABLED');
-    self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
 end
 
@@ -44,6 +42,7 @@ function Module:OnDisable()
     self.textToCopy = nil;
     self:DisableBinding();
     self:UnhookAll();
+    self.hooked = {};
 
     local talentFrame = Util:GetTalentFrameIfLoaded();
     if talentFrame then
@@ -55,6 +54,9 @@ function Module:OnDisable()
     end
     if RemixArtifactFrame then
         RemixArtifactFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
+    if TalentViewer then
+        TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
 end
@@ -68,6 +70,9 @@ function Module:GetName()
 end
 
 function Module:SetupHook(talentsTab, isPlayerSpellsUI)
+    if not self:IsEnabled() or self.hooked[talentsTab] then return; end
+    self.hooked[talentsTab] = true;
+
     talentsTab:RegisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self.OnTalentButtonAcquired, self);
     for talentButton in talentsTab:EnumerateAllTalentButtons() do
         self:OnTalentButtonAcquired(talentButton);

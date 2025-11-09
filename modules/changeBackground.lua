@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_ChangeBackground: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TTT_ChangeBackground: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('ChangeBackground', 'AceHook-3.0', 'AceEvent-3.0');
 Module.originalAlpha = {}
 
@@ -36,8 +36,9 @@ function Module:GetName()
     return L['Change Background'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    --- @type TTT_ChangeBackgroundDB
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ChangeBackgroundDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
     --- @class TTT_ChangeBackgroundDB
     local defaults = {
@@ -46,87 +47,55 @@ function Module:GetOptions(defaultOptionsTable, db)
         showAlphaInUI = true,
         showAlphaInSpellbookUI = true,
         showAlphaInViewerUI = true,
-    }
-    for key, value in pairs(defaults) do
-        if self.db[key] == nil then
-            self.db[key] = value;
+    };
+    configBuilder:SetDefaults(defaults, true);
+
+    local sliderOptions = configBuilder:MakeSliderOptions(0, 1, 0.01, function(value) return ('%.1f%%'):format(100 * value); end);
+
+    configBuilder:MakeSlider(
+        L['Background Transparency'],
+        'alpha',
+        nil,
+        sliderOptions,
+        function() self:UpdateBackground(); end
+    );
+    configBuilder:MakeSlider(
+        L['Spellbook Background Transparency'],
+        'spellbookAlpha',
+        nil,
+        sliderOptions,
+        function() self:UpdateBackground(); end
+    );
+    configBuilder:MakeCheckbox(
+        L['Show a slider in the talent UI'],
+        'showAlphaInUI',
+        nil,
+        function(_, value)
+            if self.alphaSlider then
+                self.alphaSlider:SetShown(value);
+            end
         end
-    end
-
-    local get = function(info)
-        return self.db[info[#info]];
-    end
-    local set = function(info, value)
-        local setting = info[#info];
-        self.db[setting] = value;
-
-        if setting == 'alpha' or setting == 'spellbookAlpha' then
-            self:UpdateBackground();
-        elseif setting == 'showAlphaInUI' and self.alphaSlider then
-            self.alphaSlider:SetShown(value);
-        elseif setting == 'showAlphaInSpellbookUI' and self.spellbookAlphaSlider then
-            self.spellbookAlphaSlider:SetShown(value);
-        elseif setting == 'showAlphaInViewerUI' and self.viewerAlphaSlider then
-            self.viewerAlphaSlider:SetShown(value);
+    );
+    configBuilder:MakeCheckbox(
+        L['Show a slider in the spellbook UI'],
+        'showAlphaInSpellbookUI',
+        nil,
+        function(_, value)
+            if self.spellbookAlphaSlider then
+                self.spellbookAlphaSlider:SetShown(value);
+            end
         end
-    end
-    local counter = CreateCounter(5);
-
-    defaultOptionsTable.args.spacer1 = {
-        order = counter(),
-        type = 'description',
-        name = '',
-        width = 'full',
-    }
-    defaultOptionsTable.args.alpha = {
-        type = 'range',
-        name = L['Background Transparency'],
-        order = counter(),
-        get = get,
-        set = set,
-        min = 0,
-        max = 1,
-        step = 0.01,
-        width = 'full',
-    };
-    defaultOptionsTable.args.spellbookAlpha = {
-        type = 'range',
-        name = L['Spellbook Background Transparency'],
-        order = counter(),
-        get = get,
-        set = set,
-        min = 0,
-        max = 1,
-        step = 0.01,
-        width = 'full',
-    };
-    defaultOptionsTable.args.showAlphaInUI = {
-        type = 'toggle',
-        name = L['Show a slider in the talent UI'],
-        order = counter(),
-        get = get,
-        set = set,
-        width = 'double',
-    };
-    defaultOptionsTable.args.showAlphaInSpellbookUI = {
-        type = 'toggle',
-        name = L['Show a slider in the spellbook UI'],
-        order = counter(),
-        get = get,
-        set = set,
-        width = 'double',
-    };
-    defaultOptionsTable.args.showAlphaInViewerUI = {
-        type = 'toggle',
-        name = L['Show a slider in Talent Tree Viewer UI'],
-        order = counter(),
-        get = get,
-        set = set,
-        disabled = function() return not Main:IsTalentTreeViewerEnabled() end,
-        width = 'double',
-    };
-
-    return defaultOptionsTable;
+    );
+    configBuilder:MakeCheckbox(
+        L['Show a slider in Talent Tree Viewer UI'],
+        'showAlphaInViewerUI',
+        L['Requires the Talent Tree Viewer addon to be installed and enabled.'],
+        function(_, value)
+            if self.viewerAlphaSlider then
+                self.viewerAlphaSlider:SetShown(value);
+            end
+        end
+    ):AddModifyPredicate(function() return Main:IsTalentTreeViewerEnabled(); end);
 end
 
 function Module:TrySetAlpha(frame, alpha)
@@ -224,7 +193,7 @@ function Module:CreateSlider(parentFrame, alphaSetting, xOffset)
     local steps = 40;
     local formatters = {
         [MinimalSliderWithSteppersMixin.Label.Left] = function() return L['Transparency'] end,
-        [MinimalSliderWithSteppersMixin.Label.Right] = function(value) return string.format('%.2f%%', value) end,
+        [MinimalSliderWithSteppersMixin.Label.Right] = function(value) return string.format('%.1f%%', 100 * value) end,
     }
     slider:Init(self.db[alphaSetting], minValue, maxValue, steps, formatters);
     slider:SetWidth(200);
@@ -232,6 +201,7 @@ function Module:CreateSlider(parentFrame, alphaSetting, xOffset)
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
         self.db[alphaSetting] = value;
         self:UpdateBackground();
+        TTT.Config:NotifyChange(true);
     end);
 
     return slider;

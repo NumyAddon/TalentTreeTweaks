@@ -1,13 +1,13 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
 local LTT = Util.LibTalentTree;
 
---- @class TalentTreeTweaks_SearchForIds: AceModule, AceHook-3.0
+--- @class TTT_SearchForIds: AceModule, AceHook-3.0
 local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
 local TALENT_TREE_VIEWER = 1;
@@ -34,16 +34,10 @@ function Module:GetName()
     return L['Search by ID'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    self.db = db;
-
-    return defaultOptionsTable;
-end
-
 function Module:SetupHook(addon)
     local talentFrame;
     if addon == BLIZZARD_TALENT_UI then
-    	talentFrame = Util:GetTalentFrame();
+        talentFrame = Util:GetTalentFrame();
     elseif addon == TALENT_TREE_VIEWER then
         talentFrame = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
     end
@@ -54,7 +48,7 @@ function Module:SetupHook(addon)
 end
 
 function Module:MatchesID(traitSearchSource, searchString, nodeID, specificEntryID)
-    local entryIDs = specificEntryID and {specificEntryID} or LTT:GetNodeInfo(nodeID).entryIDs;
+    local entryIDs = specificEntryID and { specificEntryID } or LTT:GetNodeInfo(nodeID).entryIDs;
     for _, entryID in ipairs(entryIDs) do
         local definitionInfo = traitSearchSource:GetEntryDefinitionInfo(entryID);
         if

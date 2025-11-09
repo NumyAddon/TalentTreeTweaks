@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_ScaleTalentFrame: AceModule, AceHook-3.0
+--- @class TTT_ScaleTalentFrame: AceModule, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
 local SetScale = GetFrameMetatable().__index.SetScale
@@ -14,12 +14,8 @@ local BLIZZARD_TALENT_UI = 2;
 
 function Module:OnEnable()
     if self.blizzMoveEnabled then return end
-    Util:OnTalentUILoad(function()
-        self:SetupHook(BLIZZARD_TALENT_UI);
-    end);
-    Util:ContinueOnAddonLoaded(TALENT_TREE_VIEWER, function()
-        self:SetupHook(TALENT_TREE_VIEWER);
-    end);
+    Util:OnTalentUILoad(function() self:SetupHook(BLIZZARD_TALENT_UI); end);
+    Util:ContinueOnAddonLoaded(TALENT_TREE_VIEWER, function() self:SetupHook(TALENT_TREE_VIEWER); end);
 end
 
 function Module:OnDisable()
@@ -38,40 +34,32 @@ function Module:GetName()
     return L['Scale Talent Frame'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    self.blizzMoveEnabled = not not (_G.BlizzMoveAPI or C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2);
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ScaleTalentFrameDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
+    --- @class TTT_ScaleTalentFrameDB
+    local defaults = {
+        scale = 1,
+    };
+    configBuilder:SetDefaults(defaults, true);
+    self.blizzMoveEnabled = not not (_G.BlizzMoveAPI or C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2);
+    local function blizzMoveEnabledPredicate() return self.blizzMoveEnabled; end
+    local function blizzMoveMissingPredicate() return not self.blizzMoveEnabled; end
 
-    if self.blizzMoveEnabled then
-        defaultOptionsTable.args.enable.disabled = true
-        defaultOptionsTable.args.blizzMove = {
-            type = 'description',
-            name = L['This module is incompatible with BlizzMove, and has been disabled.'],
-            order = 5,
-        };
-    end
-
-    defaultOptionsTable.args.scale = {
-        type = 'range',
-        name = L['Change Scale'],
-        order = 6,
-        disabled = self.blizzMoveEnabled,
-        get = function(info)
-            return self.db[info[#info]];
-        end,
-        set = function(info, value)
-            value = math.max(0.5, math.min(2, value));
-            self.db[info[#info]] = value;
+    configBuilder.enableInitializer:AddModifyPredicate(blizzMoveMissingPredicate);
+    local warning = configBuilder:MakeText(L['This module is incompatible with BlizzMove, and has been disabled.']);
+    warning:AddShownPredicate(blizzMoveEnabledPredicate);
+    configBuilder:MakeSlider(
+        L['Change Scale'],
+        'scale',
+        nil,
+        configBuilder:MakeSliderOptions(0.5, 2, 0.05, function(value) return ('%.1fx'):format(value); end),
+        function(_, value)
             local containerFrame = Util:GetTalentContainerFrameIfLoaded();
             if containerFrame and containerFrame.SetScale and not InCombatLockdown() then SetScale(containerFrame, value); end
-        end,
-        min = 0.5,
-        max = 2,
-        step = 0.05,
-        width = 'full',
-    };
-
-    return defaultOptionsTable;
+        end
+    ):AddModifyPredicate(blizzMoveMissingPredicate);
 end
 
 function Module:SetupHook(addon)

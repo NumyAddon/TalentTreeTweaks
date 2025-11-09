@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_ReduceTaintModule: AceModule, AceHook-3.0
+--- @class TTT_ReduceTaintModule: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
 function Module:OnInitialize()
@@ -16,9 +16,7 @@ function Module:OnInitialize()
 end
 
 function Module:OnEnable()
-    Util:OnTalentUILoad(function()
-        self:SetupHook();
-    end, 1); -- load before any other module
+    Util:OnTalentUILoad(function() self:SetupHook(); end, 1); -- load before any other module
     self:HandleActionBarEventTaintSpread();
     self:HandleOnBarHighlightMarkTaint();
 end
@@ -40,52 +38,32 @@ function Module:GetName()
     return L['Reduce Taint'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_ReduceTaintModuleDB
+function Module:BuildConfig(configBuilder, db)
     self.db = db;
+    --- @class TTT_ReduceTaintModuleDB
     local defaults = {
+        alwaysReplaceShareButton = false,
         disableMultiActionBarShowHide = true,
     };
     self.db.replaceDropDown = nil;
-    for k, v in pairs(defaults) do
-        if db[k] == nil then
-            db[k] = v;
-        end
-    end
+    configBuilder:SetDefaults(defaults, true);
 
-    local counter = CreateCounter(10);
-
-    local get = function(info)
-        return self.db[info[#info]];
-    end
-    local set = function(info, value)
-        self.db[info[#info]] = value;
-    end
-    defaultOptionsTable.args.extra_info = {
-        type = 'description',
-        name = L['You have to reload your UI after disabling this module, for some of the change to take effect.'],
-        order = 5,
-    };
-    defaultOptionsTable.args.alwaysReplaceShareButton = {
-        type = 'toggle',
-        name = L['Always Replace Share Button'],
-        desc = L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when possible.'],
-        order = counter(),
-        get = get,
-        set = set,
-    };
-    defaultOptionsTable.args.disableMultiActionBarShowHide = {
-        type = 'toggle',
-        name = L['Disable MultiActionBar_ShowAllGrids on Show'],
-        desc = L['Disables the MultiActionBar_ShowAllGrids function, which can cause action buttons to break.'],
-        order = counter(),
-        get = get,
-        set = function(info, value)
-            set(info, value);
+    configBuilder:MakeText(L['You have to reload your UI after disabling this module, for some of the change to take effect.']);
+    configBuilder:MakeCheckbox(
+        L['Always Replace Share Button'],
+        'alwaysReplaceShareButton',
+        L['Replace the Share Loadout button, to open a copy/paste popup instead of automatically copying to clipboard when possible.']
+    );
+    configBuilder:MakeCheckbox(
+        L['Disable MultiActionBar_ShowAllGrids on Show'],
+        'disableMultiActionBarShowHide',
+        L['Disables the MultiActionBar_ShowAllGrids function, which can cause action buttons to break.'],
+        function()
             self:HandleMultiActionBarTaint();
-        end,
-    }
-
-    return defaultOptionsTable;
+        end
+    );
 end
 
 function Module:SetupHook()

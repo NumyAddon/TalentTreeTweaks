@@ -1,11 +1,11 @@
-local _, TTT = ...;
---- @type TalentTreeTweaks_Main
+--- @class TTT_NS
+local TTT = select(2, ...);
+
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_AlwaysShowGates: AceModule, AceHook-3.0
+--- @class TTT_AlwaysShowGates: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 local LTT = Util.LibTalentTree;
 local GATE_TEXT_FORMAT = '%d (+%d)';
@@ -41,22 +41,21 @@ function Module:GetName()
     return L['Always Show Gates'];
 end
 
-function Module:GetOptions(defaultOptionsTable, db)
-    self.db = Util:PrepareModuleDb(self, db, {
+--- @param configBuilder TTT_ConfigBuilder
+--- @param db TTT_AlwaysShowGatesDB
+function Module:BuildConfig(configBuilder, db)
+    self.db = db;
+    --- @class TTT_AlwaysShowGatesDB
+    local defaults = {
         shiftHeroTrees = false,
-    });
-    local getter, setter, increment = Util:GetterSetterIncrementFactory(db, function() self:UpdateHeroContainerPosition(); end);
-
-    defaultOptionsTable.args.shiftHeroTrees = {
-        order = increment(),
-        type = "toggle",
-        name = L["Shift Hero Talent Trees"],
-        desc = L["Shifts the Hero Talent Trees to the left to avoid overlapping with the gate text."],
-        get = getter,
-        set = setter,
-    }
-
-    return defaultOptionsTable;
+    };
+    configBuilder:SetDefaults(defaults, true);
+    configBuilder:MakeCheckbox(
+        L["Shift Hero Talent Trees"],
+        'shiftHeroTrees',
+        L["Shifts the Hero Talent Trees to the left to avoid overlapping with the gate text."],
+        function() self:UpdateHeroContainerPosition(); end
+    );
 end
 
 function Module:SetupHook()
