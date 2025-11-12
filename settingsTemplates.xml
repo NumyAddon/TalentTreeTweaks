@@ -27,24 +27,23 @@ https://raw.githubusercontent.com/Meorawr/wow-ui-schema/main/UI.xsd">
             </Button>
         </Frames>
     </Frame>
-    <Frame name="TalentTreeTweaks_SettingsDoubleButtonControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsDoubleButtonControlMixin" virtual="true">
+    <Frame name="TalentTreeTweaks_SettingsMultiButtonControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsMultiButtonControlMixin" virtual="true">
         <Size x="280" y="26"/>
         <Scripts>
             <OnLoad method="OnLoad"/>
         </Scripts>
         <Frames>
-            <Button parentKey="Button1" inherits="UIPanelButtonTemplate">
-                <Size x="120" y="26"/>
+            <Frame parentKey="ButtonContainer">
+                <Size x="370" y="26"/>
                 <Anchors>
                     <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-80" y="0"/>
                 </Anchors>
-            </Button>
-            <Button parentKey="Button2" inherits="UIPanelButtonTemplate">
-                <Size x="120" y="26"/>
-                <Anchors>
-                    <Anchor point="LEFT" relativeKey="$parent.Button1" relativePoint="RIGHT" x="10" y="0"/>
-                </Anchors>
-            </Button>
+                <Scripts>
+                    <OnLoad>
+                        self.buttonPool = CreateFramePool('Button', self, 'UIPanelButtonTemplate');
+                    </OnLoad>
+                </Scripts>
+            </Frame>
         </Frames>
     </Frame>
     <Frame name="TalentTreeTweaks_SettingsTextTemplate" mixin="TalentTreeTweaks_SettingsTextMixin" virtual="true">

@@ -2,6 +2,7 @@ local name = ...;
 --- @class TTT_NS
 local ns = select(2, ...);
 
+--- @class TTT_Config
 local Config = {}
 ns.Config = Config;
 
@@ -49,12 +50,11 @@ function Config:Init()
     self.db = TalentTreeTweaksDB;
     self.version = C_AddOns.GetAddOnMetadata(name, "Version") or "";
 
-    local category, layout = Settings.RegisterVerticalLayoutCategory("Talent Tree Tweaks");
-    self.category = category;
+    self.category, self.layout = Settings.RegisterVerticalLayoutCategory("Talent Tree Tweaks");
 
-    self:MakeText(layout, L["Version:"] .. " " .. WHITE_FONT_COLOR:WrapTextInColorCode(self.version));
+    self:MakeText(L["Version:"] .. " " .. WHITE_FONT_COLOR:WrapTextInColorCode(self.version));
 
-    self:MakeDonationPrompt(layout);
+    self:MakeDonationPrompt();
 
     do
         local modulesWithConfig = {};
@@ -73,8 +73,8 @@ function Config:Init()
         if modulesWithoutConfig[1] then
             table.sort(modulesWithoutConfig, function(a, b) return a.order < b.order; end);
 
-            local expandInitializer, isExpanded = self:MakeExpandableSection(layout, L["Basic Modules"]);
-            local configBuilder = self:MakeConfigBuilder(self.db.modules, category, layout, isExpanded);
+            local expandInitializer, isExpanded = self:MakeExpandableSection(L["Basic Modules"]);
+            local configBuilder = self:MakeConfigBuilder(self.db.modules, isExpanded);
             configBuilder:SetEnableInitializer(expandInitializer); -- not quite accurate, but whatever
             for _, moduleInfo in ipairs(modulesWithoutConfig) do
                 local moduleName, module = moduleInfo.moduleName, moduleInfo.module;
@@ -102,13 +102,13 @@ function Config:Init()
         table.sort(modulesWithConfig, function(a, b) return a.order < b.order; end);
         for _, moduleInfo in ipairs(modulesWithConfig) do
             local moduleName, module = moduleInfo.moduleName, moduleInfo.module;
-            local expandInitializer, isExpanded = self:MakeExpandableSection(layout, function() return formatModuleName(module:GetName(), self.db.modules[moduleName]); end);
+            local expandInitializer, isExpanded = self:MakeExpandableSection(function() return formatModuleName(module:GetName(), self.db.modules[moduleName]); end);
             local changingExpandText = false;
             expandInitializer:AddShownPredicate(function() return not changingExpandText; end);
 
             self.db.moduleDb[moduleName] = self.db.moduleDb[moduleName] or {};
             local moduleDb = self.db.moduleDb[moduleName];
-            local configBuilder = self:MakeConfigBuilder(moduleDb, category, layout, isExpanded);
+            local configBuilder = self:MakeConfigBuilder(moduleDb, isExpanded);
 
             configBuilder:MakeText(module:GetDescription());
             local enableInitializer = configBuilder:MakeCheckbox(
@@ -136,7 +136,7 @@ function Config:Init()
         end
     end
 
-    Settings.RegisterAddOnCategory(category);
+    Settings.RegisterAddOnCategory(self.category);
 end
 
 function Config:NotifyChange(forceUpdateSliders)
@@ -228,7 +228,7 @@ do
     --- @param tooltip string?
     --- @return SettingsListElementInitializer initializer
     function ConfigBuilderMixin:MakeHeader(text, tooltip)
-        local initializer = Config:MakeHeader(self.layout, text, tooltip);
+        local initializer = Config:MakeHeader(text, tooltip);
         initializer:AddShownPredicate(self.isExpanded);
 
         return initializer;
@@ -237,7 +237,7 @@ do
     --- @param text string
     --- @return SettingsListElementInitializer initializer
     function ConfigBuilderMixin:MakeText(text)
-        local initializer = Config:MakeText(self.layout, text);
+        local initializer = Config:MakeText(text);
         initializer:AddShownPredicate(self.isExpanded);
 
         return initializer;
@@ -248,14 +248,14 @@ do
     --- @param tooltip string?
     --- @return SettingsListElementInitializer initializer
     function ConfigBuilderMixin:MakeButton(label, onClick, tooltip)
-        local initializer = Config:MakeButton(self.layout, label, onClick, tooltip);
+        local initializer = Config:MakeButton(label, onClick, tooltip);
         initializer:AddShownPredicate(self.isExpanded);
 
         return initializer;
     end
 
     --- @param label string
-    --- @param settingKey string
+    --- @param settingKey string|number
     --- @param tooltip string?
     --- @param callback fun(setting: AddOnSettingMixin, value: boolean)?
     --- @param defaultValue boolean?
@@ -266,7 +266,7 @@ do
         if defaultValue == nil then
             defaultValue = self.defaults[settingKey];
         end
-        local initializer, setting = Config:MakeCheckbox(self.category, label, settingKey, tooltip, defaultValue, overrideTable or self.db);
+        local initializer, setting = Config:MakeCheckbox(label, settingKey, tooltip, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
         if callback then
             setting:SetValueChangedCallback(callback);
@@ -290,7 +290,7 @@ do
     end
 
     --- @param label string
-    --- @param settingKey string
+    --- @param settingKey string|number
     --- @param tooltip string?
     --- @param options TTT_Config_SliderOptions
     --- @param callback fun(setting: AddOnSettingMixin, value: number)?
@@ -302,7 +302,7 @@ do
         if defaultValue == nil then
             defaultValue = self.defaults[settingKey];
         end
-        local initializer, setting = Config:MakeSlider(self.category, label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
+        local initializer, setting = Config:MakeSlider(label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
         if callback then
             setting:SetValueChangedCallback(callback);
@@ -312,7 +312,7 @@ do
     end
 
     --- @param label string
-    --- @param settingKey string
+    --- @param settingKey string|number
     --- @param tooltip string?
     --- @param options TTT_Config_DropDownOptions|fun(): TTT_Config_DropDownOptions
     --- @param callback fun(setting: AddOnSettingMixin, value: any)?
@@ -324,7 +324,7 @@ do
         if defaultValue == nil then
             defaultValue = self.defaults[settingKey];
         end
-        local initializer, setting = Config:MakeDropdown(self.category, label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
+        local initializer, setting = Config:MakeDropdown(label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
         if callback then
             setting:SetValueChangedCallback(callback);
@@ -334,7 +334,7 @@ do
     end
 
     --- @param label string
-    --- @param settingKey string
+    --- @param settingKey string|number
     --- @param tooltip string?
     --- @param callback fun(setting: AddOnSettingMixin, value: ColorRGBData|ColorRGBAData)?
     --- @param defaultValue ColorRGBData|ColorRGBAData|nil
@@ -345,7 +345,7 @@ do
         if defaultValue == nil then
             defaultValue = self.defaults[settingKey];
         end
-        local initializer, setting = Config:MakeColorPicker(self.category, self.layout, label, settingKey, tooltip, defaultValue, overrideTable or self.db);
+        local initializer, setting = Config:MakeColorPicker(label, settingKey, tooltip, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
         if callback then
             setting:SetValueChangedCallback(callback);
@@ -356,432 +356,434 @@ do
 end
 
 --- @param moduleDb table
---- @param category SettingsCategoryMixin
---- @param layout SettingsVerticalLayoutMixin
 --- @param isExpanded fun(): boolean
 --- @return TTT_ConfigBuilder configBuilder
-function Config:MakeConfigBuilder(moduleDb, category, layout, isExpanded)
-    return CreateAndInitFromMixin(ConfigBuilderMixin, moduleDb, category, layout, isExpanded);
+function Config:MakeConfigBuilder(moduleDb, isExpanded)
+    return CreateAndInitFromMixin(ConfigBuilderMixin, moduleDb, self.category, self.layout, isExpanded);
 end
 
---- @param layout SettingsVerticalLayoutMixin
---- @param text string
---- @param tooltip string?
---- @return SettingsListElementInitializer
-function Config:MakeHeader(layout, text, tooltip)
-    local headerInitializer = CreateSettingsListSectionHeaderInitializer(text, tooltip);
-    layout:AddInitializer(headerInitializer);
+do
+    --- @param text string
+    --- @param tooltip string?
+    --- @return SettingsListElementInitializer
+    function Config:MakeHeader(text, tooltip)
+        local headerInitializer = CreateSettingsListSectionHeaderInitializer(text, tooltip);
+        self.layout:AddInitializer(headerInitializer);
 
-    return headerInitializer;
-end
-
-local heightCalculator = UIParent:CreateFontString(nil, "ARTWORK", "GameFontNormal");
-heightCalculator:SetWidth(635);
-
---- @param layout SettingsVerticalLayoutMixin
---- @param text string
---- @return SettingsListElementInitializer
-function Config:MakeText(layout, text)
-    heightCalculator:SetText(text);
-
-    local data = {
-        name = text,
-        extent = heightCalculator:GetStringHeight(),
-    };
-    --- @type SettingsListElementInitializer
-    local textInitializer = Settings.CreateElementInitializer("TalentTreeTweaks_SettingsTextTemplate", data);
-
-    function textInitializer:GetExtent() return self.data.extent; end
-    layout:AddInitializer(textInitializer);
-
-    return textInitializer;
-end
-
-local function sliderForcedUpdatePredicate()
-    return not Config.updatingSliders;
-end
-
---- @param category SettingsCategoryMixin
---- @param label string
---- @param settingKey string
---- @param tooltip string?
---- @param options TTT_Config_SliderOptions # see Settings.CreateSliderOptions
---- @param defaultValue number?
---- @param dbTableOverride table?
---- @return SettingsListElementInitializer initializer
---- @return AddOnSettingMixin setting
-function Config:MakeSlider(category, label, settingKey, tooltip, options, defaultValue, dbTableOverride)
-    local variable = self:GetUniqueVariable();
-
-    if defaultValue == nil then
-        error('No default value provided');
+        return headerInitializer;
     end
-    local setting = Settings.RegisterAddOnSetting(
-        category,
-        variable,
-        settingKey,
-        dbTableOverride or self.db,
-        Settings.VarType.Number,
-        label,
-        defaultValue
-    );
 
-    local initializer = Settings.CreateSlider(category, setting, options, tooltip);
-    initializer:AddShownPredicate(sliderForcedUpdatePredicate);
+    local heightCalculator = UIParent:CreateFontString(nil, "ARTWORK", "GameFontNormal");
+    heightCalculator:SetWidth(635);
 
-    return initializer, setting;
-end
+    --- @param text string
+    --- @return SettingsListElementInitializer
+    function Config:MakeText(text)
+        heightCalculator:SetText(text);
 
---- @param category SettingsCategoryMixin
---- @param label string
---- @param settingKey string
---- @param tooltip string?
---- @param defaultValue boolean?
---- @param dbTableOverride table?
---- @return SettingsListElementInitializer initializer
---- @return AddOnSettingMixin setting
-function Config:MakeCheckbox(category, label, settingKey, tooltip, defaultValue, dbTableOverride)
-    local variable = self:GetUniqueVariable();
+        local data = {
+            name = text,
+            extent = heightCalculator:GetStringHeight(),
+        };
+        --- @type SettingsListElementInitializer
+        local textInitializer = Settings.CreateElementInitializer("TalentTreeTweaks_SettingsTextTemplate", data);
 
-    if defaultValue == nil then
-        error('No default value provided');
+        function textInitializer:GetExtent() return self.data.extent; end
+
+        self.layout:AddInitializer(textInitializer);
+
+        return textInitializer;
     end
-    local setting = Settings.RegisterAddOnSetting(
-        category,
-        variable,
-        settingKey,
-        dbTableOverride or self.db,
-        Settings.VarType.Boolean,
-        label,
-        defaultValue
-    );
 
-    return Settings.CreateCheckbox(category, setting, tooltip), setting;
-end
-
---- @param category SettingsCategoryMixin
---- @param label string
---- @param settingKey string
---- @param tooltip string?
---- @param options TTT_Config_DropDownOptions|fun(): TTT_Config_DropDownOptions
---- @param defaultValue any?
---- @param dbTableOverride table?
---- @return SettingsListElementInitializer initializer
---- @return AddOnSettingMixin setting
-function Config:MakeDropdown(category, label, settingKey, tooltip, options, defaultValue, dbTableOverride)
-    local variable = self:GetUniqueVariable();
-
-    if defaultValue == nil then
-        error('No default value provided')
+    local function sliderForcedUpdatePredicate()
+        return not Config.updatingSliders;
     end
-    local GetOptions = options;
-    if type(options) == "table" then
-        GetOptions = function() return options; end
-    end
-    local function wrapper()
-        local opts = GetOptions();
-        for _, option in pairs(opts) do
-            option.label = option.label or option.text;
+
+    --- @param label string
+    --- @param settingKey string|number
+    --- @param tooltip string?
+    --- @param options TTT_Config_SliderOptions # see Settings.CreateSliderOptions
+    --- @param defaultValue number?
+    --- @param dbTableOverride table?
+    --- @return SettingsListElementInitializer initializer
+    --- @return AddOnSettingMixin setting
+    function Config:MakeSlider(label, settingKey, tooltip, options, defaultValue, dbTableOverride)
+        local variable = self:GetUniqueVariable();
+        if defaultValue == nil then
+            error('No default value provided');
         end
 
-        return opts;
-    end
-    local setting = Settings.RegisterAddOnSetting(category, variable, settingKey, dbTableOverride or self.db, type(defaultValue), label, defaultValue);
+        local setting = Settings.RegisterAddOnSetting(
+            self.category,
+            variable,
+            settingKey,
+            dbTableOverride or self.db,
+            Settings.VarType.Number,
+            label,
+            defaultValue
+        );
 
-    return Settings.CreateDropdown(category, setting, wrapper, tooltip), setting;
-end
+        local initializer = Settings.CreateSlider(self.category, setting, options, tooltip);
+        initializer:AddShownPredicate(sliderForcedUpdatePredicate);
 
---- @param layout SettingsVerticalLayoutMixin
---- @param label string
---- @param onClick fun(self: Button)
---- @param tooltip string?
---- @return SettingsListElementInitializer initializer
-function Config:MakeButton(layout, label, onClick, tooltip)
-    local data = {
-        name = label,
-        tooltip = tooltip,
-        buttonText = label,
-        OnButtonClick = onClick,
-    };
-    data.buttonText = label;
-    data.OnButtonClick = onClick;
-    local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsButtonControlTemplate', data);
-    initializer:AddSearchTags(label);
-    layout:AddInitializer(initializer);
-
-    return initializer;
-end
-
---- @param layout SettingsVerticalLayoutMixin
---- @param label string
---- @param onClick fun(buttonIndex: number)
---- @param tooltip string?
---- @return SettingsListElementInitializer initializer
-function Config:MakeDoubleButton(layout, label, onClick, tooltip, button1Text, button2Text)
-    local data = {
-        name = label,
-        tooltip = tooltip,
-        button1Text = button1Text,
-        button2Text = button2Text,
-        OnButtonClick = onClick,
-    };
-    local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsDoubleButtonControlTemplate', data);
-    initializer:AddSearchTags(label);
-    layout:AddInitializer(initializer);
-
-    return initializer;
-end
-
---- @param layout SettingsVerticalLayoutMixin
---- @param sectionName string|fun(): string
---- @return SettingsExpandableSectionInitializer initializer
---- @return fun(): boolean isExpanded
-function Config:MakeExpandableSection(layout, sectionName)
-    local nameGetter = sectionName;
-    if type(sectionName) == "string" then
-        nameGetter = function() return sectionName; end
-    end
-    local expandInitializer = CreateSettingsExpandableSectionInitializer(nameGetter());
-    expandInitializer.data.nameGetter = nameGetter;
-    function expandInitializer:GetExtent()
-        return 25;
+        return initializer, setting;
     end
 
-    local origInitFrame = expandInitializer.InitFrame;
-    function expandInitializer:InitFrame(frame)
-        self.data.name = self.data.nameGetter();
-
-        origInitFrame(self, frame);
-
-        function frame:OnExpandedChanged(expanded)
-            self:EvaluateVisibility(expanded);
-            SettingsInbound.RepairDisplay();
+    --- @param label string
+    --- @param settingKey string|number
+    --- @param tooltip string?
+    --- @param defaultValue boolean?
+    --- @param dbTableOverride table?
+    --- @return SettingsListElementInitializer initializer
+    --- @return AddOnSettingMixin setting
+    function Config:MakeCheckbox(label, settingKey, tooltip, defaultValue, dbTableOverride)
+        local variable = self:GetUniqueVariable();
+        if defaultValue == nil then
+            error('No default value provided');
         end
-        function frame:EvaluateVisibility(expanded)
-            -- elvui wants this function to exist
-            if expanded then
-                self.Button.Right:SetAtlas("Options_ListExpand_Right_Expanded", TextureKitConstants.UseAtlasSize);
-            else
-                self.Button.Right:SetAtlas("Options_ListExpand_Right", TextureKitConstants.UseAtlasSize);
+
+        local setting = Settings.RegisterAddOnSetting(
+            self.category,
+            variable,
+            settingKey,
+            dbTableOverride or self.db,
+            Settings.VarType.Boolean,
+            label,
+            defaultValue
+        );
+
+        return Settings.CreateCheckbox(self.category, setting, tooltip), setting;
+    end
+
+    --- @param label string
+    --- @param settingKey string|number
+    --- @param tooltip string?
+    --- @param options TTT_Config_DropDownOptions|fun(): TTT_Config_DropDownOptions
+    --- @param defaultValue any?
+    --- @param dbTableOverride table?
+    --- @return SettingsListElementInitializer initializer
+    --- @return AddOnSettingMixin setting
+    function Config:MakeDropdown(label, settingKey, tooltip, options, defaultValue, dbTableOverride)
+        local variable = self:GetUniqueVariable();
+        if defaultValue == nil then
+            error('No default value provided')
+        end
+
+        local function getOptions()
+            if type(options) == "function" then
+                options = options()
+            end
+            local container = Settings.CreateControlTextContainer();
+            for _, option in pairs(options) do
+                local added = container:Add(option.value, option.label or option.text, option.tooltip);
+                added.text = option.text;
+            end
+
+            return container:GetData();
+        end
+        local setting = Settings.RegisterAddOnSetting(self.category, variable, settingKey, dbTableOverride or self.db, type(defaultValue), label, defaultValue);
+
+        return Settings.CreateDropdown(self.category, setting, getOptions, tooltip), setting;
+    end
+
+    --- @param label string
+    --- @param onClick fun(self: Button)
+    --- @param tooltip string?
+    --- @return SettingsListElementInitializer initializer
+    function Config:MakeButton(label, onClick, tooltip)
+        local data = {
+            name = label,
+            tooltip = tooltip,
+            buttonText = label,
+            OnButtonClick = onClick,
+        };
+        data.buttonText = label;
+        data.OnButtonClick = onClick;
+        local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsButtonControlTemplate', data);
+        initializer:AddSearchTags(label);
+        self.layout:AddInitializer(initializer);
+
+        return initializer;
+    end
+
+    --- @param label string
+    --- @param onClick fun(button: Button, buttonIndex: number)
+    --- @param tooltip string?
+    --- @param buttonTexts string[]
+    --- @return SettingsListElementInitializer initializer
+    function Config:MakeMultiButton(label, onClick, tooltip, buttonTexts)
+        local data = {
+            name = label,
+            tooltip = tooltip,
+            buttonTexts = buttonTexts,
+            OnButtonClick = onClick,
+        };
+        local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsMultiButtonControlTemplate', data);
+        initializer:AddSearchTags(label);
+        self.layout:AddInitializer(initializer);
+
+        return initializer;
+    end
+
+    --- @param sectionName string|fun(): string
+    --- @return SettingsExpandableSectionInitializer initializer
+    --- @return fun(): boolean isExpanded
+    function Config:MakeExpandableSection(sectionName)
+        local nameGetter = sectionName;
+        if type(sectionName) == "string" then
+            nameGetter = function() return sectionName; end
+        end
+        local expandInitializer = CreateSettingsExpandableSectionInitializer(nameGetter());
+        expandInitializer.data.nameGetter = nameGetter;
+        function expandInitializer:GetExtent()
+            return 25;
+        end
+
+        local origInitFrame = expandInitializer.InitFrame;
+        function expandInitializer:InitFrame(frame)
+            self.data.name = self.data.nameGetter();
+
+            origInitFrame(self, frame);
+
+            function frame:OnExpandedChanged(expanded)
+                self:EvaluateVisibility(expanded);
+                SettingsInbound.RepairDisplay();
+            end
+
+            function frame:EvaluateVisibility(expanded)
+                -- elvui wants this function to exist
+                if expanded then
+                    self.Button.Right:SetAtlas("Options_ListExpand_Right_Expanded", TextureKitConstants.UseAtlasSize);
+                else
+                    self.Button.Right:SetAtlas("Options_ListExpand_Right", TextureKitConstants.UseAtlasSize);
+                end
+            end
+
+            function frame:CalculateHeight()
+                local initializer = self:GetElementData();
+
+                return initializer:GetExtent();
             end
         end
-        function frame:CalculateHeight()
-            local initializer = self:GetElementData();
 
-            return initializer:GetExtent();
-        end
-    end
-    layout:AddInitializer(expandInitializer);
+        self.layout:AddInitializer(expandInitializer);
 
-    return expandInitializer, function() return expandInitializer.data.expanded; end;
-end
-
---- @param category SettingsCategoryMixin
---- @param layout SettingsVerticalLayoutMixin
---- @param label string
---- @param settingKey string
---- @param tooltip string?
---- @param defaultValue ColorRGBData?
---- @param dbTableOverride table?
---- @return SettingsListElementInitializer initializer
---- @return AddOnSettingMixin setting
-function Config:MakeColorPicker(category, layout, label, settingKey, tooltip, defaultValue, dbTableOverride)
-    local variable = self:GetUniqueVariable();
-    if defaultValue == nil then
-        error('No default value provided');
+        return expandInitializer, function() return expandInitializer.data.expanded; end;
     end
 
-    --- @type AddOnSettingMixin
-    local setting = Settings.RegisterAddOnSetting(
-        category,
-        variable,
-        settingKey,
-        dbTableOverride or self.db,
-        'table',
-        label,
-        defaultValue
-    );
-    local data = Settings.CreateSettingInitializerData(setting, nil, tooltip);
-
-    local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsColorControlTemplate', data);
-    layout:AddInitializer(initializer);
-
-    return initializer, setting;
-end
-
---- @param layout SettingsVerticalLayoutMixin
---- @return SettingsListElementInitializer initializer
-function Config:MakeDonationPrompt(layout)
-    self:MakeText(layout, L["Addon development takes a large amount of time and effort. If you enjoy using Talent Tree Tweaks, please consider supporting its development by donating. Your support helps ensure the continued improvement and maintenance of the addon. Thank you for your generosity!"]);
-
-    local function onClick(buttonIndex)
-        if buttonIndex == 1 then
-            ns.Util:CopyText("https://www.paypal.com/cgi-bin/webscr?hosted_button_id=C8HP9WVKPCL8C&item_name=Talent+Tree+Tweaks&cmd=_s-xclick");
-        else
-            ns.Util:CopyText("https://buymeacoffee.com/numy");
-        end
-    end
-
-    return self:MakeDoubleButton(
-        layout,
-        L["Donate"],
-        onClick,
-        L["If you enjoy using Talent Tree Tweaks, consider supporting its development with a donation."],
-        PAYPAL_TEXTURE .. "PayPal",
-        COFFEE_TEXTURE .. "BuyMeACoffee"
-    );
-end
-
-TalentTreeTweaks_SettingsColorControlMixin = CreateFromMixins(SettingsControlMixin);
-do
-    --- @class TTT_Config_ColorControlMixin
-    local mixin = TalentTreeTweaks_SettingsColorControlMixin;
-
-    --- @param colorData ColorRGBData
-    function mixin:SetColorVisual(colorData)
-        local r, g, b = colorData.r, colorData.g, colorData.b;
-        self.Text:SetTextColor(r, g, b);
-        self.ColorSwatch.Color:SetVertexColor(r, g, b);
-    end
-
-    function mixin:Init(initializer)
-        SettingsControlMixin.Init(self, initializer);
-
-        -- "SetCallback" actually registers the callback, it doesn't replace it
-        self.data.setting:SetValueChangedCallback(function(_, value) self:SetColorVisual(value) end);
-        self:SetColorVisual(self.data.setting:GetValue());
-
-        self.ColorSwatch:SetScript("OnClick", function() self:OpenColorPicker() end);
-        self.ColorSwatch:SetScript("OnEnter", function(button)
-            GameTooltip:SetOwner(button, "ANCHOR_TOP");
-            GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
-            GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
-            GameTooltip:Show();
-        end);
-        self.ColorSwatch:SetScript("OnLeave", function() GameTooltip:Hide(); end);
-
-        self:EvaluateState();
-    end
-
-    function mixin:EvaluateState()
-        SettingsControlMixin.EvaluateState(self);
-        local enabled = self:IsEnabled();
-
-        self.ColorSwatch:SetEnabled(enabled);
-        if enabled then
-            self.Text:SetTextColor(self.ColorSwatch.Color:GetVertexColor());
-        else
-            self.Text:SetTextColor(GRAY_FONT_COLOR:GetRGB());
-        end
-    end
-
-    function mixin:OpenColorPicker()
-        local color = self.data.setting:GetValue();
-
-        ColorPickerFrame:SetupColorPickerAndShow({
-            r = color.r,
-            g = color.g,
-            b = color.b,
-            opacity = color.a or nil,
-            hasOpacity = color.a ~= nil,
-            swatchFunc = function()
-                local r, g, b = ColorPickerFrame:GetColorRGB();
-                local a = ColorPickerFrame:GetColorAlpha();
-
-                self.data.setting:SetValue({ r = r, g = g, b = b, a = a });
-            end,
-            cancelFunc = function()
-                local r, g, b, a = ColorPickerFrame:GetPreviousValues();
-
-                self.data.setting:SetValue({ r = r, g = g, b = b, a = a });
-            end,
-        });
-    end
-end
-
-TalentTreeTweaks_SettingsButtonControlMixin = CreateFromMixins(SettingsListElementMixin);
-do
-    --- @class TTT_Config_ButtonControlMixin
-    local mixin = TalentTreeTweaks_SettingsButtonControlMixin;
-
-    function mixin:Init(initializer)
-        SettingsListElementMixin.Init(self, initializer);
-
-        self.Button:SetText(self.data.buttonText);
-        self.Button:SetScript("OnClick", self.data.OnButtonClick);
-        self.Button:SetScript("OnEnter", function(button)
-            GameTooltip:SetOwner(button, "ANCHOR_TOP");
-            GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
-            GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
-            GameTooltip:Show();
-        end);
-        self.Button:SetScript("OnLeave", function() GameTooltip:Hide(); end);
-
-        self:EvaluateState();
-    end
-
-    function mixin:EvaluateState()
-        SettingsListElementMixin.EvaluateState(self);
-        local enabled = SettingsControlMixin.IsEnabled(self);
-
-        self.Button:SetEnabled(enabled);
-        self:DisplayEnabled(enabled);
-    end
-end
-
-TalentTreeTweaks_SettingsDoubleButtonControlMixin = CreateFromMixins(SettingsListElementMixin);
-do
-    --- @class TTT_Config_DoubleButtonControlMixin
-    local mixin = TalentTreeTweaks_SettingsDoubleButtonControlMixin;
-
-    function mixin:Init(initializer)
-        SettingsListElementMixin.Init(self, initializer);
-        local function onClick(button)
-            self.data.OnButtonClick(button == self.Button1 and 1 or 2);
+    --- @param label string
+    --- @param settingKey string|number
+    --- @param tooltip string?
+    --- @param defaultValue ColorRGBData?
+    --- @param dbTableOverride table?
+    --- @return SettingsListElementInitializer initializer
+    --- @return AddOnSettingMixin setting
+    function Config:MakeColorPicker(label, settingKey, tooltip, defaultValue, dbTableOverride)
+        local variable = self:GetUniqueVariable();
+        if defaultValue == nil then
+            error('No default value provided');
         end
 
-        self.Button1:SetTextToFit(self.data.button1Text);
-        self.Button1:SetScript("OnClick", onClick);
-        self.Button1:SetScript("OnEnter", function(button)
-            GameTooltip:SetOwner(button, "ANCHOR_TOP");
-            GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
-            GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
-            GameTooltip:Show();
-        end);
-        self.Button1:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+        --- @type AddOnSettingMixin
+        local setting = Settings.RegisterAddOnSetting(
+            self.category,
+            variable,
+            settingKey,
+            dbTableOverride or self.db,
+            'table',
+            label,
+            defaultValue
+        );
+        local data = Settings.CreateSettingInitializerData(setting, nil, tooltip);
 
-        self.Button2:SetTextToFit(self.data.button2Text);
-        self.Button2:SetScript("OnClick", onClick);
-        self.Button2:SetScript("OnEnter", function(button)
-            GameTooltip:SetOwner(button, "ANCHOR_TOP");
-            GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
-            GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
-            GameTooltip:Show();
-        end);
-        self.Button2:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+        local initializer = Settings.CreateSettingInitializer('TalentTreeTweaks_SettingsColorControlTemplate', data);
+        self.layout:AddInitializer(initializer);
 
-        self:EvaluateState();
+        return initializer, setting;
     end
 
-    function mixin:EvaluateState()
-        SettingsListElementMixin.EvaluateState(self);
-        local enabled = SettingsControlMixin.IsEnabled(self);
+    --- @return SettingsListElementInitializer initializer
+    function Config:MakeDonationPrompt(layout)
+        self:MakeText(L["Addon development takes a large amount of time and effort. If you enjoy using Talent Tree Tweaks, please consider supporting its development by donating. Your support helps ensure the continued improvement and maintenance of the addon. Thank you for your generosity!"]);
 
-        self.Button1:SetEnabled(enabled);
-        self.Button2:SetEnabled(enabled);
-        self:DisplayEnabled(enabled);
+        local function onClick(buttonIndex)
+            if buttonIndex == 1 then
+                ns.Util:CopyText("https://www.paypal.com/cgi-bin/webscr?hosted_button_id=C8HP9WVKPCL8C&item_name=Talent+Tree+Tweaks&cmd=_s-xclick");
+            else
+                ns.Util:CopyText("https://buymeacoffee.com/numy");
+            end
+        end
+
+        return self:MakeMultiButton(
+            L["Donate"],
+            onClick,
+            L["If you enjoy using Talent Tree Tweaks, consider supporting its development with a donation."],
+            {
+                PAYPAL_TEXTURE .. "PayPal",
+                COFFEE_TEXTURE .. "BuyMeACoffee",
+            }
+        );
     end
-end
 
-TalentTreeTweaks_SettingsTextMixin = CreateFromMixins(DefaultTooltipMixin);
-do
-    --- @class TTT_Config_TextMixin
-    local mixin = TalentTreeTweaks_SettingsTextMixin;
+    TalentTreeTweaks_SettingsColorControlMixin = CreateFromMixins(SettingsControlMixin);
+    do
+        --- @class TTT_Config_ColorControlMixin
+        local mixin = TalentTreeTweaks_SettingsColorControlMixin;
 
-    function mixin:Init(initializer)
-        local data = initializer:GetData();
-        self.Text:SetText(data.name);
-        self.Text:SetHeight(data.extent);
-        self:SetHeight(data.extent);
+        --- @param colorData ColorRGBData
+        function mixin:SetColorVisual(colorData)
+            local r, g, b = colorData.r, colorData.g, colorData.b;
+            self.Text:SetTextColor(r, g, b);
+            self.ColorSwatch.Color:SetVertexColor(r, g, b);
+        end
+
+        function mixin:Init(initializer)
+            SettingsControlMixin.Init(self, initializer);
+
+            -- "SetCallback" actually registers the callback, it doesn't replace it
+            self.data.setting:SetValueChangedCallback(function(_, value) self:SetColorVisual(value) end);
+            self:SetColorVisual(self.data.setting:GetValue());
+
+            self.ColorSwatch:SetScript("OnClick", function() self:OpenColorPicker() end);
+            self.ColorSwatch:SetScript("OnEnter", function(button)
+                GameTooltip:SetOwner(button, "ANCHOR_TOP");
+                GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
+                GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
+                GameTooltip:Show();
+            end);
+            self.ColorSwatch:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+
+            self:EvaluateState();
+        end
+
+        function mixin:EvaluateState()
+            SettingsControlMixin.EvaluateState(self);
+            local enabled = self:IsEnabled();
+
+            self.ColorSwatch:SetEnabled(enabled);
+            if enabled then
+                self.Text:SetTextColor(self.ColorSwatch.Color:GetVertexColor());
+            else
+                self.Text:SetTextColor(GRAY_FONT_COLOR:GetRGB());
+            end
+        end
+
+        function mixin:OpenColorPicker()
+            local color = self.data.setting:GetValue();
+
+            ColorPickerFrame:SetupColorPickerAndShow({
+                r = color.r,
+                g = color.g,
+                b = color.b,
+                opacity = color.a or nil,
+                hasOpacity = color.a ~= nil,
+                swatchFunc = function()
+                    local r, g, b = ColorPickerFrame:GetColorRGB();
+                    local a = ColorPickerFrame:GetColorAlpha();
+
+                    self.data.setting:SetValue({ r = r, g = g, b = b, a = a, });
+                end,
+                cancelFunc = function()
+                    local r, g, b, a = ColorPickerFrame:GetPreviousValues();
+
+                    self.data.setting:SetValue({ r = r, g = g, b = b, a = a, });
+                end,
+            });
+        end
+    end
+
+    TalentTreeTweaks_SettingsButtonControlMixin = CreateFromMixins(SettingsListElementMixin);
+    do
+        --- @class TTT_Config_ButtonControlMixin
+        local mixin = TalentTreeTweaks_SettingsButtonControlMixin;
+
+        function mixin:Init(initializer)
+            SettingsListElementMixin.Init(self, initializer);
+
+            self.Button:SetText(self.data.buttonText);
+            self.Button:SetScript("OnClick", self.data.OnButtonClick);
+            self.Button:SetScript("OnEnter", function(button)
+                GameTooltip:SetOwner(button, "ANCHOR_TOP");
+                GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
+                GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
+                GameTooltip:Show();
+            end);
+            self.Button:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+
+            self:EvaluateState();
+        end
+
+        function mixin:EvaluateState()
+            SettingsListElementMixin.EvaluateState(self);
+            local enabled = SettingsControlMixin.IsEnabled(self);
+
+            self.Button:SetEnabled(enabled);
+            self:DisplayEnabled(enabled);
+        end
+    end
+
+    TalentTreeTweaks_SettingsMultiButtonControlMixin = CreateFromMixins(SettingsListElementMixin);
+    do
+        --- @class TTT_Config_MultiButtonControlMixin
+        local mixin = TalentTreeTweaks_SettingsMultiButtonControlMixin;
+
+        function mixin:Init(initializer)
+            SettingsListElementMixin.Init(self, initializer);
+            --- @param button Button
+            local function onClick(button)
+                self.data.OnButtonClick(button, button:GetID());
+            end
+            --- @param button Button
+            local function onEnter(button)
+                GameTooltip:SetOwner(button, "ANCHOR_TOP");
+                GameTooltip_AddHighlightLine(GameTooltip, initializer:GetName());
+                GameTooltip_AddNormalLine(GameTooltip, initializer:GetTooltip());
+                GameTooltip:Show();
+            end
+            local function onLeave() GameTooltip:Hide(); end
+            self.ButtonContainer.buttonPool:ReleaseAll();
+
+            local anchorTarget;
+            for i, buttonText in ipairs(self.data.buttonTexts) do
+                local button = self.ButtonContainer.buttonPool:Acquire();
+                button:SetID(i);
+                button:SetTextToFit(buttonText);
+                button:Show();
+                if i == 1 then
+                    button:SetPoint("LEFT", self.ButtonContainer, "LEFT", 0, 0);
+                else
+                    button:SetPoint("LEFT", anchorTarget, "RIGHT", 5, 0);
+                end
+                button:SetScript("OnClick", onClick);
+                button:SetScript("OnEnter", onEnter);
+                button:SetScript("OnLeave", onLeave);
+                anchorTarget = button;
+            end
+
+            self:EvaluateState();
+        end
+
+        function mixin:EvaluateState()
+            SettingsListElementMixin.EvaluateState(self);
+            local enabled = SettingsControlMixin.IsEnabled(self);
+
+            for button in self.ButtonContainer.buttonPool:EnumerateActive() do
+                button:SetEnabled(enabled);
+            end
+            self:DisplayEnabled(enabled);
+        end
+    end
+
+    TalentTreeTweaks_SettingsTextMixin = CreateFromMixins(DefaultTooltipMixin);
+    do
+        --- @class TTT_Config_TextMixin
+        local mixin = TalentTreeTweaks_SettingsTextMixin;
+
+        function mixin:Init(initializer)
+            local data = initializer:GetData();
+            self.Text:SetText(data.name);
+            self.Text:SetHeight(data.extent);
+            self:SetHeight(data.extent);
+        end
     end
 end

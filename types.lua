@@ -9,10 +9,10 @@
 --- @field choiceNodeSelection number
 --- @field nodeID number
 
---- @class TTT_ColorSwatchButton: Button, ColorSwatchTemplate
+--- @class TTT_Config_ColorSwatchButton: Button, ColorSwatchTemplate
 
 --- @class TTT_Config_ColorControlMixin : SettingsListElementTemplate, SettingsControlMixin
---- @field ColorSwatch TTT_ColorSwatchButton
+--- @field ColorSwatch TTT_Config_ColorSwatchButton
 --- @field data TTT_Config_SettingData
 
 --- @class TTT_Config_ButtonControlMixin : SettingsListElementTemplate
@@ -25,17 +25,18 @@
 --- @field buttonText string
 --- @field OnButtonClick fun(button: Button)
 
---- @class TTT_Config_DoubleButtonControlMixin : SettingsListElementTemplate
---- @field Button1 UIPanelButtonTemplate
---- @field Button2 UIPanelButtonTemplate
---- @field data TTT_Config_DoubleButtonSettingData
+--- @class TTT_Config_MultiButtonControlMixin : SettingsListElementTemplate
+--- @field ButtonContainer TTT_Config_MultiButton_ButtonContainer
+--- @field data TTT_Config_MultiButtonSettingData
 
---- @class TTT_Config_DoubleButtonSettingData
+--- @class TTT_Config_MultiButton_ButtonContainer
+--- @field buttonPool FramePool<UIPanelButtonTemplate>
+
+--- @class TTT_Config_MultiButtonSettingData
 --- @field name string
 --- @field tooltip string
---- @field button1Text string
---- @field button2Text string
---- @field OnButtonClick fun(buttonIndex: number)
+--- @field buttonTexts string[]
+--- @field OnButtonClick fun(button: Button, buttonIndex: number)
 
 --- @class TTT_Config_TextMixin: Frame, DefaultTooltipMixin
 --- @field Text FontString
