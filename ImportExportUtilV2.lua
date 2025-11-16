@@ -4,7 +4,7 @@ if C_Traits.GetLoadoutSerializationVersion() ~= LOADOUT_SERIALIZATION_VERSION th
 --- @class TTT_NS
 local ns = select(2, ...);
 
---- @class TalentTreeTweaks_ImportExportUtilV2
+--- @class TTT_ImportExportUtilV2
 local ImportExportUtil = {};
 ns.ImportExportUtil = ImportExportUtil;
 

@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TalentTreeTweaks_CopyTalentButtonInfo: TTT_Module, AceHook-3.0, AceEvent-3.0
+--- @class TTT_CopyTalentButtonInfo: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('CopyTalentButtonInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnInitialize()

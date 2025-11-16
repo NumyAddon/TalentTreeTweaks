@@ -180,30 +180,30 @@ function Module:BuildConfig(configBuilder, db)
     do
         local function isLoaded() return not not self.skyridingConfigID; end;
         local function isNotLoaded() return not isLoaded; end;
-        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE);
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Skyriding system on this character yet.']);
+        local header = configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE, nil, 2);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Skyriding system on this character yet.'], 2);
         loading:AddShownPredicate(isNotLoaded);
         configBuilder:MakeCheckbox(
             ENABLE,
             'skyridingEnabled',
             L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE)
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Toggle UI'],
             function() self:ToggleTreeUI(SKYRIDING_TREE_ID); end,
             L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE)
-        ):AddModifyPredicate(isLoaded);
+        ):SetParentInitializer(header, isLoaded);
         configBuilder:MakeDropdown(
             L['Auto Ride Along'],
             'rideAlong',
             L['Automatically enable/disable Ride Along the first time you log in on a character.'],
             {
-                { value = CHOICE_NODE_OPTION_1, text = L['Enable Ride Along'], },
-                { value = CHOICE_NODE_OPTION_2, text = L['Disable Ride Along'], },
-                { value = CHOICE_NODE_NOT_SET,  text = L['Do Nothing'], },
+                { value = CHOICE_NODE_OPTION_1, text = L['Enable Ride Along'] },
+                { value = CHOICE_NODE_OPTION_2, text = L['Disable Ride Along'] },
+                { value = CHOICE_NODE_NOT_SET, text = L['Do Nothing'] },
             },
             setEnabledTreeIDs
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Reset Ride Along Cache'],
             function()
@@ -211,18 +211,18 @@ function Module:BuildConfig(configBuilder, db)
                 self:DefferPurchase();
             end,
             L['Reset the Ride Along cache, so all characters will match the current setting on login.']
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeDropdown(
             L['Auto Surge Choice'],
             'surge',
             L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
             {
-                { value = CHOICE_NODE_OPTION_1, text = StripHyperlinks(C_Spell.GetSpellLink(WHIRLING_SURGE_SPELL_ID)) or 'Whirling Surge', },
-                { value = CHOICE_NODE_OPTION_2, text = StripHyperlinks(C_Spell.GetSpellLink(LIGHTNING_SURGE_SPELL_ID)) or 'Lightning Surge', },
-                { value = CHOICE_NODE_NOT_SET,  text = L['Do Nothing'], },
+                { value = CHOICE_NODE_OPTION_1, text = StripHyperlinks(C_Spell.GetSpellLink(WHIRLING_SURGE_SPELL_ID)) or 'Whirling Surge' },
+                { value = CHOICE_NODE_OPTION_2, text = StripHyperlinks(C_Spell.GetSpellLink(LIGHTNING_SURGE_SPELL_ID)) or 'Lightning Surge' },
+                { value = CHOICE_NODE_NOT_SET, text = L['Do Nothing'] },
             },
             setEnabledTreeIDs
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Reset Surge Cache'],
             function()
@@ -230,81 +230,86 @@ function Module:BuildConfig(configBuilder, db)
                 self:DefferPurchase();
             end,
             L['Reset the Surge cache, so all characters will match the current setting on login.']
-        );
+        ):SetParentInitializer(header);
     end
     do
         local function isLoaded() return not not self:GetLemixConfigID(); end;
         local function isNotLoaded() return not isLoaded(); end;
         local function isLemix() return IS_LEMIX; end;
-        configBuilder:MakeHeader(L['Legion Remix: Limits Unbound']):AddShownPredicate(isLemix);
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.']);
+        local header = configBuilder:MakeHeader(L['Legion Remix: Limits Unbound'], nil, 2)
+        header:AddShownPredicate(isLemix);
+
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.'], 2);
         loading:AddShownPredicate(isNotLoaded);
         loading:AddShownPredicate(isLemix);
 
-        configBuilder:MakeCheckbox(
+        local enabled = configBuilder:MakeCheckbox(
             ENABLE,
             'lemixLimitsUnboundEnabled',
             L['Automatically upgrade the final Limits Unbound talent when you have enough currency.']
-        ):AddShownPredicate(isLemix);
+        );
+        enabled:AddShownPredicate(isLemix);
+        enabled:SetParentInitializer(header);
+
         local openUI = configBuilder:MakeButton(
             L['Open Artifact Traits UI'],
             function() SocketInventoryItem(16); end,
             L['Open the Legion Remix Artifact traits UI to view and adjust talents.']
         );
-        openUI:AddModifyPredicate(isLoaded)
+        openUI:SetParentInitializer(header, isLoaded)
         openUI:AddShownPredicate(isLemix);
     end
     do
         local function isLoaded() return not not self.reshiiWrapsConfigID; end;
         local function isNotLoaded() return not isLoaded(); end;
-        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE);
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE));
+        local header = configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE, nil, 2);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE), 2);
         loading:AddShownPredicate(isNotLoaded);
         configBuilder:MakeCheckbox(
             ENABLE,
             'reshiiWrapsEnabled',
             L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE)
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Toggle UI'],
             function() self:ToggleTreeUI(RESHII_WRAPS_TREE_ID); end,
             L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE)
-        ):AddModifyPredicate(isLoaded);
+        ):SetParentInitializer(header, isLoaded);
     end
     do
         local HORRIFIC_VISIONS_TITLE = SPLASH_BATTLEFORAZEROTH_8_3_0_FEATURE1_TITLE or L['Horrific Visions'];
         local function isLoaded() return not not self.horrificVisionsConfigID; end;
         local function isNotLoaded() return not isLoaded(); end;
-        configBuilder:MakeHeader(HORRIFIC_VISIONS_TITLE);
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.']);
+        local header = configBuilder:MakeHeader(HORRIFIC_VISIONS_TITLE, nil, 2);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the Horrific Visions system on this character yet.'], 2);
         loading:AddShownPredicate(isNotLoaded);
         configBuilder:MakeCheckbox(
             ENABLE,
             'horrificVisionsEnabled',
             L['Automatically purchase Horrific Visions talents when you have enough currency.']
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Toggle UI'],
             function() self:ToggleTreeUI(HORRIFIC_VISIONS_TREE_ID); end,
             L['Toggle the %s UI to view and adjust talents.']:format(HORRIFIC_VISIONS_TITLE)
-        ):AddModifyPredicate(isLoaded);
+        ):SetParentInitializer(header, isLoaded);
     end
     do
         local function isLoaded() return not not self.overchargedTitanConsoleConfigID; end;
         local function isNotLoaded() return not isLoaded(); end;
-        configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE);
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE));
+        local header = configBuilder:MakeHeader(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE, nil, 2);
+        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE), 2);
         loading:AddShownPredicate(isNotLoaded);
         configBuilder:MakeCheckbox(
             ENABLE,
             'overchargedTitanConsoleEnabled',
             L['Automatically purchase %s talents when you have enough currency.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE)
-        );
+        ):SetParentInitializer(header);
         configBuilder:MakeButton(
             L['Toggle UI'],
             function() self:ToggleTreeUI(OVERCHARGED_TITAN_CONSOLE_TREE_ID); end,
             L['Toggle the %s UI to view and adjust talents.']:format(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE)
-        ):AddModifyPredicate(isLoaded);
+        ):SetParentInitializer(header, isLoaded);
     end
 end
 

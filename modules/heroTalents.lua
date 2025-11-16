@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_HeroTalents: AceModule, AceHook-3.0
+--- @class TTT_HeroTalents: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('HeroTalents', 'AceHook-3.0');
 
 local function RunScript(frame, script, ...)

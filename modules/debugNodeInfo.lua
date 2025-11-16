@@ -79,7 +79,7 @@ function Module:BuildConfig(configBuilder, db)
     };
     configBuilder:SetDefaults(defaults, true);
 
-    configBuilder:MakeText(L['You can toggle any of the following on/off to enable/disable the integration with that debug tool.']);
+    configBuilder:MakeText(L['You can toggle any of the following on/off to enable/disable the integration with that debug tool.'], 2);
 
     configBuilder:MakeCheckbox(
         '/tinspect',

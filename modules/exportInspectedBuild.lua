@@ -1,9 +1,7 @@
 --- @class TTT_NS
 local TTT = select(2, ...);
 
---- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
---- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
 local L = TTT.L;
 
@@ -12,7 +10,7 @@ local ChatFrame_OpenChat = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame
 
 local LEVEL_CAP = 80;
 
---- @class TTT_ExportInspectedBuild: AceModule, AceHook-3.0, AceEvent-3.0
+--- @class TTT_ExportInspectedBuild: TTT_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'AceEvent-3.0');
 
 --- @param unit UnitToken

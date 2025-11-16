@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_MiniTreeInTooltip: AceModule, AceHook-3.0
+--- @class TTT_MiniTreeInTooltip: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
 local LTT = Util.LibTalentTree;
@@ -454,7 +454,7 @@ function Module:GetDiffForNode(nodeID, targetEntry, targetRank)
     return useCustomColors and self.customColors[diff] or diff;
 end
 
---- @class TalentTreeTweaks_TreeInMinimapContainerMixin: Frame
+--- @class TTT_TreeInMinimapContainerMixin: Frame
 local containerMixin = {};
 function containerMixin:Init()
     self.spacing = 20;
@@ -620,9 +620,9 @@ function containerMixin:Reset()
     self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
 end
 
---- @return TalentTreeTweaks_TreeInMinimapContainerMixin
+--- @return TTT_TreeInMinimapContainerMixin
 function Module:CreateContainer()
-    --- @type TalentTreeTweaks_TreeInMinimapContainerMixin
+    --- @type TTT_TreeInMinimapContainerMixin
     local container = CreateFrame("FRAME");
     Mixin(container, containerMixin);
     container:Init();
@@ -630,7 +630,7 @@ function Module:CreateContainer()
     return container;
 end
 
---- @return TalentTreeTweaks_TreeInMinimapContainerMixin
+--- @return TTT_TreeInMinimapContainerMixin
 function Module:GetOrCreateContainer(tooltip)
     if not self.containers[tooltip] then
         self.containers[tooltip] = self:CreateContainer();

@@ -41,6 +41,9 @@
 --- @class TTT_Config_TextMixin: Frame, DefaultTooltipMixin
 --- @field Text FontString
 
+--- @class TTT_Config_HeaderMixin: Frame, DefaultTooltipMixin
+--- @field Title FontString
+
 --- @class TTT_Config_SettingData
 --- @field setting AddOnSettingMixin
 --- @field name string
@@ -72,8 +75,3 @@ function Module:GetName() end
 --- @param configBuilder TTT_ConfigBuilder
 --- @param db table # The module's private database
 function Module:BuildConfig(configBuilder, db) end
-
---- @param defaultOptionsTable table # The default module options table
---- @param db table # The module's private database
---- @return table # Options table with any module specific options added in
-function Module:GetOptions(defaultOptionsTable, db) end

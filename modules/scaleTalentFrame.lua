@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_ScaleTalentFrame: AceModule, AceHook-3.0
+--- @class TTT_ScaleTalentFrame: TTT_Module, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
 local SetScale = GetFrameMetatable().__index.SetScale
@@ -48,7 +48,7 @@ function Module:BuildConfig(configBuilder, db)
     local function blizzMoveMissingPredicate() return not self.blizzMoveEnabled; end
 
     configBuilder.enableInitializer:AddModifyPredicate(blizzMoveMissingPredicate);
-    local warning = configBuilder:MakeText(L['This module is incompatible with BlizzMove, and has been disabled.']);
+    local warning = configBuilder:MakeText(WHITE_FONT_COLOR:WrapTextInColorCode(L['This module is incompatible with BlizzMove, and has been disabled.']), 2);
     warning:AddShownPredicate(blizzMoveEnabledPredicate);
     configBuilder:MakeSlider(
         L['Change Scale'],

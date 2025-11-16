@@ -64,25 +64,25 @@ function Module:BuildConfig(configBuilder, db)
         end
     end
 
-    local function makeSubCheckbox(label, key, tableKey, tooltip)
-        configBuilder:MakeCheckbox(label, key, tooltip, nil, defaults[tableKey][key], db[tableKey]);
+    local function makeSubCheckbox(subHeader, label, key, tableKey, tooltip)
+        configBuilder:MakeCheckbox(label, key, tooltip, nil, defaults[tableKey][key], db[tableKey]):SetParentInitializer(subHeader);
     end
     do
-        configBuilder:MakeText(L['Talent Tooltip']);
-        makeSubCheckbox(ENABLE, 'enabled', 'talentTooltip', L['Toggles for the Talent Tooltips.']);
-        makeSubCheckbox('Node ID', 'nodeId', 'talentTooltip'); -- don't translate
-        makeSubCheckbox('Entry ID', 'entryId', 'talentTooltip'); -- don't translate
-        makeSubCheckbox('Definition ID', 'definitionId', 'talentTooltip'); -- don't translate
-        makeSubCheckbox(L['Spell ID'], 'spellId', 'talentTooltip');
-        makeSubCheckbox(L['Row/Col Info'], 'rowColInfo', 'talentTooltip');
+        local subHeader = configBuilder:MakeText(L['Talent Tooltip'], 2);
+        makeSubCheckbox(subHeader, ENABLE, 'enabled', 'talentTooltip', L['Toggles for the Talent Tooltips.']);
+        makeSubCheckbox(subHeader, 'Node ID', 'nodeId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, 'Entry ID', 'entryId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, 'Definition ID', 'definitionId', 'talentTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, L['Spell ID'], 'spellId', 'talentTooltip');
+        makeSubCheckbox(subHeader, L['Row/Col Info'], 'rowColInfo', 'talentTooltip');
     end
     do
-        configBuilder:MakeText(L['Professions Tooltip']);
-        makeSubCheckbox(ENABLE, 'enabled', 'professionTooltip', L['Toggles for the Professions Tooltips.']);
-        makeSubCheckbox('Node ID', 'nodeId', 'professionTooltip'); -- don't translate
-        makeSubCheckbox('Entry ID', 'entryId', 'professionTooltip'); -- don't translate
-        makeSubCheckbox('Definition ID', 'definitionId', 'professionTooltip'); -- don't translate
-        makeSubCheckbox(L['Spell ID'], 'spellId', 'professionTooltip');
+        local subHeader = configBuilder:MakeText(L['Professions Tooltip'], 2);
+        makeSubCheckbox(subHeader, ENABLE, 'enabled', 'professionTooltip', L['Toggles for the Professions Tooltips.']);
+        makeSubCheckbox(subHeader, 'Node ID', 'nodeId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, 'Entry ID', 'entryId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, 'Definition ID', 'definitionId', 'professionTooltip'); -- don't translate
+        makeSubCheckbox(subHeader, L['Spell ID'], 'spellId', 'professionTooltip');
     end
 end
 

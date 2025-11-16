@@ -1,7 +1,7 @@
 --- @class TTT_NS
 local ns = select(2, ...);
 
---- @class TalentTreeTweaks_Util
+--- @class TTT_Util
 local Util = {};
 ns.Util = Util;
 local L = ns.L;
