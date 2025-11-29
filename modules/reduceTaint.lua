@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_ReduceTaintModule: TTT_Module, AceHook-3.0
+--- @class TTT_ReduceTaintModule: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('ReduceTaint', 'AceHook-3.0');
 
 function Module:OnInitialize()
@@ -38,7 +38,7 @@ function Module:GetName()
     return L['Reduce Taint'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_ReduceTaintModuleDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

@@ -6,7 +6,7 @@ local L = TTT.L;
 local Util = TTT.Util;
 local LTT = Util.LibTalentTree;
 
---- @class TTT_TooltipIds: TTT_Module
+--- @class TTT_TooltipIds: NumyConfig_Module
 local Module = Main:NewModule('TooltipIds');
 
 function Module:OnEnable()
@@ -29,7 +29,7 @@ function Module:GetName()
     return L['Tooltip IDs'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_TooltipIdsDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

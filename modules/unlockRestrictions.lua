@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_UnlockRestrictions: TTT_Module, AceHook-3.0
+--- @class TTT_UnlockRestrictions: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
     [ERR_TALENT_FAILED_IN_COMBAT] = true,
@@ -36,7 +36,7 @@ function Module:GetName()
     return L['Unlock Restrictions'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_UnlockRestrictionsDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

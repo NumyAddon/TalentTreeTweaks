@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_InspectDiff: TTT_Module, AceHook-3.0
+--- @class TTT_InspectDiff: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('InspectDiff', 'AceHook-3.0');
 
 function Module:OnEnable()
@@ -42,7 +42,7 @@ function Module:GetName()
     return L['Inspect Diff'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_InspectDiffDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

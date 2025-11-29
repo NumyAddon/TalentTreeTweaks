@@ -17,6 +17,23 @@ jobs:
       - name: Replace toc-versions
         uses: NumyAddon/ToCVersions@v1
 
+      - name: Grab NumyConfig Config Directory
+        uses: actions/checkout@v4
+        with:
+          repository: NumyAddon/NumyConfig
+          path: 'Config'
+          sparse-checkout: 'Config'
+          sparse-checkout-cone-mode: false
+
+      - name: Namespace config addon placeholders
+        run: |
+          mv Config/Config/* Config
+          grep -rl __NUMY_CONFIG_ADDON_PLACEHOLDER__ Config/*.{xml,lua} | xargs sed -i "s/__NUMY_CONFIG_ADDON_PLACEHOLDER__/TalentTreeTweaks/g"
+          rm -rf Config/.git
+          rm -rf Config/Config
+          git add Config/*
+        shell: bash
+
       - name: Update Locale
         run: |
           sudo apt-get install lua5.3

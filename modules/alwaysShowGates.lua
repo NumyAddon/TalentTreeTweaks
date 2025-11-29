@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_AlwaysShowGates: TTT_Module, AceHook-3.0
+--- @class TTT_AlwaysShowGates: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('AlwaysShowGates', 'AceHook-3.0');
 local LTT = Util.LibTalentTree;
 local GATE_TEXT_FORMAT = '%d (+%d)';
@@ -41,7 +41,7 @@ function Module:GetName()
     return L['Always Show Gates'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_AlwaysShowGatesDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

@@ -28,8 +28,7 @@ core.lua
 ImportExportUtilV2.lua
 SharedUtil.lua
 
-settingsTemplates.xml
-config.lua
+config.xml
 
 modules\reduceTaint.lua
 

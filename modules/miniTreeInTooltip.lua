@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_MiniTreeInTooltip: TTT_Module, AceHook-3.0
+--- @class TTT_MiniTreeInTooltip: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
 local LTT = Util.LibTalentTree;
@@ -87,7 +87,7 @@ function Module:GetName()
     return L["Mini Tree in Tooltips"];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_MiniTreeInTooltipDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

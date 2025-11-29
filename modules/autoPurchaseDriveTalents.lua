@@ -9,7 +9,7 @@ local TRAIT_SYSTEM_ID = 19;
 local TREE_ID = 1056;
 local DO_NOTHING = -1;
 
---- @class TTT_DriveModule: TTT_Module, AceEvent-3.0
+--- @class TTT_DriveModule: NumyConfig_Module, AceEvent-3.0
 local Module = Main:NewModule('Drive Auto Purchaser', 'AceEvent-3.0');
 
 function Module:OnInitialize()
@@ -37,7 +37,7 @@ function Module:GetDescription()
     return L['Automatically selects the DRIVE upgrades you want for all of your alts.'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_DriveModuleDB
 function Module:BuildConfig(configBuilder, db)
     self.configBuilder = configBuilder;

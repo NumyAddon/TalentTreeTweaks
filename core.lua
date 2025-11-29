@@ -28,14 +28,40 @@ function Main:OnInitialize()
     self:InitDefaults();
     ns.Util:OnInitialize();
     for moduleName, module in self:IterateModules() do
-        --- @type TTT_Module
+        --- @type NumyConfig_Module
         local module = module;
         if self.db.modules[moduleName] == false then
             module:Disable();
         end
     end
 
-    ns.Config:Init();
+    --- @type NumyConfig
+    local Config = ns.Config;
+    Config:Init("Talent Tree Tweaks", self.db, nil, ns.L, self, {
+        "Skyriding Auto Purchaser",
+        "Drive Auto Purchaser",
+        "MiniTreeInTooltip",
+        "InspectDiff",
+        "ClickableExportStringsInChat",
+        "ExportInspectedBuild",
+        "RespecButtons",
+        "AlwaysShowGates",
+        "ChangeBackground",
+        "TooltipIds",
+        "ImportIntoCurrentLoadout",
+        "ScaleTalentFrame",
+        "HighlightCascadeRepurchable",
+        "UnlockRestrictions",
+
+        "CopyTalentButtonInfo",
+        "ReduceSpam",
+        "HeroTalents",
+        "SearchForIds",
+
+        "MiscFixes",
+        "DebugNodeInfo",
+        "ReduceTaint",
+    });
 
     SLASH_TALENT_TREE_TWEAKS1 = '/ttt';
     SLASH_TALENT_TREE_TWEAKS2 = '/talenttreetweaks';

@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_RespecButtons: TTT_Module, AceHook-3.0, AceEvent-3.0
+--- @class TTT_RespecButtons: NumyConfig_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnEnable()
@@ -29,7 +29,7 @@ function Module:GetName()
     return L['Respec Buttons'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_RespecButtonsDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_DebugNodeInfo: TTT_Module, AceHook-3.0, AceEvent-3.0
+--- @class TTT_DebugNodeInfo: NumyConfig_Module, AceHook-3.0, AceEvent-3.0
 local Module = Main:NewModule('DebugNodeInfo', 'AceHook-3.0', 'AceEvent-3.0');
 
 function Module:OnInitialize()
@@ -66,7 +66,7 @@ function Module:GetName()
     return L['Debug Talent.nodeInfo'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_DebugNodeInfoDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

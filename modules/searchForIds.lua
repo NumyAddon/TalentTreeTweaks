@@ -7,7 +7,7 @@ local L = TTT.L;
 
 local LTT = Util.LibTalentTree;
 
---- @class TTT_SearchForIds: TTT_Module, AceHook-3.0
+--- @class TTT_SearchForIds: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('SearchForIds', 'AceHook-3.0');
 
 local TALENT_TREE_VIEWER = 1;

@@ -9,7 +9,7 @@ local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEd
 local ChatFrame_AddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
 local ChatFrame_RemoveMessageEventFilter = ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter or ChatFrame_RemoveMessageEventFilter
 
---- @class TTT_ClickableExportStringsInChat: TTT_Module, AceHook-3.0
+--- @class TTT_ClickableExportStringsInChat: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('ClickableExportStringsInChat', 'AceHook-3.0');
 Module.bitWidthHeaderVersion = 8;
 Module.bitWidthSpecID = 16;
@@ -84,7 +84,7 @@ function Module:GetName()
     return L['Improved Loadout Links'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_ClickableExportStringsInChatDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

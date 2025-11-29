@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_ImportIntoCurrentLoadout: TTT_Module, AceHook-3.0
+--- @class TTT_ImportIntoCurrentLoadout: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('ImportIntoCurrentLoadout', 'AceHook-3.0');
 
 local LOADOUT_SERIALIZATION_VERSION;
@@ -45,7 +45,7 @@ function Module:GetName()
     return L['Import into current loadout'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_ImportIntoCurrentLoadoutDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

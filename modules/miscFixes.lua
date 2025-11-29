@@ -8,7 +8,7 @@ local L = TTT.L;
 local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink;
 local GetSpellLink = C_Spell.GetSpellLink;
 
---- @class TTT_MiscFixes: TTT_Module, AceHook-3.0
+--- @class TTT_MiscFixes: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('MiscFixes', 'AceHook-3.0');
 
 function Module:OnEnable()
@@ -29,7 +29,7 @@ function Module:GetName()
     return L['Misc Fixes'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_MiscFixesDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

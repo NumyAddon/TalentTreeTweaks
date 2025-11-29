@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_ScaleTalentFrame: TTT_Module, AceHook-3.0
+--- @class TTT_ScaleTalentFrame: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('ScaleTalentFrame', 'AceHook-3.0');
 
 local SetScale = GetFrameMetatable().__index.SetScale
@@ -34,7 +34,7 @@ function Module:GetName()
     return L['Scale Talent Frame'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_ScaleTalentFrameDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;

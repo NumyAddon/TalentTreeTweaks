@@ -5,7 +5,7 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
---- @class TTT_HighlightCascadeRepurchable: TTT_Module
+--- @class TTT_HighlightCascadeRepurchable: NumyConfig_Module
 local Module = Main:NewModule('HighlightCascadeRepurchable');
 Module.enabled = false;
 
@@ -35,7 +35,7 @@ function Module:GetName()
     return L['Highlight Cascade Repurchable'];
 end
 
---- @param configBuilder TTT_ConfigBuilder
+--- @param configBuilder NumyConfigBuilder
 --- @param db TTT_HighlightCascadeRepurchableDB
 function Module:BuildConfig(configBuilder, db)
     self.db = db;
