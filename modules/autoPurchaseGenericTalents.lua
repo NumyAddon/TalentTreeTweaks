@@ -404,8 +404,7 @@ function Module:TRAIT_TREE_CURRENCY_INFO_UPDATED(_, treeID)
     end
 end
 
-function Module:GetCurrencyInfo(treeID)
-    local configID = C_Traits.GetConfigIDByTreeID(treeID);
+function Module:GetCurrencyInfo(treeID, configID)
     local excludeStagedChanges = true;
     local currencyInfo = C_Traits.GetTreeCurrencyInfo(configID, treeID, excludeStagedChanges);
 
@@ -528,7 +527,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
 
     if C_Traits.ConfigHasStagedChanges(configID) then return; end
 
-    local currencyInfo = self:GetCurrencyInfo(treeID);
+    local currencyInfo = self:GetCurrencyInfo(treeID, configID);
     if
         not currencyInfo or
         not currencyInfo[1] or
