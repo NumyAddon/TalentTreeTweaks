@@ -1,6 +1,8 @@
 --- @class TTT_NS
 local TTT = select(2, ...);
 
+local StripHyperlinks = C_StringUtil and C_StringUtil.StripHyperlinks or StripHyperlinks;
+
 local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
