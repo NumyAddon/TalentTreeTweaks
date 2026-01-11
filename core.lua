@@ -37,7 +37,7 @@ function Main:OnInitialize()
 
     --- @type NumyConfig
     local Config = ns.Config;
-    Config:Init("Talent Tree Tweaks", self.db, nil, ns.L, self, {
+    Config:Init("Talent Tree Tweaks", "TalentTreeTweaks", self.db, nil, ns.L, self, {
         "Skyriding Auto Purchaser",
         "Drive Auto Purchaser",
         "MiniTreeInTooltip",
