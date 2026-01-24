@@ -50,20 +50,18 @@ function Module:BuildConfig(configBuilder, db)
     };
     configBuilder:SetDefaults(defaults, true);
 
-    local sliderOptions = configBuilder:MakeSliderOptions(0, 1, 0.01, function(value) return ('%.1f%%'):format(100 * value); end);
-
     configBuilder:MakeSlider(
         L['Background Transparency'],
         'alpha',
         nil,
-        sliderOptions,
+        configBuilder.sliderOptions.percent,
         function() self:UpdateBackground(); end
     );
     configBuilder:MakeSlider(
         L['Spellbook Background Transparency'],
         'spellbookAlpha',
         nil,
-        sliderOptions,
+        configBuilder.sliderOptions.percent,
         function() self:UpdateBackground(); end
     );
     configBuilder:MakeCheckbox(

@@ -169,13 +169,13 @@ function Module:BuildConfig(configBuilder, db)
         L['Scale'],
         'scale',
         L["Scale of the mini tree."],
-        configBuilder:MakeSliderOptions(0.5, 2, 0.1, function(value) return ('%.1fx'):format(value); end)
+        configBuilder.sliderOptions.scale
     );
     configBuilder:MakeSlider(
         L['Fade Inactive Hero Trees'],
         'inactiveSubTreeAlpha',
         L["Fade Inactive Hero Trees, to more easily see which one is active."],
-        configBuilder:MakeSliderOptions(0, 1, 0.1, function(value) return ('%.1f%%'):format(100 * value); end)
+        configBuilder.sliderOptions.percent
     );
     configBuilder:MakeButton(
         L['Show Example'],

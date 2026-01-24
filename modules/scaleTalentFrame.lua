@@ -54,7 +54,7 @@ function Module:BuildConfig(configBuilder, db)
         L['Change Scale'],
         'scale',
         nil,
-        configBuilder:MakeSliderOptions(0.5, 2, 0.05, function(value) return ('%.1fx'):format(value); end),
+        configBuilder.sliderOptions.scale,
         function(_, value)
             local containerFrame = Util:GetTalentContainerFrameIfLoaded();
             if containerFrame and containerFrame.SetScale and not InCombatLockdown() then SetScale(containerFrame, value); end
