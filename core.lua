@@ -1,5 +1,5 @@
 local name = ...;
---- @class TTT_NS
+--- @class TTT_NS: NumyConfigNS
 local ns = select(2, ...);
 
 --@debug@
@@ -7,7 +7,7 @@ _G.TalentTreeTweaks = ns;
 if not _G.TTT then _G.TTT = ns; end
 --@end-debug@
 
---- @class TTT_Main: AceAddon, AceConsole-3.0, AceHook-3.0, AceEvent-3.0
+--- @class TTT_Main: NumyConfig_AceAddon, AceConsole-3.0, AceHook-3.0, AceEvent-3.0
 local Main = LibStub('AceAddon-3.0'):NewAddon(name, 'AceConsole-3.0', 'AceHook-3.0', 'AceEvent-3.0');
 if not Main then return; end
 ns.Main = Main;
@@ -28,14 +28,11 @@ function Main:OnInitialize()
     self:InitDefaults();
     ns.Util:OnInitialize();
     for moduleName, module in self:IterateModules() do
-        --- @type NumyConfig_Module
-        local module = module;
         if self.db.modules[moduleName] == false then
             module:Disable();
         end
     end
 
-    --- @type NumyConfig
     local Config = ns.Config;
     Config:Init("Talent Tree Tweaks", "TalentTreeTweaks", self.db, nil, ns.L, self, {
         "Skyriding Auto Purchaser",
