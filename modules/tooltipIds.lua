@@ -91,14 +91,14 @@ function Module:AlreadyAdded(textLine, tooltip)
         return false
     end
 
-    for i = 1, 15 do
-        local tooltipFrame = _G[tooltip:GetName() .. "TextLeft" .. i]
-        local textRight = _G[tooltip:GetName() .. "TextRight" .. i]
-        local text, right
-        if tooltipFrame then text = tooltipFrame:GetText() end
-        if text and string.find(text, textLine, 1, true) then return true end
-        if textRight then right = textRight:GetText() end
-        if right and string.find(right, textLine, 1, true) then return true end
+    for i = 1, 30 do
+        local leftFontstring = _G[tooltip:GetName() .. "TextLeft" .. i]
+        local rightFontstring = _G[tooltip:GetName() .. "TextRight" .. i]
+        local left, right
+        if leftFontstring then left = leftFontstring:GetText() end
+        if left and not issecretvalue(left) and string.find(left, textLine, 1, true) then return true end
+        if rightFontstring then right = rightFontstring:GetText() end
+        if right and not issecretvalue(right) and string.find(right, textLine, 1, true) then return true end
     end
 end
 
