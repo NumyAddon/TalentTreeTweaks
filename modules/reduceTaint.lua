@@ -324,10 +324,10 @@ local function replacedShareButtonCallback()
 end
 
 function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
-    if not self:ShouldReplaceShareButton() then return; end
 
     for _, elementDescription in rootDescription:EnumerateElementDescriptions() do
         if elementDescription.text == TALENT_FRAME_DROP_DOWN_EXPORT then
+            if not self:ShouldReplaceShareButton(elementDescription) then return; end
             for _, subElementDescription in elementDescription:EnumerateElementDescriptions() do
                 -- for unlock restrictions module: subElementDescription:SetEnabled(function() return true end); -- try without func wrapper too
                 if subElementDescription.text == TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD then
@@ -338,9 +338,11 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
     end
 end
 
-function Module:ShouldReplaceShareButton()
+--- @param elementDescription ElementMenuDescriptionProxy
+function Module:ShouldReplaceShareButton(elementDescription)
     return
         self.db.alwaysReplaceShareButton
+        or not issecurevariable(elementDescription, 'text')
         or not issecurevariable(Util:GetTalentFrame(), 'configID');
 end
 
