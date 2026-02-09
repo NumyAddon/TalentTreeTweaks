@@ -333,7 +333,7 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     local container = self:GetOrCreateContainer(tooltip);
     container:Reset();
     container:SetScale(self.db.scale);
-    local containerWidth, containerHeight = container:GetSize();
+    local containerWidth, containerHeight = container.baseWidth, container.baseHeight;
     container:SetSize(containerWidth * self.db.scale, containerHeight * self.db.scale);
 
     local dots = {};
@@ -462,7 +462,9 @@ function containerMixin:Init()
     self.expectedMaxRows = 10;
     self.expectedMaxCols = 23;
 
-    self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
+    self.baseWidth = self.expectedMaxCols * self.spacing;
+    self.baseHeight = self.expectedMaxRows * self.spacing;
+    self:SetSize(self.baseWidth, self.baseHeight);
     self:Hide();
 
     --- @type FramePool<Frame>
@@ -480,8 +482,8 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
 
     local row = 1; -- yellow / default
     if type(diff) == 'table' then
-    	row = 4; -- white
-    	texture:SetVertexColor(diff.r, diff.g, diff.b);
+        row = 4; -- white
+        texture:SetVertexColor(diff.r, diff.g, diff.b);
     elseif diff == DIFF_DEFAULT_ORANGE then
         row = 5; -- orange
     elseif diff == DIFF_DEFAULT_YELLOW then
@@ -493,7 +495,7 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
     end
 
     if diff and visualStyle == VISUAL_STYLE_EMPTY then
-    	visualStyle = VISUAL_STYLE_FULL;
+        visualStyle = VISUAL_STYLE_FULL;
     end
 
     local col;
@@ -615,6 +617,8 @@ function containerMixin:ReleaseAllLines()
 end
 
 function containerMixin:Reset()
+    self:SetParent(nil);
+    self:ClearAllPoints();
     self:ReleaseAllLines();
     self:ReleaseAllDots();
     self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
