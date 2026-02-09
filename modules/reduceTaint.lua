@@ -323,6 +323,7 @@ local function replacedShareButtonCallback()
     Util:CopyText(exportString, L['Talent Loadout String']);
 end
 
+--- @param rootDescription RootMenuDescriptionProxy
 function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
 
     for _, elementDescription in rootDescription:EnumerateElementDescriptions() do
