@@ -86,19 +86,24 @@ function Module:BuildConfig(configBuilder, db)
     end
 end
 
+--- @param tooltip GameTooltip
 function Module:AlreadyAdded(textLine, tooltip)
     if textLine == nil then
         return false
     end
 
-    for i = 1, 30 do
-        local leftFontstring = _G[tooltip:GetName() .. "TextLeft" .. i]
-        local rightFontstring = _G[tooltip:GetName() .. "TextRight" .. i]
-        local left, right
-        if leftFontstring then left = leftFontstring:GetText() end
-        if left and not issecretvalue(left) and string.find(left, textLine, 1, true) then return true end
-        if rightFontstring then right = rightFontstring:GetText() end
-        if right and not issecretvalue(right) and string.find(right, textLine, 1, true) then return true end
+    for i = 1, tooltip:NumLines() do
+        local leftLine = tooltip:GetLeftLine(i)
+        if leftLine then
+            local left = leftLine:GetText()
+            if left and not issecretvalue(left) and string.find(left, textLine, 1, true) then return true end
+        end
+
+        local rightLine = tooltip:GetRightLine(i)
+        if rightLine then
+            local right = rightLine:GetText()
+            if right and not issecretvalue(right) and string.find(right, textLine, 1, true) then return true end
+        end
     end
 end
 
