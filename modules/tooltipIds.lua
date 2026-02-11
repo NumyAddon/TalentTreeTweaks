@@ -130,20 +130,22 @@ function Module:AddGenericTraitButtonTooltips(button, tooltip, settings)
     end
 end
 
+--- @param button TalentButtonSpendMixin|Button
 function Module:OnTalentTooltipCreated(button, tooltip)
     if not self.db.talentTooltip.enabled then return end
     local settings = self.db.talentTooltip
-    if settings.nodeId then
-        self:AddItemToTooltip('Node ID', button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID, tooltip)
+    local parent = button:GetParent()
+    local nodeID = (button.GetNodeID and button:GetNodeID())
+        or (button.GetNodeInfo and button:GetNodeInfo().ID)
+        or (parent and parent.GetNodeID and parent:GetNodeID())
+    if nodeID and settings.nodeId then
+        self:AddItemToTooltip('Node ID', nodeID, tooltip)
     end
     self:AddGenericTraitButtonTooltips(button, tooltip, settings)
-    if settings.rowColInfo then
-        local nodeID = button.GetNodeID and button:GetNodeID() or button:GetNodeInfo().ID
-        if nodeID then
-            local column, row = LTT:GetNodeGridPosition(nodeID)
-            if column and row then
-                self:AddItemToTooltip(L['Row/Col'], string.format('%d / %.1f', row, column):gsub('%.0', ''), tooltip)
-            end
+    if nodeID and settings.rowColInfo then
+        local column, row = LTT:GetNodeGridPosition(nodeID)
+        if column and row then
+            self:AddItemToTooltip(L['Row/Col'], string.format('%d / %.1f', row, column):gsub('%.0', ''), tooltip)
         end
     end
 end
