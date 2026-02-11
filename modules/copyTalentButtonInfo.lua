@@ -129,6 +129,11 @@ function Module:OnTalentButtonAcquired(talentButton)
     end
     self:SecureHookScript(talentButton, 'OnEnter', 'OnTalentButtonEnter');
     self:SecureHookScript(talentButton, 'OnLeave', 'OnTalentButtonLeave');
+    if talentButton.trackPipArray then
+        for _, trackPip in pairs(talentButton.trackPipArray) do
+            self:OnTalentButtonAcquired(trackPip)
+        end
+    end
 end
 
 function Module:OnShowSelections(talentsTab)

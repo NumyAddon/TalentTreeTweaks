@@ -160,6 +160,11 @@ function Module:OnTalentButtonAcquired(talentButton)
     end
     self:SecureHookScript(talentButton, 'OnEnter', 'OnTalentButtonEnter');
     self:SecureHookScript(talentButton, 'OnLeave', 'OnTalentButtonLeave');
+    if talentButton.trackPipArray then
+        for _, trackPip in pairs(talentButton.trackPipArray) do
+            self:OnTalentButtonAcquired(trackPip)
+        end
+    end
 end
 
 function Module:OnShowSelections(talentsTab)
@@ -177,8 +182,12 @@ function Module:OnTalentTooltipCreated(_, tooltip)
     tooltip:Show();
 end
 
+--- @param buttonFrame TalentButtonSpendMixin|Button
 function Module:ShowDebugInfo(buttonFrame)
-    local nodeInfo = buttonFrame.nodeInfo or buttonFrame.GetNodeInfo and buttonFrame:GetNodeInfo() or {};
+    local parent = buttonFrame:GetParent();
+    local nodeInfo = (buttonFrame.nodeInfo or buttonFrame.GetNodeInfo and buttonFrame:GetNodeInfo())
+        or (parent and parent.nodeInfo or parent.GetNodeInfo and parent:GetNodeInfo())
+        or {};
     nodeInfo = Mixin({}, nodeInfo);
     nodeInfo._entryInfo = buttonFrame.entryInfo or buttonFrame.GetEntryInfo and buttonFrame:GetEntryInfo() or nil;
 
