@@ -46,6 +46,7 @@ function Module:BuildConfig(configBuilder, db)
     local defaults = {
         alwaysReplaceShareButton = false,
         disableMultiActionBarShowHide = true,
+        disableCastbar = true,
     };
     self.db.replaceDropDown = nil;
     configBuilder:SetDefaults(defaults, true);
@@ -62,6 +63,17 @@ function Module:BuildConfig(configBuilder, db)
         L['Disables the MultiActionBar_ShowAllGrids function, which can cause action buttons to break.'],
         function()
             self:HandleMultiActionBarTaint();
+        end
+    );
+    configBuilder:MakeCheckbox(
+        L['Disable Custom Castbar'],
+        'disableCastbar',
+        L['Midnight introduced some changes that cause the custom castbar to throw errors when switching talents.'],
+        function()
+            local talentsTab = Util:GetTalentFrameIfLoaded()
+            if talentsTab then
+                self:HandleCastbarTaint(talentsTab);
+            end
         end
     );
 end
@@ -82,6 +94,7 @@ function Module:SetupHook()
     self:ReplaceCopyLoadoutButton(talentsTab);
 
     self:HandleMultiActionBarTaint();
+    self:HandleCastbarTaint(talentsTab);
 end
 
 function Module:HandleOnBarHighlightMarkTaint()
@@ -199,8 +212,11 @@ function Module:ReplaceCopyLoadoutButton(talentsTab)
     end);
 end
 
-local function purgeKey(table, key)
-    TextureLoadingGroupMixin.RemoveTexture({textures = table}, key);
+local function setTrue(table, key)
+    TextureLoadingGroupMixin.AddTexture({ textures = table }, key);
+end
+local function setNil(table, key)
+    TextureLoadingGroupMixin.RemoveTexture({ textures = table }, key);
 end
 local function makeFEnvReplacement(original, replacement)
     local fEnv = {};
@@ -247,9 +263,18 @@ function Module:HandleMultiActionBarTaint()
         and not self:IsHooked(microButton, 'HasTalentAlertToShow')
     then
         self:SecureHook(microButton, 'HasTalentAlertToShow', function()
-            purgeKey(microButton, 'canUseTalentUI');
-            purgeKey(microButton, 'canUseTalentSpecUI');
+            setNil(microButton, 'canUseTalentUI');
+            setNil(microButton, 'canUseTalentSpecUI');
         end);
+    end
+end
+
+--- @param talentsTab PlayerSpellsFrame_TalentsFrame
+function Module:HandleCastbarTaint(talentsTab)
+    if self.db.disableCastbar then
+        setNil(talentsTab, 'enableCommitCastBar');
+    else
+        setTrue(talentsTab, 'enableCommitCastBar');
     end
 end
 
@@ -257,7 +282,7 @@ function Module:MakeOnHideSafe()
     local talentContainerFrame = Util:GetTalentContainerFrame();
     if not issecurevariable(talentContainerFrame, 'lockInspect') then
         if not talentContainerFrame.lockInspect then
-            purgeKey(talentContainerFrame, 'lockInspect');
+            setNil(talentContainerFrame, 'lockInspect');
         else
             -- get blizzard to set the value to true
             TextureLoadingGroupMixin.AddTexture({textures = talentContainerFrame}, 'lockInspect');
@@ -265,14 +290,14 @@ function Module:MakeOnHideSafe()
     end
     local isInspecting = talentContainerFrame:IsInspecting();
     if not issecurevariable(talentContainerFrame, 'inspectUnit') then
-        purgeKey(talentContainerFrame, 'inspectUnit');
+        setNil(talentContainerFrame, 'inspectUnit');
     end
     if not issecurevariable(talentContainerFrame, 'inspectString') then
-        purgeKey(talentContainerFrame, 'inspectString');
+        setNil(talentContainerFrame, 'inspectString');
     end
     if isInspecting then
-        purgeKey(talentContainerFrame, 'inspectString');
-        purgeKey(talentContainerFrame, 'inspectUnit');
+        setNil(talentContainerFrame, 'inspectString');
+        setNil(talentContainerFrame, 'inspectUnit');
         RunNextFrame(function()
             -- Addons like NoAutoClose will allow calling this in combat, but otherwise we're screwed :/
             if InCombatLockdown() and UIPanelWindows[talentContainerFrame:GetName()] then return; end
