@@ -371,11 +371,11 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                 elseif nodeSelectionInfo.isPartiallyRanked then
                     local maxRanks = nodeInfo.maxRanks
                     rank = nodeSelectionInfo.partialRanksPurchased;
-                    if maxRanks == 2 then
+                    if maxRanks == 2 or (maxRanks == 4 and rank == 2) then
                         style = VISUAL_STYLE_HALF;
-                    elseif maxRanks == 3 and rank == 1 then
+                    elseif (maxRanks == 3 and rank == 1) or (maxRanks == 4 and rank == 1) then
                         style = VISUAL_STYLE_ONE_THIRD;
-                    elseif maxRanks == 3 and rank == 2 then
+                    elseif (maxRanks == 3 and rank == 2) or (maxRanks == 4 and rank == 3) then
                         style = VISUAL_STYLE_TWO_THIRD;
                     end
                 elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
@@ -499,11 +499,11 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
     end
 
     local col;
-    if visualStyle == VISUAL_STYLE_TWO_THIRD then
+    if visualStyle == VISUAL_STYLE_ONE_THIRD then
         col = 1;
     elseif visualStyle == VISUAL_STYLE_HALF then
         col = 2;
-    elseif visualStyle == VISUAL_STYLE_ONE_THIRD then
+    elseif visualStyle == VISUAL_STYLE_TWO_THIRD then
         col = 3;
     elseif visualStyle == VISUAL_STYLE_FULL then
         col = 4;
@@ -512,7 +512,7 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
         col = 5;
         row = 1;
     end
-    local factor = 66/512 -- texture file is 512x512, each orb is 64x64 + 2px spacing
+    local factor = 66 / 512 -- texture file is 512x512, each orb is 64x64 + 2px spacing
 
     local rotation;
     if visualStyle == VISUAL_STYLE_LEFT then
