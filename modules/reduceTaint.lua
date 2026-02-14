@@ -86,10 +86,6 @@ function Module:SetupHook()
     end
     self:SecureHook(talentsTab, 'ShowSelections', 'OnShowSelections');
 
-    -- ToggleTalentFrame starts of with a talentContainerFrame:SetInspecting call, which has a high likelihood of tainting execution
-    self:SecureHook('ShowUIPanel', 'OnShowUIPanel')
-    self:SecureHook('HideUIPanel', 'OnHideUIPanel')
-
     self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
     self:ReplaceCopyLoadoutButton(talentsTab);
 
@@ -284,8 +280,7 @@ function Module:MakeOnHideSafe()
         if not talentContainerFrame.lockInspect then
             setNil(talentContainerFrame, 'lockInspect');
         else
-            -- get blizzard to set the value to true
-            TextureLoadingGroupMixin.AddTexture({textures = talentContainerFrame}, 'lockInspect');
+            setTrue(talentContainerFrame, 'lockInspect');
         end
     end
     local isInspecting = talentContainerFrame:IsInspecting();
@@ -317,24 +312,6 @@ function Module:TriggerMicroButtonUpdate()
     end
     C_CVar.SetCVar(cvarName, GetCVar(cvarName) == '1' and '0' or '1');
     LFDMicroButton:UnregisterEvent('CVAR_UPDATE');
-end
-
---- @param frame Frame
-function Module:OnShowUIPanel(frame)
-    if frame ~= Util:GetTalentContainerFrameIfLoaded() then return end
-    if not frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
-        -- if possible, force show the frame, ignoring the INTERFACE_ACTION_BLOCKED message
-        frame:Show()
-    end
-end
-
---- @param frame Frame
-function Module:OnHideUIPanel(frame)
-    if frame ~= Util:GetTalentContainerFrameIfLoaded() then return end
-    if frame:IsShown() and not (InCombatLockdown() and frame:IsProtected()) then
-        -- if possible, force hide the frame, ignoring the INTERFACE_ACTION_BLOCKED message
-        frame:Hide()
-    end
 end
 
 function Module:OnShowSelections()
