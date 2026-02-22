@@ -40,6 +40,7 @@ end
 
 function Module:OnDisable()
     self.textToCopy = nil;
+    self.targetButton = nil;
     self:DisableBinding();
     self:UnhookAll();
     self.hooked = {};
@@ -115,11 +116,13 @@ end
 
 function Module:OnTalentButtonEnter(talentButton)
     self.textToCopy = talentButton:GetSpellID();
+    self.targetButton = talentButton;
     self:EnableBinding();
 end
 
 function Module:OnTalentButtonLeave()
     self.textToCopy = nil;
+    self.targetButton = nil;
     self:DisableBinding();
 end
 
@@ -147,12 +150,14 @@ function Module:OnSpellbookButtonEnter(button)
     local spellID = spellFrame.spellBookItemInfo and spellFrame.spellBookItemInfo.spellID;
     if not spellID then return; end
     self.textToCopy = spellID;
+    self.targetButton = button;
     self:EnableBinding();
     self:OnTalentTooltipCreated(nil, ElvUI_SpellBookTooltip or GameTooltip);
 end
 
 function Module:OnSpellbookButtonLeave()
     self.textToCopy = nil;
+    self.targetButton = nil;
     self:DisableBinding();
 end
 
@@ -174,10 +179,15 @@ function Module:OnSpellbookUpdate()
 end
 
 function Module:OnTalentTooltipCreated(_, tooltip)
-    local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-C to copy spellID']);
-    if InCombatLockdown() then
-        text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
-    end
-    tooltip:AddLine(text);
-    tooltip:Show();
+    RunNextFrame(function()
+        local owner = GameTooltip:GetOwner();
+        if owner ~= self.targetButton or not self.textToCopy then return; end
+
+        local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-C to copy spellID']);
+        if InCombatLockdown() then
+            text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
+        end
+        tooltip:AddLine(text);
+        tooltip:Show();
+    end);
 end

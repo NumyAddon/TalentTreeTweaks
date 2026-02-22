@@ -21,6 +21,9 @@ function Module:OnEnable()
     Util:OnTalentUILoad(function()
         self:SetupHook(Util:GetTalentFrame());
     end);
+    Util:ContinueOnAddonLoaded('Blizzard_Professions', function()
+        self:SetupHook(ProfessionsFrame.SpecPage);
+    end);
     Util:ContinueOnAddonLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
     end);
@@ -35,6 +38,7 @@ function Module:OnEnable()
     self:RegisterEvent('PLAYER_REGEN_DISABLED');
     self:RegisterEvent('PLAYER_REGEN_ENABLED');
     EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
+    EventRegistry:RegisterCallback("ProfessionSpecs.SpecPathEntered", self.OnTalentTooltipCreated, self)
 end
 
 function Module:OnDisable()
@@ -173,13 +177,18 @@ function Module:OnShowSelections(talentsTab)
     end
 end
 
-function Module:OnTalentTooltipCreated(_, tooltip)
-    local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-D to debug nodeInfo']);
-    if InCombatLockdown() then
-        text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
-    end
-    tooltip:AddLine(text);
-    tooltip:Show();
+function Module:OnTalentTooltipCreated()
+    RunNextFrame(function()
+        local owner = GameTooltip:GetOwner();
+        if owner ~= self.targetButton then return; end
+
+        local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-D to debug nodeInfo']);
+        if InCombatLockdown() then
+            text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
+        end
+        GameTooltip:AddLine(text);
+        GameTooltip:Show();
+    end);
 end
 
 --- @param buttonFrame TalentButtonSpendMixin|Button
