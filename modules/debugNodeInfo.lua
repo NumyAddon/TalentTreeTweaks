@@ -53,6 +53,9 @@ function Module:OnDisable()
     if TalentViewer then
         TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
+    if ProfessionsFrame and ProfessionsFrame.SpecPage then
+        ProfessionsFrame.SpecPage:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
     if GenericTraitFrame then
         GenericTraitFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
