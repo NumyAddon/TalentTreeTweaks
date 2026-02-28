@@ -93,10 +93,7 @@ do
     function respecButtonMixin:OnClick()
         local specIndex = self:GetID();
         if C_SpecializationInfo.GetSpecialization() == specIndex then return end
-        if ClassTalentHelper and ClassTalentHelper.SwitchToSpecializationByIndex then
-            ClassTalentHelper.SwitchToSpecializationByIndex(specIndex)
-            return
-        end
+
         C_SpecializationInfo.SetSpecialization(specIndex)
         Util:GetTalentFrame():SetCommitStarted(0)
         Module:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED')
