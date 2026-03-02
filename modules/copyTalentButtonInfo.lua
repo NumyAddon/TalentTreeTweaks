@@ -35,7 +35,7 @@ function Module:OnEnable()
         if not talentsTab then return; end
         self:SetupHook(talentsTab);
     end);
-    EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
+    Util:RegisterEventRegistryCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self, 11);
 end
 
 function Module:OnDisable()
@@ -59,7 +59,7 @@ function Module:OnDisable()
     if TalentViewer then
         TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
-    EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
+    Util:UnregisterEventRegistryCallback("TalentDisplay.TooltipCreated", self);
 end
 
 function Module:GetDescription()
@@ -179,15 +179,10 @@ function Module:OnSpellbookUpdate()
 end
 
 function Module:OnTalentTooltipCreated(_, tooltip)
-    RunNextFrame(function()
-        local owner = GameTooltip:GetOwner();
-        if owner ~= self.targetButton or not self.textToCopy then return; end
-
-        local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-C to copy spellID']);
-        if InCombatLockdown() then
-            text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
-        end
-        tooltip:AddLine(text);
-        tooltip:Show();
-    end);
+    local text = GREEN_FONT_COLOR:WrapTextInColorCode(L['CTRL-C to copy spellID']);
+    if InCombatLockdown() then
+        text = string.format('%s|cFFFF0000 %s|r', text, L['blocked in combat']);
+    end
+    tooltip:AddLine(text);
+    tooltip:Show();
 end

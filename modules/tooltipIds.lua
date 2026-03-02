@@ -10,15 +10,15 @@ local LTT = Util.LibTalentTree;
 local Module = Main:NewModule('TooltipIds');
 
 function Module:OnEnable()
-    EventRegistry:RegisterCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self)
-    EventRegistry:RegisterCallback("ProfessionSpecs.SpecPerkEntered", self.OnProfessionPerkEntered, self)
-    EventRegistry:RegisterCallback("ProfessionSpecs.SpecPathEntered", self.OnProfessionPathEntered, self)
+    Util:RegisterEventRegistryCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self);
+    Util:RegisterEventRegistryCallback("ProfessionSpecs.SpecPerkEntered", self.OnProfessionPerkEntered, self);
+    Util:RegisterEventRegistryCallback("ProfessionSpecs.SpecPathEntered", self.OnProfessionPathEntered, self);
 end
 
 function Module:OnDisable()
-    EventRegistry:UnregisterCallback("TalentDisplay.TooltipCreated", self)
-    EventRegistry:UnregisterCallback("ProfessionSpecs.SpecPerkEntered", self)
-    EventRegistry:UnregisterCallback("ProfessionSpecs.SpecPathEntered", self)
+    Util:UnregisterEventRegistryCallback("TalentDisplay.TooltipCreated", self);
+    Util:UnregisterEventRegistryCallback("ProfessionSpecs.SpecPerkEntered", self);
+    Util:UnregisterEventRegistryCallback("ProfessionSpecs.SpecPathEntered", self);
 end
 
 function Module:GetDescription()

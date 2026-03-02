@@ -105,12 +105,42 @@ function Util:ContinueOnAddonLoaded(addonName, callback)
     table.insert(self.addonLoadedRegistry[addonName], callback);
 end
 
-function Util:ResetRegistry()
-    self.classTalentUILoadCallbacks = {
-        minPriority = 1,
-        maxPriority = 1,
+--- @param hasOwners boolean?
+local function makeRegistry(hasOwners)
+    --- @class TTT_Util_Registry
+    --- @field [number] table<table|number, fun()>
+    --- @field minPriority number
+    --- @field maxPriority number
+    --- @field registered boolean
+    --- @field hasOwners boolean
+    return {
+        minPriority = math.huge,
+        maxPriority = 0,
         registered = false,
+        hasOwners = hasOwners or false,
     };
+end
+
+--- @param registry TTT_Util_Registry
+--- @param ... any # arguments to pass to callbacks
+local function executeRegistry(registry, ...)
+    local hasOwners = registry.hasOwners;
+    local iterator = hasOwners and pairs or ipairs;
+    for priority = registry.minPriority, registry.maxPriority do
+        if registry[priority] then
+            for owner, callback in iterator(registry[priority]) do
+                if hasOwners then
+                    securecallfunction(callback, owner, ...);
+                else
+                    securecallfunction(callback, ...);
+                end
+            end
+        end
+    end
+end
+
+function Util:ResetRegistry()
+    self.classTalentUILoadCallbacks = makeRegistry();
 end
 
 --- @param callback function
@@ -130,14 +160,7 @@ function Util:OnTalentUILoad(callback, priority)
 end
 
 function Util:RunOnLoadCallbacks()
-    local registry = self.classTalentUILoadCallbacks;
-    for priority = registry.minPriority, registry.maxPriority do
-        if registry[priority] then
-            for _, callback in ipairs(registry[priority]) do
-                securecallfunction(callback);
-            end
-        end
-    end
+    executeRegistry(self.classTalentUILoadCallbacks);
     self:ResetRegistry();
 end
 
@@ -157,6 +180,56 @@ do
             item.func(unpack(item.args));
         end
         self.combatLockdownQueue = {};
+    end
+end
+
+do
+    Util.eventRegistryCallbackRegistry = {};
+
+    ---@param event string
+    ---@param callback fun(...: any)
+    ---@param owner table
+    ---@param priority number? - lower numbers are called first
+    function Util:RegisterEventRegistryCallback(event, callback, owner, priority)
+        self.eventRegistryCallbackRegistry[event] = self.eventRegistryCallbackRegistry[event] or makeRegistry(true);
+        local registry = self.eventRegistryCallbackRegistry[event];
+        local actualPriority = priority or 10;
+        registry[actualPriority] = registry[actualPriority] or {};
+        registry[actualPriority][owner] = callback;
+        registry.minPriority = math.min(registry.minPriority, actualPriority);
+        registry.maxPriority = math.max(registry.maxPriority, actualPriority);
+        if not registry.registered then
+            registry.registered = true;
+            EventRegistry:RegisterCallback(event, function(_, ...)
+                executeRegistry(registry, ...);
+            end, self);
+        end
+    end
+
+    function Util:UnregisterEventRegistryCallback(event, owner)
+        local registry = self.eventRegistryCallbackRegistry[event];
+        if not registry then return; end
+
+        for priority = registry.minPriority, registry.maxPriority do
+            if registry[priority] and registry[priority][owner] then
+                registry[priority][owner] = nil;
+            end
+            if not registry[priority] or next(registry[priority]) == nil then
+                registry[priority] = nil;
+                if priority == registry.minPriority then
+                    registry.minPriority = priority + 1;
+                end
+                if priority == registry.maxPriority then
+                    registry.maxPriority = priority - 1;
+                end
+            end
+        end
+        if registry.minPriority > registry.maxPriority then
+            registry.minPriority = math.huge;
+            registry.maxPriority = 1;
+            EventRegistry:UnregisterCallback(event, self);
+            registry.registered = false;
+        end
     end
 end
 
