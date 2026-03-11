@@ -7,8 +7,8 @@ _G.TalentTreeTweaks = ns;
 if not _G.TTT then _G.TTT = ns; end
 --@end-debug@
 
---- @class TTT_Main: NumyConfig_AceAddon, AceConsole-3.0, AceHook-3.0, AceEvent-3.0
-local Main = LibStub('AceAddon-3.0'):NewAddon(name, 'AceConsole-3.0', 'AceHook-3.0', 'AceEvent-3.0');
+--- @class TTT_Main: NumyConfig_AceAddon, AceConsole-3.0, AceHook-3.0, NumyAceEvent-3.0
+local Main = LibStub('AceAddon-3.0'):NewAddon(name, 'AceConsole-3.0', 'AceHook-3.0', 'NumyAceEvent-3.0');
 if not Main then return; end
 ns.Main = Main;
 ns.L = LibStub('AceLocale-3.0'):GetLocale(name);

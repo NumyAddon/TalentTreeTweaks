@@ -41,8 +41,8 @@ local IS_LEMIX;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
---- @class TTT_GenericTalentModule: NumyConfig_Module, AceEvent-3.0
-local Module = Main:NewModule('Skyriding Auto Purchaser', 'AceEvent-3.0');
+--- @class TTT_GenericTalentModule: NumyConfig_Module, NumyAceEvent-3.0
+local Module = Main:NewModule('Skyriding Auto Purchaser', 'NumyAceEvent-3.0');
 -- don't rename the module, the settings etc are stored there
 
 function Module:OnInitialize()

@@ -10,8 +10,8 @@ local ChatFrame_OpenChat = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame
 
 local LEVEL_CAP = 80;
 
---- @class TTT_ExportInspectedBuild: NumyConfig_Module, AceHook-3.0, AceEvent-3.0
-local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'AceEvent-3.0');
+--- @class TTT_ExportInspectedBuild: NumyConfig_Module, AceHook-3.0, NumyAceEvent-3.0
+local Module = Main:NewModule('ExportInspectedBuild', 'AceHook-3.0', 'NumyAceEvent-3.0');
 
 --- @param unit UnitToken
 function TTT_InspectTalents(unit)

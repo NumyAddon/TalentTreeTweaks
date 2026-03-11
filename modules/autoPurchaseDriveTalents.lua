@@ -9,8 +9,8 @@ local TRAIT_SYSTEM_ID = 19;
 local TREE_ID = 1056;
 local DO_NOTHING = -1;
 
---- @class TTT_DriveModule: NumyConfig_Module, AceEvent-3.0
-local Module = Main:NewModule('Drive Auto Purchaser', 'AceEvent-3.0');
+--- @class TTT_DriveModule: NumyConfig_Module, NumyAceEvent-3.0
+local Module = Main:NewModule('Drive Auto Purchaser', 'NumyAceEvent-3.0');
 
 function Module:OnInitialize()
     self:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED', 'CheckConfig');
