@@ -158,12 +158,27 @@ function Module:InitCheckbox(talentViewerFrame)
         end
     end);
     checkbox:SetScript('OnEnter', function()
-        GameTooltip:SetOwner(checkbox, 'ANCHOR_RIGHT');
-        GameTooltip:AddLine(L['TalentTreeTweaks Diff Viewer']);
-        GameTooltip:AddLine(L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'], 1, 1, 1, true);
-        GameTooltip:Show();
+        local tooltip = GameTooltip;
+        if securecallfunction then
+            pcall(securecallfunction, tooltip.SetOwner, tooltip, checkbox, 'ANCHOR_RIGHT');
+            pcall(securecallfunction, tooltip.AddLine, tooltip, L['TalentTreeTweaks Diff Viewer']);
+            pcall(securecallfunction, tooltip.AddLine, tooltip, L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'], 1, 1, 1, true);
+            pcall(securecallfunction, tooltip.Show, tooltip);
+        else
+            pcall(tooltip.SetOwner, tooltip, checkbox, 'ANCHOR_RIGHT');
+            pcall(tooltip.AddLine, tooltip, L['TalentTreeTweaks Diff Viewer']);
+            pcall(tooltip.AddLine, tooltip, L['Show the difference between your talent choices, and the talent build in Talent Tree Viewer.'], 1, 1, 1, true);
+            pcall(tooltip.Show, tooltip);
+        end
     end);
-    checkbox:SetScript('OnLeave', function() GameTooltip:Hide(); end);
+    checkbox:SetScript('OnLeave', function()
+        local tooltip = GameTooltip;
+        if securecallfunction then
+            pcall(securecallfunction, tooltip.Hide, tooltip);
+        else
+            pcall(tooltip.Hide, tooltip);
+        end
+    end);
     checkbox.Text:SetText(L['Show Diff']);
     checkbox:SetHitRectInsets(0, -checkbox.Text:GetWidth(), 0, 0);
 

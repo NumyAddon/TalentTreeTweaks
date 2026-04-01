@@ -47,7 +47,7 @@ end
 
 function Module:OnInitialize()
     self.debug = false;
-    self.containers = {};
+    self.containers = setmetatable({}, { __mode = 'k' });
     Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
         if not self:IsEnabled() then return; end
         self:OnLoadoutMenuOpen(dropdown, rootDescription);
@@ -182,12 +182,22 @@ function Module:BuildConfig(configBuilder, db)
         function()
             local configID = C_ClassTalents.GetActiveConfigID();
             if not configID then return end;
-            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_CURSOR');
-            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
-            ItemRefTooltip:Show();
-            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_PRESERVE');
-            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
-            ItemRefTooltip:Show();
+            local tooltip = ItemRefTooltip;
+            if securecallfunction then
+                pcall(securecallfunction, tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_CURSOR');
+                pcall(securecallfunction, tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+                pcall(securecallfunction, tooltip.Show, tooltip);
+                pcall(securecallfunction, tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_PRESERVE');
+                pcall(securecallfunction, tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+                pcall(securecallfunction, tooltip.Show, tooltip);
+            else
+                pcall(tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_CURSOR');
+                pcall(tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+                pcall(tooltip.Show, tooltip);
+                pcall(tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_PRESERVE');
+                pcall(tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode(("Talent Tree Tweaks")));
+                pcall(tooltip.Show, tooltip);
+            end
             TalentTreeTweaks_EmbedMiniTreeIntoTooltip(ItemRefTooltip, nil, configID)
         end,
         L["Show an example of the mini tree for your current spec."]
@@ -210,7 +220,11 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
             local exportString = Util:GetLoadoutExportString(Util:GetTalentFrame(), configID);
 
             if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
-                GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
+                if securecallfunction then
+                    pcall(securecallfunction, GameTooltip.SetOwner, GameTooltip, frame, "ANCHOR_RIGHT");
+                else
+                    pcall(GameTooltip.SetOwner, GameTooltip, frame, "ANCHOR_RIGHT");
+                end
             end
             self:AddBuildToTooltip(GameTooltip, exportString);
         end);
@@ -243,7 +257,11 @@ function Module:HookInspectTalentsButton()
         if not loadoutString then return; end
 
         if not GameTooltip:IsShown() or GameTooltip:GetOwner() ~= button then
-            GameTooltip:SetOwner(button, "ANCHOR_RIGHT");
+            if securecallfunction then
+                pcall(securecallfunction, GameTooltip.SetOwner, GameTooltip, button, "ANCHOR_RIGHT");
+            else
+                pcall(GameTooltip.SetOwner, GameTooltip, button, "ANCHOR_RIGHT");
+            end
         end
         self:AddBuildToTooltip(GameTooltip, loadoutString);
         GameTooltip:Show();
@@ -258,7 +276,11 @@ function Module:LoadoutDropdownOnEnter(dropdownButton)
 
     if dropdownButton ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
         self.loadoutDropdownTooltipShown = true;
-        GameTooltip:SetOwner(dropdownButton, "ANCHOR_RIGHT");
+        if securecallfunction then
+            pcall(securecallfunction, GameTooltip.SetOwner, GameTooltip, dropdownButton, "ANCHOR_RIGHT");
+        else
+            pcall(GameTooltip.SetOwner, GameTooltip, dropdownButton, "ANCHOR_RIGHT");
+        end
     end
     self:AddBuildToTooltip(GameTooltip, exportString);
 end
@@ -318,9 +340,9 @@ end
 function Module:AddBuildToTooltip(tooltip, exportString)
     local falseOrSpecID, errorOrClassID, nilOrLoadoutInfo = Util:ParseTalentBuildString(exportString);
     if false == falseOrSpecID then
-        --@debug@
+        --[==[@debug@
         print('Error parsing exportString, message:', errorOrClassID);
-        --@end-debug@
+        --@end-debug@]==]
         return;
     end
     local specID = falseOrSpecID;
@@ -424,7 +446,20 @@ function Module:AddBuildToTooltip(tooltip, exportString)
         end
     end
 
-    GameTooltip_InsertFrame(tooltip, container);
+    local ok;
+    if securecallfunction then
+        ok = pcall(securecallfunction, GameTooltip_InsertFrame, tooltip, container);
+    else
+        ok = pcall(GameTooltip_InsertFrame, tooltip, container);
+    end
+
+    if not ok then
+        -- Fallback: evitar GameTooltip_InsertFrame si está fallando por taint/"secret numbers".
+        container:SetParent(tooltip);
+        container:ClearAllPoints();
+        container:SetPoint("TOPLEFT", tooltip, "BOTTOMLEFT", 0, 0);
+        container:Show();
+    end
     tooltip:Show();
 end
 
@@ -617,6 +652,7 @@ function containerMixin:ReleaseAllLines()
 end
 
 function containerMixin:Reset()
+    self:Hide();
     self:SetParent(nil);
     self:ClearAllPoints();
     self:ReleaseAllLines();

@@ -67,17 +67,31 @@ function Module:SetupHeroTalentToggleButton(talentsTab)
                 return;
             end
             if GameTooltip:GetOwner() ~= button or not GameTooltip:IsShown() then
-                GameTooltip:SetOwner(button, 'ANCHOR_RIGHT');
+                if securecallfunction then
+                    pcall(securecallfunction, GameTooltip.SetOwner, GameTooltip, button, 'ANCHOR_RIGHT');
+                else
+                    pcall(GameTooltip.SetOwner, GameTooltip, button, 'ANCHOR_RIGHT');
+                end
             end
-            GameTooltip:SetText(L['%s Switch to %s']:format(
+            local text = L['%s Switch to %s']:format(
                 Util.RightClickAtlasMarkup,
                 WHITE_FONT_COLOR:WrapTextInColorCode(self:GetTargetHeroSpecName(container))
-            ));
-            GameTooltip:Show();
+            );
+            if securecallfunction then
+                pcall(securecallfunction, GameTooltip.SetText, GameTooltip, text);
+                pcall(securecallfunction, GameTooltip.Show, GameTooltip);
+            else
+                pcall(GameTooltip.SetText, GameTooltip, text);
+                pcall(GameTooltip.Show, GameTooltip);
+            end
         end);
         self:SecureHookScript(button, 'OnLeave', function()
             if GameTooltip:GetOwner() == button then
-                GameTooltip:Hide();
+                if securecallfunction then
+                    pcall(securecallfunction, GameTooltip.Hide, GameTooltip);
+                else
+                    pcall(GameTooltip.Hide, GameTooltip);
+                end
             end
         end);
         btn:SetParent(button);

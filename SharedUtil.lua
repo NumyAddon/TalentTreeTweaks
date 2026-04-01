@@ -16,9 +16,9 @@ Util.PlayerKey = UnitName('player') .. '-' .. GetRealmName();
 Util.RightClickAtlasMarkup = CreateAtlasMarkup('NPE_RightClick', 18, 18);
 Util.LeftClickAtlasMarkup = CreateAtlasMarkup('NPE_LeftClick', 18, 18);
 Util.debug = false;
---@debug@
+--[==[@debug@
 Util.debug = true;
---@end-debug@
+--@end-debug@]==]
 
 Util.specToClassMap = {};
 Util.classMap = {};

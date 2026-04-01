@@ -104,13 +104,24 @@ function Module:OnInitialize()
                 return;
             end
 
-            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_CURSOR');
-            ItemRefTooltip:AddLine('placeholder');
-            ItemRefTooltip:Show();
-            ItemRefTooltip:SetOwner(UIParent, 'ANCHOR_PRESERVE');
-            ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode('Talent Tree Tweaks ') .. text);
-            ItemRefTooltip:AddLine(definitionInfo.overrideDescription, nil, nil, nil, true);
-            ItemRefTooltip:Show();
+            local tooltip = ItemRefTooltip;
+            if securecallfunction then
+                pcall(securecallfunction, tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_CURSOR');
+                pcall(securecallfunction, tooltip.AddLine, tooltip, 'placeholder');
+                pcall(securecallfunction, tooltip.Show, tooltip);
+                pcall(securecallfunction, tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_PRESERVE');
+                pcall(securecallfunction, tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode('Talent Tree Tweaks ') .. text);
+                pcall(securecallfunction, tooltip.AddLine, tooltip, definitionInfo.overrideDescription, nil, nil, nil, true);
+                pcall(securecallfunction, tooltip.Show, tooltip);
+            else
+                pcall(tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_CURSOR');
+                pcall(tooltip.AddLine, tooltip, 'placeholder');
+                pcall(tooltip.Show, tooltip);
+                pcall(tooltip.SetOwner, tooltip, UIParent, 'ANCHOR_PRESERVE');
+                pcall(tooltip.AddLine, tooltip, HIGHLIGHT_FONT_COLOR:WrapTextInColorCode('Talent Tree Tweaks ') .. text);
+                pcall(tooltip.AddLine, tooltip, definitionInfo.overrideDescription, nil, nil, nil, true);
+                pcall(tooltip.Show, tooltip);
+            end
         end
     end);
 end

@@ -139,10 +139,10 @@ function Module:HandleOnBarHighlightMarkTaint()
     ]]);
     cleanser:SetAttribute('_wrapentered', true); -- ensures the secure wrapped OnLeave will actually run
 
-    --@debug@
+    --[==[@debug@
     --cleanser:SetSize(20, 20);
     --cleanser:SetNormalTexture(134532);
-    --@end-debug@
+    --@end-debug@]==]
     local function tryClearTaint()
         if issecurevariable('ON_BAR_HIGHLIGHT_MARKS') then return; end
 
@@ -368,13 +368,13 @@ function Module:HandleActionBarEventTaintSpread()
         ['UNIT_AURA'] = true,
     }
     local function registerActionButtonEvents(actionButton)
-        --@debug@
+        --[==[@debug@
         hooksecurefunc(actionButton, 'UnregisterEvent', function(_, event)
             if events[event] then
                 Util:DebugPrint(actionButton:GetName(), 'UnregisterEvent', event);
             end
         end);
-        --@end-debug@
+        --@end-debug@]==]
         for event in pairs(events) do
             actionButton:RegisterEvent(event);
         end

@@ -84,12 +84,28 @@ end
 local respecButtonMixin = {};
 do
     function respecButtonMixin:OnEnter()
-        GameTooltip:SetOwner(self, 'ANCHOR_RIGHT');
-        GameTooltip:SetText(self.name);
-        GameTooltip:AddLine(L['Click to respec to this specialization.']);
-        GameTooltip:Show();
+        local tooltip = GameTooltip;
+        local ok;
+        if securecallfunction then
+            ok = pcall(securecallfunction, tooltip.SetOwner, tooltip, self, 'ANCHOR_RIGHT');
+            if ok then pcall(securecallfunction, tooltip.SetText, tooltip, self.name); end
+            if ok then pcall(securecallfunction, tooltip.AddLine, tooltip, L['Click to respec to this specialization.']); end
+            if ok then pcall(securecallfunction, tooltip.Show, tooltip); end
+        else
+            ok = pcall(tooltip.SetOwner, tooltip, self, 'ANCHOR_RIGHT');
+            if ok then pcall(tooltip.SetText, tooltip, self.name); end
+            if ok then pcall(tooltip.AddLine, tooltip, L['Click to respec to this specialization.']); end
+            if ok then pcall(tooltip.Show, tooltip); end
+        end
     end
-    function respecButtonMixin:OnLeave() GameTooltip:Hide() end
+    function respecButtonMixin:OnLeave()
+        local tooltip = GameTooltip;
+        if securecallfunction then
+            pcall(securecallfunction, tooltip.Hide, tooltip);
+        else
+            pcall(tooltip.Hide, tooltip);
+        end
+    end
     function respecButtonMixin:OnClick()
         local specIndex = self:GetID();
         if C_SpecializationInfo.GetSpecialization() == specIndex then return end

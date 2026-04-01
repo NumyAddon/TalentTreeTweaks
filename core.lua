@@ -2,10 +2,10 @@ local name = ...;
 --- @class TTT_NS: NumyConfigNS
 local ns = select(2, ...);
 
---@debug@
+--[==[@debug@
 _G.TalentTreeTweaks = ns;
 if not _G.TTT then _G.TTT = ns; end
---@end-debug@
+--@end-debug@]==]
 
 --- @class TTT_Main: NumyConfig_AceAddon, AceConsole-3.0, AceHook-3.0, NumyAceEvent-3.0
 local Main = LibStub('AceAddon-3.0'):NewAddon(name, 'AceConsole-3.0', 'AceHook-3.0', 'NumyAceEvent-3.0');

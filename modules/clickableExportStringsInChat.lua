@@ -322,6 +322,8 @@ function Module:ReplaceChatMessage(message)
 end
 
 local validStringsCache = {};
+local validStringsCacheCount = 0;
+local VALID_STRINGS_CACHE_MAX = 200;
 function Module:ParseImportString(importText)
     if validStringsCache[importText] then return unpack(validStringsCache[importText]); end
     local importStream = ExportUtil.MakeImportDataStream(importText);
@@ -361,7 +363,12 @@ function Module:ParseImportString(importText)
         return false;
     end
 
+    if validStringsCacheCount >= VALID_STRINGS_CACHE_MAX then
+        wipe(validStringsCache);
+        validStringsCacheCount = 0;
+    end
     validStringsCache[importText] = { true, specID, pointsSpent };
+    validStringsCacheCount = validStringsCacheCount + 1;
 
     return true, specID, pointsSpent;
 end

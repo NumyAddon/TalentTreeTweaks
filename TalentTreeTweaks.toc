@@ -1,12 +1,9 @@
-## Interface: @toc-version-midnight@, @toc-version-retail@
-#@debug@
-## Interface: 120000
-#@end-debug@
+## Interface: 120001, 120001
 ## Title: Talent Tree Tweaks
 ## Author: Numy
 ## IconTexture: Interface\Addons\TalentTreeTweaks\media\icon
 ## Notes: Various improvements and addition to the Dragonflight talent tree UI
-## Version: @project-version@
+## Version: v1.13.21
 ## X-Curse-Project-ID: 678792
 ## X-Wago-ID: qKQxm86x
 ## SavedVariables: TalentTreeTweaksDB

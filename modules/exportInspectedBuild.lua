@@ -24,17 +24,33 @@ local TTT_InspectTalents = TTT_InspectTalents;
 function Module:OnInitialize()
     --- @type table<string, { unit: string, name: string }> # [guid] = info
     self.inspecting = {};
+    local function CreateOverlayButton()
+        local btn = CreateFrame('BUTTON');
+        btn:RegisterForClicks('RightButtonDown');
+        btn:RegisterForClicks('RightButtonUp');
+        btn:SetPassThroughButtons('LeftButton');
+        btn:SetPropagateMouseMotion(true);
+        btn:Hide();
+        return btn;
+    end
+
     --- @class TTT_ExportInspectedBuild_Pool
     self.overlayPool = {
         --- @type table<BUTTON, true>
         active = {},
         --- @type BUTTON[]
         inactive = {},
+        created = 0,
+        max = 50,
         --- @param pool TTT_ExportInspectedBuild_Pool
         --- @return BUTTON?
         Acquire = function(pool)
             local btn = table.remove(pool.inactive);
-            if not btn then return; end
+            if not btn then
+                if pool.created >= pool.max then return; end
+                btn = CreateOverlayButton();
+                pool.created = pool.created + 1;
+            end
             pool.active[btn] = true;
             return btn;
         end,
@@ -47,15 +63,6 @@ function Module:OnInitialize()
             btn:Hide();
         end,
     };
-    for i = 1, 50 do
-        local btn = CreateFrame('BUTTON');
-        btn:RegisterForClicks('RightButtonDown');
-        btn:RegisterForClicks('RightButtonUp');
-        btn:SetPassThroughButtons('LeftButton');
-        btn:SetPropagateMouseMotion(true);
-        btn:Hide();
-        self.overlayPool.inactive[i] = btn;
-    end
 
     Menu.ModifyMenu('MENU_CLASS_TALENT_PROFILE', function(dropdown, rootDescription, contextData)
         if self:IsEnabled() and self.db.exportOnDropdownRightClick then
@@ -173,7 +180,7 @@ function Module:INSPECT_READY(_, guid)
 
     local ticker;
     local startTime = GetTime();
-    ticker = C_Timer.NewTicker(0, function()
+    ticker = C_Timer.NewTicker(0.1, function()
         local unit = checkUnitGuid(info.unit, guid);
         if not unit or (GetTime() - startTime) > 10 then
             Main:Print(string.format(L['Failed to inspect %s'], info.name));
@@ -285,10 +292,19 @@ function Module:OnLoadoutMenuOpen(dropdown, rootDescription)
         if ok and configInfo then
             elementDescription:HookOnEnter(function(frame)
                 if frame ~= GameTooltip:GetOwner() or not GameTooltip:IsShown() then
-                    GameTooltip:SetOwner(frame, "ANCHOR_RIGHT");
+                    if securecallfunction then
+                        pcall(securecallfunction, GameTooltip.SetOwner, GameTooltip, frame, "ANCHOR_RIGHT");
+                    else
+                        pcall(GameTooltip.SetOwner, GameTooltip, frame, "ANCHOR_RIGHT");
+                    end
                 end
-                GameTooltip:AddLine(L["Right-click to share"]);
-                GameTooltip:Show();
+                if securecallfunction then
+                    pcall(securecallfunction, GameTooltip.AddLine, GameTooltip, L["Right-click to share"]);
+                    pcall(securecallfunction, GameTooltip.Show, GameTooltip);
+                else
+                    pcall(GameTooltip.AddLine, GameTooltip, L["Right-click to share"]);
+                    pcall(GameTooltip.Show, GameTooltip);
+                end
             end);
             elementDescription:AddInitializer(function(button, description, menu)
                 -- all this crap, is only because blizzard doesn't reset the button's script when it's reused :/

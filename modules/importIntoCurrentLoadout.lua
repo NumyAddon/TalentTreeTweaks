@@ -134,13 +134,26 @@ function Module:CreateCheckbox(dialog)
     checkbox:SetSize(24, 24);
     checkbox:SetScript('OnClick', function(cb) self:OnCheckboxClick(cb); end);
     checkbox:SetScript('OnEnter', function(self)
-        GameTooltip:SetOwner(self, 'ANCHOR_RIGHT');
-        GameTooltip:SetText(text);
-        GameTooltip:AddLine(L['If checked, the imported build will be imported into the currently selected loadout.'], 1, 1, 1);
-        GameTooltip:Show();
+        local tooltip = GameTooltip;
+        if securecallfunction then
+            pcall(securecallfunction, tooltip.SetOwner, tooltip, self, 'ANCHOR_RIGHT');
+            pcall(securecallfunction, tooltip.SetText, tooltip, text);
+            pcall(securecallfunction, tooltip.AddLine, tooltip, L['If checked, the imported build will be imported into the currently selected loadout.'], 1, 1, 1);
+            pcall(securecallfunction, tooltip.Show, tooltip);
+        else
+            pcall(tooltip.SetOwner, tooltip, self, 'ANCHOR_RIGHT');
+            pcall(tooltip.SetText, tooltip, text);
+            pcall(tooltip.AddLine, tooltip, L['If checked, the imported build will be imported into the currently selected loadout.'], 1, 1, 1);
+            pcall(tooltip.Show, tooltip);
+        end
     end);
     checkbox:SetScript('OnLeave', function()
-        GameTooltip:Hide();
+        local tooltip = GameTooltip;
+        if securecallfunction then
+            pcall(securecallfunction, tooltip.Hide, tooltip);
+        else
+            pcall(tooltip.Hide, tooltip);
+        end
     end);
     checkbox.text = checkbox:CreateFontString(nil, 'ARTWORK', 'GameFontNormal');
     checkbox.text:SetPoint('LEFT', checkbox, 'RIGHT', 0, 1);

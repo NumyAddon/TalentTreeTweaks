@@ -1,0 +1,206 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+https://raw.githubusercontent.com/Gethe/wow-ui-source/refs/heads/live/Interface/AddOns/Blizzard_SharedXML/UI.xsd">
+    <Frame name="TalentTreeTweaks_SettingsColorControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsColorControlMixin" virtual="true">
+        <Size x="280" y="26"/>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+        <Frames>
+            <Button parentKey="ColorSwatch" inherits="ColorSwatchTemplate" scale="1.6">
+                <Anchors>
+                    <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-49" y="0"/>
+                </Anchors>
+            </Button>
+        </Frames>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsInputControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsInputControlMixin" virtual="true">
+        <Size x="280" y="26"/>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+        <Frames>
+            <EditBox parentKey="InputBox" inherits="InputBoxTemplate" autoFocus="false">
+                <Size x="278" y="20"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-74" y="0"/>
+                </Anchors>
+                <Frames>
+                    <Button inherits="UIPanelButtonTemplate">
+                        <Size x="20" y="18"/>
+                        <Anchors>
+                            <Anchor point="RIGHT" relativeKey="$parent.InputBox" relativePoint="RIGHT" x="0" y="0"/>
+                        </Anchors>
+                        <NormalTexture file="Interface\Buttons\UI-CheckBox-Check"/>
+                        <Scripts>
+                            <OnLoad>
+                                self:GetParent():GetParent().OkayButton = self;
+                            </OnLoad>
+                        </Scripts>
+                    </Button>
+                </Frames>
+                <Scripts>
+                    <OnEnter>
+                        self:GetParent().Tooltip:GetScript("OnEnter")(self:GetParent().Tooltip);
+                    </OnEnter>
+                    <OnLeave>
+                        self:GetParent().Tooltip:GetScript("OnLeave")(self:GetParent().Tooltip);
+                    </OnLeave>
+                </Scripts>
+            </EditBox>
+        </Frames>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsButtonControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsButtonControlMixin" virtual="true">
+        <Size x="280" y="26"/>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+        <Frames>
+            <Button parentKey="Button" inherits="UIPanelButtonTemplate">
+                <Size x="200" y="26"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-80" y="0"/>
+                </Anchors>
+            </Button>
+        </Frames>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsMultiButtonControlTemplate" inherits="SettingsListElementTemplate" mixin="TalentTreeTweaks_SettingsMultiButtonControlMixin" virtual="true">
+        <Size x="280" y="26"/>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+        <Frames>
+            <Frame parentKey="ButtonContainer">
+                <Size x="370" y="26"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-80" y="0"/>
+                </Anchors>
+                <Scripts>
+                    <OnLoad>
+                        self.buttonPool = CreateFramePool('Button', self, 'UIPanelButtonTemplate');
+                        self.plainButtonPool = CreateFramePool('Button', self);
+                    </OnLoad>
+                </Scripts>
+            </Frame>
+        </Frames>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsTextTemplate" mixin="TalentTreeTweaks_SettingsTextMixin" virtual="true">
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Text" inherits="GameFontNormal" justifyH="LEFT" justifyV="TOP">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="7" y="0"/>
+                        <Anchor point="RIGHT" x="-7"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsHeaderTemplate" mixin="TalentTreeTweaks_SettingsHeaderMixin" virtual="true">
+        <Size y="45"/>
+        <Layers>
+            <Layer level="OVERLAY">
+                <FontString parentKey="Title" inherits="GameFontHighlightLarge" justifyH="LEFT" justifyV="TOP">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="7" y="-16"/>
+                    </Anchors>
+                </FontString>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+    </Frame>
+    <Frame name="TalentTreeTweaks_SettingsSoundSelectorTemplate" inherits="SettingsDropdownControlTemplate" mixin="TalentTreeTweaks_SettingsSoundSelectorMixin" virtual="true">
+        <Frames>
+            <Button parentKey="PreviewIcon">
+                <Size x="26" y="26"/>
+                <Anchors>
+                    <Anchor point="LEFT" relativeKey="$parent" relativePoint="CENTER" x="-72" y="1"/>
+                </Anchors>
+                <NormalTexture file="Interface\Common\VoiceChat-Speaker" />
+                <Scripts>
+                    <OnLoad>
+                        self:GetNormalTexture():SetVertexColor(0.8, 0.8, 0.8);
+                    </OnLoad>
+                    <OnEnter>
+                        self:GetNormalTexture():SetVertexColor(1, 1, 1);
+                        GameTooltip:SetOwner(self, "ANCHOR_TOP");
+                        GameTooltip:SetText(TEXT_TO_SPEECH_PLAY_SAMPLE);
+                        GameTooltip:Show();
+                    </OnEnter>
+                    <OnLeave>
+                        self:GetNormalTexture():SetVertexColor(0.8, 0.8, 0.8);
+                        GameTooltip:Hide();
+                    </OnLeave>
+                    <OnClick>
+                        self:GetParent():PlaySound();
+                    </OnClick>
+                </Scripts>
+            </Button>
+        </Frames>
+    </Frame>
+    <EventFrame name="TalentTreeTweaks_SettingsExpandTemplate" mixin="TalentTreeTweaks_SettingsExpandMixin" virtual="true">
+        <Size y="25"/>
+        <Frames>
+            <Frame parentKey="Tooltip" mixin="DefaultTooltipMixin" setAllPoints="true" propagateMouseInput="Clicks" enableMouseMotion="true">
+                <Scripts>
+                    <OnLoad method="OnLoad"/>
+                </Scripts>
+            </Frame>
+            <Button parentKey="Button">
+                <Size y="30"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="0" y="0"/>
+                    <Anchor point="TOPRIGHT" x="-20" y="0"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture parentKey="Left" atlas="Options_ListExpand_Left" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT"/>
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="Right" atlas="Options_ListExpand_Right" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPRIGHT"/>
+                            </Anchors>
+                        </Texture>
+                        <Texture atlas="_Options_ListExpand_Middle" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativeKey="$parent.Left" relativePoint="TOPRIGHT"/>
+                                <Anchor point="TOPRIGHT" relativeKey="$parent.Right" relativePoint="TOPLEFT"/>
+                            </Anchors>
+                        </Texture>
+                    </Layer>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="Text" font="GameFontNormal" justifyH="CENTER" maxLines="1">
+                            <Anchors>
+                                <Anchor point="LEFT" x="28" y="2"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton parentKey="Checkbox" mixin="SettingsCheckboxMixin" motionScriptsWhileDisabled="true">
+                        <Size x="23" y="22"/>
+                        <Anchors>
+                            <Anchor point="RIGHT" relativeKey="$parent.Text" relativePoint="LEFT" x= "-2" y="0"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad method="OnLoad"/>
+                            <OnEnter method="OnEnter"/>
+                            <OnLeave method="OnLeave"/>
+                        </Scripts>
+                        <NormalTexture atlas="checkbox-minimal" useAtlasSize="true"/>
+                        <PushedTexture atlas="checkbox-minimal" useAtlasSize="true"/>
+                        <CheckedTexture atlas="checkmark-minimal" useAtlasSize="true"/>
+                        <DisabledCheckedTexture atlas="checkmark-minimal-disabled" useAtlasSize="true"/>
+                    </CheckButton>
+                </Frames>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+    </EventFrame>
+</Ui>
