@@ -608,6 +608,11 @@ function containerMixin:MakeLine(dot1, dot2, isActive)
     return line;
 end
 
+function containerMixin:GetWidth()
+    -- blizzard is too incompetent to prevent the widget API spitting secrets
+    return self.baseWidth * self:GetScale();
+end
+
 function containerMixin:ReleaseAllDots()
     self.dotPool:ReleaseAll();
 end
@@ -621,7 +626,7 @@ function containerMixin:Reset()
     self:ClearAllPoints();
     self:ReleaseAllLines();
     self:ReleaseAllDots();
-    self:SetSize(self.expectedMaxCols * self.spacing, self.expectedMaxRows * self.spacing);
+    self:SetSize(self.baseWidth, self.baseHeight);
 end
 
 --- @return TTT_TreeInMinimapContainerMixin
