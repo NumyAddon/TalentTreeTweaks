@@ -286,7 +286,7 @@ function Util:RefreshConfigIDLookup()
     for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
         local specID = GetSpecializationInfoForClassID(classID, specIndex);
         for _, configID in pairs(C_ClassTalents.GetConfigIDsBySpecID(specID)) do
-        	self.configIDLookup[configID] = specID;
+            self.configIDLookup[configID] = specID;
         end
     end
 end

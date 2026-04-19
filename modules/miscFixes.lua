@@ -38,6 +38,7 @@ function Module:BuildConfig(configBuilder, db)
         dropdownUpdateOnLoadConfigFix = true,
         dropdownFixOrder = true,
         linkChoiceNodeInChatFix = true,
+        passThroughDisableOverlay = true,
     };
     configBuilder:SetDefaults(defaults, true);
 
@@ -61,6 +62,14 @@ function Module:BuildConfig(configBuilder, db)
         L['Fix issue that prevents linking choice talents in chat, when inspecting a build'],
         'linkChoiceNodeInChatFix'
     );
+    configBuilder:MakeCheckbox(
+        L['Stops the overlay from blocking clicks / hover when changing loadouts'],
+        'passThroughDisableOverlay',
+        nil,
+        function()
+            self:HandleOverlay()
+        end
+    );
 end
 
 function Module:SetupHook()
@@ -70,6 +79,7 @@ function Module:SetupHook()
     if self.db.dropdownFixOrder then
         self:SetupDropdownOrderHook();
     end
+    self:HandleOverlay();
 end
 
 function Module:OnButtonClick(buttonFrame, mouseButton)
@@ -136,4 +146,17 @@ end
 
 function Module:UnhookDropDownUpdateHook()
     self:Unhook(Util:GetTalentFrame(), 'CheckUpdateLastSelectedConfigID');
+end
+
+function Module:HandleOverlay()
+    local talentsTab = Util:GetTalentFrameIfLoaded();
+    if not talentsTab then return; end
+    local overlay = talentsTab.DisabledOverlay;
+    if not overlay then return; end
+
+    if self.db.passThroughDisableOverlay then
+        overlay:EnableMouse(false);
+    else
+        overlay:EnableMouse(true);
+    end
 end
