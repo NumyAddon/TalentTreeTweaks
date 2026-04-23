@@ -96,7 +96,7 @@ function Util:OnInitialize()
 end
 
 function Util:ContinueOnAddonLoaded(addonName, callback)
-    if C_AddOns.IsAddOnLoaded(addonName) then
+    if select(2, C_AddOns.IsAddOnLoaded(addonName)) then
         callback();
         return;
     end
