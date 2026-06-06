@@ -70,7 +70,7 @@ function Module:OverrideSpendPointsButton(specPage)
     end);
 
     button:SetScript('OnEnter', function()
-        GameTooltip:SetOwner(button, 'ANCHOR_RIGHT');
+        GameTooltip:SetOwner(button, 'ANCHOR_TOP');
         GameTooltip:SetText(L['Bulk Apply Knowledge']);
         GameTooltip:AddLine(L['|cffeda55fClick|r to spend a point on this path.'], 1, 1, 1, true);
         GameTooltip:AddLine(L['|cffeda55fCTRL-Click|r to spend up to the next 5 point breakpoint.'], 1, 1, 1, true);
