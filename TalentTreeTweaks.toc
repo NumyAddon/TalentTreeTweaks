@@ -53,6 +53,7 @@ modules\copyTalentButtonInfo.lua
 modules\reduceSpam.lua
 modules\miniTreeInTooltip.lua
 modules\heroTalents.lua
+modules\bulkProfessionUpgrade.lua
 
 modules\autoPurchaseGenericTalents.lua
 modules\autoPurchaseDriveTalents.lua

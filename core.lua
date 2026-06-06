@@ -54,6 +54,7 @@ function Main:OnInitialize()
         "ReduceSpam",
         "HeroTalents",
         "SearchForIds",
+        "BulkProfessionUpgrade",
 
         "MiscFixes",
         "DebugNodeInfo",
