@@ -1,21 +1,23 @@
 --- @class TTT_NS
 local TTT = select(2, ...);
 
-local StripHyperlinks = C_StringUtil and C_StringUtil.StripHyperlinks or StripHyperlinks;
+local StripHyperlinks = C_StringUtil.StripHyperlinks;
 
 local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-local LINK_NAME = 'TalentTreeTweaks_TraitTooltip';
+local TOOLTIP_LINK_NAME = 'TalentTreeTweaks_TraitTooltip';
+local OPEN_UI_LINK_NAME = 'TalentTreeTweaks_OpenGenericTraits';
 
 local SKYRIDING_TREE_ID = Constants.MountDynamicFlightConsts and Constants.MountDynamicFlightConsts.TREE_ID or 672;
 local HORRIFIC_VISIONS_TREE_ID = 1057;
 local OVERCHARGED_TITAN_CONSOLE_TREE_ID = 1061;
 local RESHII_WRAPS_TREE_ID = 1115;
-local LEMIX_TREE_ID = 1161;
+local OMNIUM_FOLIO_TREE_ID = 1186;
 
 local RESHII_QUEST_ID = 89561;
+local OMNIUM_FOLIO_QUEST_ID = 96410;
 
 local CHOICE_NODE_OPTION_1 = 1;
 local CHOICE_NODE_OPTION_2 = 2;
@@ -34,10 +36,6 @@ local SURGE_ENTRY_IDS = {
 };
 local WHIRLING_SURGE_SPELL_ID = 447981;
 local LIGHTNING_SURGE_SPELL_ID = 447982;
-local LIMITS_UNBOUND_NODE_ID = 108700;
-
-local LEMIX_SEASON_ID = 2;
-local IS_LEMIX;
 
 local GetSpellLink = C_Spell.GetSpellLink;
 
@@ -45,12 +43,19 @@ local GetSpellLink = C_Spell.GetSpellLink;
 local Module = Main:NewModule('Skyriding Auto Purchaser', 'NumyAceEvent-3.0');
 -- don't rename the module, the settings etc are stored there
 
+Module.trees = {
+    [SKYRIDING_TREE_ID] = { settingKey = 'skyridingEnabled', displayName = GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE },
+    [HORRIFIC_VISIONS_TREE_ID] = { settingKey = 'horrificVisionsEnabled', displayName = SPLASH_BATTLEFORAZEROTH_8_3_0_FEATURE1_TITLE or L['Horrific Visions'] },
+    [OVERCHARGED_TITAN_CONSOLE_TREE_ID] = { settingKey = 'overchargedTitanConsoleEnabled', displayName = GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE },
+    [RESHII_WRAPS_TREE_ID] = { settingKey = 'reshiiWrapsEnabled', displayName = GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE },
+    [OMNIUM_FOLIO_TREE_ID] = { settingKey = 'omniumFolioEnabled', displayName = RUNES_OF_POWER },
+};
 function Module:OnInitialize()
-    IS_LEMIX = PlayerGetTimerunningSeasonID() == LEMIX_SEASON_ID;
-    RunNextFrame(function() IS_LEMIX = PlayerGetTimerunningSeasonID() == LEMIX_SEASON_ID; end);
+    --- @type table<number, number> # [treeID] = configID
+    self.configIDsByTree = {};
+    --- @type table<number, number> # [configID] = treeID
+    self.treeByConfigID = {};
 
-    --- @type table<number, number> # [specID] = lemixConfigID
-    self.lemixConfigIDBySpecID = {};
     --- @type table<number, boolean> # [configID] = true if currently purchasing
     self.purchasing = {};
     RunNextFrame(function()
@@ -66,25 +71,12 @@ function Module:OnInitialize()
     end);
     self.disabledByRefund = false;
     hooksecurefunc(C_Traits, 'RefundRank', function(configID)
-        if
-            configID == self.skyridingConfigID
-            or configID == self.horrificVisionsConfigID
-            or configID == self.overchargedTitanConsoleConfigID
-            or configID == self.reshiiWrapsConfigID
-        then
+        if self.treeByConfigID[configID] then
             self.disabledByRefund = true;
         end
     end);
     hooksecurefunc(C_Traits, 'SetSelection', function(configID, nodeID, entryID)
-        if
-            (
-                configID == self.skyridingConfigID
-                or configID == self.horrificVisionsConfigID
-                or configID == self.overchargedTitanConsoleConfigID
-                or configID == self.reshiiWrapsConfigID
-            )
-            and entryID == nil
-        then
+        if self.treeByConfigID[configID] and entryID == nil then
             self.disabledByRefund = true;
         end
     end);
@@ -98,7 +90,8 @@ function Module:OnInitialize()
 
     EventRegistry:RegisterCallback('SetItemRef', function(_, link, text)
         local linkType, addonName, linkData = strsplit(':', link)
-        if linkType == 'addon' and addonName == LINK_NAME then
+        if linkType ~= 'addon' then return; end
+        if addonName == TOOLTIP_LINK_NAME then
             local definitionInfo = C_Traits.GetDefinitionInfo(tonumber(linkData));
             if not definitionInfo or not definitionInfo.overrideDescription then
                 return;
@@ -111,6 +104,9 @@ function Module:OnInitialize()
             ItemRefTooltip:AddLine(HIGHLIGHT_FONT_COLOR:WrapTextInColorCode('Talent Tree Tweaks ') .. text);
             ItemRefTooltip:AddLine(definitionInfo.overrideDescription, nil, nil, nil, true);
             ItemRefTooltip:Show();
+        elseif addonName == OPEN_UI_LINK_NAME then
+            local treeID = tonumber(linkData);
+            self:ToggleTreeUI(treeID);
         end
     end);
 end
@@ -121,13 +117,11 @@ function Module:OnEnable()
         self:DeferPurchase();
     end
     self:RegisterEvent('TRAIT_TREE_CURRENCY_INFO_UPDATED');
-    self:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
 end
 
 function Module:OnDisable()
     self.enabled = false;
     self:UnregisterEvent('TRAIT_TREE_CURRENCY_INFO_UPDATED');
-    self:UnregisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
 end
 
 function Module:GetName()
@@ -150,26 +144,21 @@ function Module:BuildConfig(configBuilder, db)
     --- @class TTT_GenericTalentModuleDB
     local defaults = {
         reportPurchases = true,
-        skyridingEnabled = true,
         rideAlong = CHOICE_NODE_OPTION_1,
         rideAlongCache = {},
         surge = CHOICE_NODE_OPTION_1,
         surgeCache = {},
-        horrificVisionsEnabled = true,
-        overchargedTitanConsoleEnabled = true,
-        reshiiWrapsEnabled = true,
-        lemixLimitsUnboundEnabled = true,
     };
+    for _, info in pairs(self.trees) do
+        defaults[info.settingKey] = true;
+    end
     configBuilder:SetDefaults(defaults, true);
 
     local function setEnabledTreeIDs()
-        self.enabledTreeIDs = {
-            [SKYRIDING_TREE_ID] = self.db.skyridingEnabled or nil,
-            [HORRIFIC_VISIONS_TREE_ID] = self.db.horrificVisionsEnabled or nil,
-            [OVERCHARGED_TITAN_CONSOLE_TREE_ID] = self.db.overchargedTitanConsoleEnabled or nil,
-            [RESHII_WRAPS_TREE_ID] = self.db.reshiiWrapsEnabled or nil,
-            [LEMIX_TREE_ID] = IS_LEMIX and self.db.lemixLimitsUnboundEnabled or nil,
-        };
+        self.enabledTreeIDs = {};
+        for treeID, info in pairs(self.trees) do
+            self.enabledTreeIDs[treeID] = self.db[info.settingKey] or nil;
+        end
     end
     setEnabledTreeIDs();
 
@@ -179,13 +168,13 @@ function Module:BuildConfig(configBuilder, db)
         L['Print in chat whenever a new talent is purchased.']
     );
 
-    --- @param title string
-    --- @param configIdKey string
-    --- @param settingKey string
     --- @param treeID number
     --- @return SettingsListElementInitializer
-    local function makeConfig(title, configIdKey, settingKey, treeID)
-        local function isLoaded() return not not self[configIdKey]; end;
+    local function makeConfig(treeID)
+        local settingKey = self.trees[treeID].settingKey;
+        local title = self.trees[treeID].displayName;
+
+        local function isLoaded() return not not self.configIDsByTree[treeID]; end;
         local function isNotLoaded() return not isLoaded(); end;
         local header = configBuilder:MakeHeader(title, nil, 2);
         local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked the %s system on this character yet.']:format(title), 2);
@@ -204,7 +193,7 @@ function Module:BuildConfig(configBuilder, db)
         return header;
     end
 
-    local skyridingHeader = makeConfig(GENERIC_TRAIT_FRAME_DRAGONRIDING_TITLE, 'skyridingConfigID', 'skyridingEnabled', SKYRIDING_TREE_ID);
+    local skyridingHeader = makeConfig(SKYRIDING_TREE_ID);
     do
         configBuilder:MakeDropdown(
             L['Auto Ride Along'],
@@ -245,36 +234,10 @@ function Module:BuildConfig(configBuilder, db)
             L['Reset the Surge cache, so all characters will match the current setting on login.']
         ):SetParentInitializer(skyridingHeader);
     end
-    do
-        local function isLoaded() return not not self:GetLemixConfigID(); end;
-        local function isNotLoaded() return not isLoaded(); end;
-        local function isLemix() return IS_LEMIX; end;
-        local header = configBuilder:MakeHeader(L['Legion Remix: Limits Unbound'], nil, 2)
-        header:AddShownPredicate(isLemix);
-
-        local loading = configBuilder:MakeText(L['Loading...'] .. '\n' .. L['You have not unlocked Legion Remix artifact traits yet.'], 2);
-        loading:AddShownPredicate(isNotLoaded);
-        loading:AddShownPredicate(isLemix);
-
-        local enabled = configBuilder:MakeCheckbox(
-            ENABLE,
-            'lemixLimitsUnboundEnabled',
-            L['Automatically upgrade the final Limits Unbound talent when you have enough currency.']
-        );
-        enabled:AddShownPredicate(isLemix);
-        enabled:SetParentInitializer(header);
-
-        local openUI = configBuilder:MakeButton(
-            L['Open Artifact Traits UI'],
-            function() SocketInventoryItem(16); end,
-            L['Open the Legion Remix Artifact traits UI to view and adjust talents.']
-        );
-        openUI:SetParentInitializer(header, isLoaded)
-        openUI:AddShownPredicate(isLemix);
-    end
-    makeConfig(GENERIC_TRAIT_FRAME_RESHII_WRAPS_TITLE, 'reshiiWrapsConfigID', 'reshiiWrapsEnabled', RESHII_WRAPS_TREE_ID);
-    makeConfig(SPLASH_BATTLEFORAZEROTH_8_3_0_FEATURE1_TITLE or L['Horrific Visions'], 'horrificVisionsConfigID', 'horrificVisionsEnabled', HORRIFIC_VISIONS_TREE_ID);
-    makeConfig(GENERIC_TRAIT_FRAME_TITAN_CONSOLE_TITLE, 'overchargedTitanConsoleConfigID', 'overchargedTitanConsoleEnabled', OVERCHARGED_TITAN_CONSOLE_TREE_ID);
+    makeConfig(OMNIUM_FOLIO_TREE_ID);
+    makeConfig(RESHII_WRAPS_TREE_ID);
+    makeConfig(HORRIFIC_VISIONS_TREE_ID);
+    makeConfig(OVERCHARGED_TITAN_CONSOLE_TREE_ID);
 end
 
 function Module:Print(...)
@@ -306,35 +269,15 @@ function Module:ToggleTreeUI(treeID)
     end
 end
 
-function Module:GetLemixConfigID()
-    if not IS_LEMIX then return nil; end
-    local specID = PlayerUtil.GetCurrentSpecID() or 0;
-    if not self.lemixConfigIDBySpecID[specID] then
-        local shown = RemixArtifactFrame and RemixArtifactFrame:IsShown();
-        SocketInventoryItem(16);
-        if not RemixArtifactFrame then return; end -- happens when you don't have the artifact weapon yet
-
-        self.lemixConfigIDBySpecID[specID] = RemixArtifactFrame:GetConfigID();
-        if not shown then
-            HideUIPanel(RemixArtifactFrame);
+function Module:CheckConfig()
+    for treeID in pairs(self.trees) do
+        local configID = C_Traits.GetConfigIDByTreeID(treeID);
+        self.configIDsByTree[treeID] = configID;
+        if configID then
+            self.treeByConfigID[configID] = treeID;
         end
     end
-
-    return self.lemixConfigIDBySpecID[specID];
-end
-
-function Module:CheckConfig()
-    self.skyridingConfigID = C_Traits.GetConfigIDByTreeID(SKYRIDING_TREE_ID);
-    self.horrificVisionsConfigID = C_Traits.GetConfigIDByTreeID(HORRIFIC_VISIONS_TREE_ID);
-    self.overchargedTitanConsoleConfigID = C_Traits.GetConfigIDByTreeID(OVERCHARGED_TITAN_CONSOLE_TREE_ID);
-    self.reshiiWrapsConfigID = C_Traits.GetConfigIDByTreeID(RESHII_WRAPS_TREE_ID);
-    if
-        not self.skyridingConfigID
-        and not self.horrificVisionsConfigID
-        and not self.overchargedTitanConsoleConfigID
-        and not self.reshiiWrapsConfigID
-        and not self:GetLemixConfigID()
-    then
+    if not next(self.configIDsByTree) then
         return;
     end
 
@@ -342,22 +285,10 @@ function Module:CheckConfig()
     if self.enabled then
         self:DeferPurchase();
     end
-    if
-        self.skyridingConfigID
-        and self.horrificVisionsConfigID
-        and self.overchargedTitanConsoleConfigID
-        and self.reshiiWrapsConfigID
-        and self:GetLemixConfigID()
-    then
+    if table.count(self.configIDsByTree) == table.count(self.trees) then
         for _, event in pairs(self.checkConfigEvents) do
             self:UnregisterEvent(event);
         end
-    end
-end
-
-function Module:ACTIVE_PLAYER_SPECIALIZATION_CHANGED()
-    if IS_LEMIX then
-        RunNextFrame(function() self:DeferPurchase(); end);
     end
 end
 
@@ -405,87 +336,52 @@ function Module:DeferPurchase()
 end
 
 function Module:PurchaseTalents()
-    if self.db.skyridingEnabled then
-        self:PurchaseSkyridingTalents();
-    end
-    if self.db.horrificVisionsEnabled then
-        self:PurchaseHorrificVisionsTalents();
-    end
-    if self.db.overchargedTitanConsoleEnabled then
-        self:PurchaseOverchargedTitanConsoleTalents();
-    end
-    if self.db.reshiiWrapsEnabled then
-        self:PurchaseRishiiWrapsTalents();
-    end
-    if self.db.lemixLimitsUnboundEnabled then
-        self:PurchaseLemixLimitsUnboundTalent();
-    end
-end
+    if self.disabledByRefund then return; end
 
-function Module:PurchaseSkyridingTalents()
-    if not self.skyridingConfigID then return; end
-
-    local configID = self.skyridingConfigID;
-    self:SetSpecialChoiceNode(configID, 'rideAlong', 'rideAlongCache', RIDE_ALONG_NODE_ID, RIDE_ALONG_ENTRY_IDS);
-    self:SetSpecialChoiceNode(configID, 'surge', 'surgeCache', SURGE_NODE_ID, SURGE_ENTRY_IDS);
-
+    local purchaseConditions = {
+        [RESHII_WRAPS_TREE_ID] = function()
+            -- must wait until the quest is complete, or you will not be able to progress the questline
+            return C_QuestLog.IsQuestFlaggedCompleted(RESHII_QUEST_ID);
+        end,
+        [OMNIUM_FOLIO_TREE_ID] = function()
+            -- let's wait until the first quest is complete, just in case blizzard dun fucked up again
+            return C_QuestLog.IsQuestFlaggedCompletedOnAccount(OMNIUM_FOLIO_QUEST_ID);
+        end,
+    }
     local ignoredNodeIDs = {
-        [RIDE_ALONG_NODE_ID] = true,
-        [SURGE_NODE_ID] = true,
+        [SKYRIDING_TREE_ID] = {
+            [RIDE_ALONG_NODE_ID] = true,
+            [SURGE_NODE_ID] = true,
+        },
     };
-    local treeID = SKYRIDING_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs);
-end
+    local specials = {
+        [SKYRIDING_TREE_ID] = function(configID)
+            self:SetSpecialChoiceNode(configID, 'rideAlong', 'rideAlongCache', RIDE_ALONG_NODE_ID, RIDE_ALONG_ENTRY_IDS);
+            self:SetSpecialChoiceNode(configID, 'surge', 'surgeCache', SURGE_NODE_ID, SURGE_ENTRY_IDS);
+        end,
+    }
+    local delayPurchases = {
+        [RESHII_WRAPS_TREE_ID] = 1,
+    }
 
-function Module:PurchaseHorrificVisionsTalents()
-    if not self.horrificVisionsConfigID then return; end
-
-    local ignoredNodeIDs = {};
-    local configID = self.horrificVisionsConfigID;
-    local treeID = HORRIFIC_VISIONS_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs);
-end
-
-function Module:PurchaseOverchargedTitanConsoleTalents()
-    if not self.overchargedTitanConsoleConfigID then return; end
-
-    local ignoredNodeIDs = {};
-    local configID = self.overchargedTitanConsoleConfigID;
-    local treeID = OVERCHARGED_TITAN_CONSOLE_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs);
-end
-
-function Module:PurchaseRishiiWrapsTalents()
-    if not self.reshiiWrapsConfigID then return; end
-    if not C_QuestLog.IsQuestFlaggedCompleted(RESHII_QUEST_ID) then
-        -- must wait until the quest is complete, or you will not be able to progress the questline
-        return;
+    for treeID in pairs(self.enabledTreeIDs) do
+        local configID = self.configIDsByTree[treeID];
+        local condition = purchaseConditions[treeID];
+        if configID and (not condition or condition()) then
+            if specials[treeID] then
+                specials[treeID](configID);
+            end
+            self:DoPurchase(configID, treeID, ignoredNodeIDs[treeID] or {}, delayPurchases[treeID]);
+        end
     end
-
-    local ignoredNodeIDs = {};
-    local configID = self.reshiiWrapsConfigID;
-    local treeID = RESHII_WRAPS_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs, 1);
-end
-
-function Module:PurchaseLemixLimitsUnboundTalent()
-    if not IS_LEMIX or not self:GetLemixConfigID() then return; end
-
-    local ignoredNodeIDs = { [LIMITS_UNBOUND_NODE_ID] = false };
-    setmetatable(ignoredNodeIDs, { __index = function() return true; end }); -- ignore all other nodes
-    local configID = self:GetLemixConfigID();
-    local treeID = LEMIX_TREE_ID;
-    self:DoPurchase(configID, treeID, ignoredNodeIDs, nil);
 end
 
 --- @param configID number
 --- @param treeID number
 --- @param ignoredNodeIDs table<number, boolean> # [nodeID] = true to ignore
 --- @param delayPurchases nil|number # if set, there will be x seconds delay between each purchase
---- @param onSuccessCallback nil|fun() # if set, will be called after all purchases and commits are done
-function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onSuccessCallback)
+function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases)
     if self.purchasing[configID] or self.disabledByRefund then
-        -- Already purchasing or disabled by refund
         return;
     end
 
@@ -505,6 +401,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
     self.purchasing[configID] = true;
     local nodes = C_Traits.GetTreeNodes(treeID);
     local purchasedEntries = {};
+    local purchasedChoiceNode = false;
     local purchasedCount = 0;
     local retriedCommit = false;
     local innerDoPurchase;
@@ -512,7 +409,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
         local purchasedSomething = false;
         for _, nodeID in ipairs(nodes) do
             local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID);
-            local nodeCost = self:GetOrCacheNodeCost(nodeID);
+            local nodeCost = self:GetOrCacheNodeCost(configID, nodeID);
             if
                 nodeInfo
                 and nodeInfo.ID == nodeID
@@ -533,6 +430,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
                     if C_Traits.SetSelection(configID, nodeID, entryID) then
                         availableCurrency = availableCurrency - nodeCost;
                         purchasedSomething = true;
+                        purchasedChoiceNode = true;
                         table.insert(purchasedEntries, entryID);
                     end
                 end
@@ -563,7 +461,7 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
                     C_Timer.After(0.5, innerDoPurchase);
                     return;
                 else
-                    self:ReportPurchases(configID, purchasedEntries);
+                    self:ReportPurchases(configID, treeID, purchasedEntries, purchasedChoiceNode);
                 end
             end
 
@@ -573,12 +471,12 @@ function Module:DoPurchase(configID, treeID, ignoredNodeIDs, delayPurchases, onS
     innerDoPurchase();
 end
 
-function Module:GetOrCacheNodeCost(nodeID)
+function Module:GetOrCacheNodeCost(configID, nodeID)
     if not self.nodeCostCache then
         self.nodeCostCache = {};
     end
     if not self.nodeCostCache[nodeID] then
-        local nodeCost = C_Traits.GetNodeCost(self.skyridingConfigID, nodeID);
+        local nodeCost = C_Traits.GetNodeCost(configID, nodeID);
         self.nodeCostCache[nodeID] = nodeCost and nodeCost[1] and nodeCost[1].amount or 0;
     end
     return self.nodeCostCache[nodeID];
@@ -596,7 +494,7 @@ function Module:GetSpellLinkFromEntryID(configID, entryID)
         elseif definitionInfo and definitionInfo.overrideName then
             return string.format(
                 '|cff71d5ff|Haddon:%s:%d|h[%s]|h|r',
-                LINK_NAME,
+                TOOLTIP_LINK_NAME,
                 entryInfo.definitionID,
                 definitionInfo.overrideName
             );
@@ -606,7 +504,11 @@ function Module:GetSpellLinkFromEntryID(configID, entryID)
     return '[unknown talent]';
 end
 
-function Module:ReportPurchases(configID, entryIDs)
+--- @param configID number
+--- @param treeID number
+--- @param entryIDs number[]
+--- @param purchasedChoiceNode boolean
+function Module:ReportPurchases(configID, treeID, entryIDs, purchasedChoiceNode)
     if not self.db.reportPurchases then
         return;
     end
@@ -632,4 +534,13 @@ function Module:ReportPurchases(configID, entryIDs)
             table.concat(spellLinks, ', ')
         )
     );
+    if purchasedChoiceNode then
+        self:Print(L['Auto selected a choice node.'], string.format(
+            '|cff71d5ff|Haddon:%s:%d|h[%s%s]|h|r',
+            OPEN_UI_LINK_NAME,
+            treeID,
+            CreateAtlasMarkup('NPE_LeftClick', 18, 18),
+            L['Toggle UI']
+        ));
+    end
 end
