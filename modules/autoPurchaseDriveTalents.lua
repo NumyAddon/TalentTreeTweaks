@@ -12,16 +12,15 @@ local DO_NOTHING = -1;
 --- @class TTT_DriveModule: NumyConfig_Module, NumyAceEvent-3.0
 local Module = Main:NewModule('Drive Auto Purchaser', 'NumyAceEvent-3.0');
 
-function Module:OnInitialize()
-    self:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED', 'CheckConfig');
-    self:RegisterEvent('TRAIT_CONFIG_CREATED', 'CheckConfig');
-    self:RegisterEvent('PLAYER_ENTERING_WORLD', 'CheckConfig');
-end
-
 function Module:OnEnable()
     self.enabled = true;
     if self.configID then
         self:SelectTalents();
+    else
+        self:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED', 'CheckConfig');
+        self:RegisterEvent('TRAIT_CONFIG_CREATED', 'CheckConfig');
+        self:RegisterEvent('PLAYER_ENTERING_WORLD', 'CheckConfig');
+        self:CheckConfig();
     end
 end
 
