@@ -63,6 +63,7 @@ function Module:OnInitialize()
             'TRAIT_CONFIG_LIST_UPDATED',
             'TRAIT_CONFIG_CREATED',
             'PLAYER_ENTERING_WORLD',
+            'PLAYER_LEVEL_UP',
         };
         for _, event in pairs(self.checkConfigEvents) do
             self:RegisterEvent(event, 'CheckConfig');
@@ -269,7 +270,11 @@ function Module:ToggleTreeUI(treeID)
     end
 end
 
-function Module:CheckConfig()
+--- @param event FrameEvent?
+function Module:CheckConfig(event)
+    if event then
+        RunNextFrame(function() self:CheckConfig(); end);
+    end
     for treeID in pairs(self.trees) do
         local configID = C_Traits.GetConfigIDByTreeID(treeID);
         self.configIDsByTree[treeID] = configID;
