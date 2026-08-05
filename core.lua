@@ -14,11 +14,11 @@ ns.Main = Main;
 ns.L = LibStub('AceLocale-3.0'):GetLocale(name);
 
 function Main:OnInitialize()
-    if NumyProfiler then
-        NumyProfiler:WrapModules(name, 'Main', self);
-        NumyProfiler:WrapModules(name, 'Util', ns.Util);
+    if NumyFunctionProfiler then
+        NumyFunctionProfiler:WrapModules(name, 'Main', self);
+        NumyFunctionProfiler:WrapModules(name, 'Util', ns.Util);
         for moduleName, module in self:IterateModules() do
-            NumyProfiler:WrapModules(name, moduleName, module);
+            NumyFunctionProfiler:WrapModules(name, moduleName, module);
         end
     end
 
