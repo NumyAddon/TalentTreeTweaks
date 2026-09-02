@@ -124,6 +124,7 @@ function Module:MakeRespecButton(parent, specIndex)
     button:SetScript('OnClick', respecButtonMixin.OnClick);
     button:SetScript('OnEvent', respecButtonMixin.OnEvent);
     button:RegisterEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
+    button:RegisterEvent('TRAIT_CONFIG_LIST_UPDATED');
     parent['RespecButton' .. specIndex] = button;
     parent.buttons[specIndex] = button;
     button:OnEvent('ACTIVE_PLAYER_SPECIALIZATION_CHANGED');
