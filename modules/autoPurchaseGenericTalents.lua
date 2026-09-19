@@ -220,8 +220,8 @@ function Module:BuildConfig(configBuilder, db)
             'surge',
             L['Automatically pick Whirling Surge/Lightning Surge the first time you log in on a character.'],
             {
-                { value = CHOICE_NODE_OPTION_1, text = StripHyperlinks(C_Spell.GetSpellLink(WHIRLING_SURGE_SPELL_ID)) or 'Whirling Surge' },
-                { value = CHOICE_NODE_OPTION_2, text = StripHyperlinks(C_Spell.GetSpellLink(LIGHTNING_SURGE_SPELL_ID)) or 'Lightning Surge' },
+                { value = CHOICE_NODE_OPTION_1, text = StripHyperlinks(C_Spell.GetSpellLink(WHIRLING_SURGE_SPELL_ID) or 'Whirling Surge') },
+                { value = CHOICE_NODE_OPTION_2, text = StripHyperlinks(C_Spell.GetSpellLink(LIGHTNING_SURGE_SPELL_ID) or 'Lightning Surge') },
                 { value = CHOICE_NODE_NOT_SET, text = L['Do Nothing'] },
             },
             setEnabledTreeIDs

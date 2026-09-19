@@ -101,6 +101,7 @@ function Module:OnButtonClick(buttonFrame, mouseButton)
 end
 
 function Module:SetupDropdownOrderHook()
+    if Util.is4E then return end
     local talentsTab = Util:GetTalentFrame()
     local dropdown = talentsTab.LoadSystem;
     local function sortSelections()

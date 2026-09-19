@@ -22,7 +22,9 @@ function Module:OnEnable()
         self:SetupHook(Util:GetTalentFrame());
     end);
     Util:ContinueOnAddonLoaded('Blizzard_Professions', function()
-        self:SetupHook(ProfessionsFrame.SpecPage);
+        if ProfessionsFrame.SpecPage then
+            self:SetupHook(ProfessionsFrame.SpecPage);
+        end
     end);
     Util:ContinueOnAddonLoaded('Blizzard_GenericTraitUI', function()
         self:SetupHook(GenericTraitFrame);
@@ -206,7 +208,7 @@ function Module:ShowDebugInfo(buttonFrame)
     nodeInfo._button = buttonFrame;
 
     if self.db.tinspect then
-        UIParentLoadAddOn("Blizzard_DebugTools");
+        C_AddOns.LoadAddOn("Blizzard_DebugTools");
         DisplayTableInspectorWindow(nodeInfo);
     end
 

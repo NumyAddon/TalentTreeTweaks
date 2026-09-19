@@ -236,6 +236,7 @@ end
 
 function Module:HookInspectTalentsButton()
     local button = InspectPaperDollItemsFrame.InspectTalents;
+    if not button then return; end
     self:SecureHookScript(button, "OnEnter", function()
         if not C_Traits.HasValidInspectData() then return; end
         local inspectUnit = InspectFrame.unit;

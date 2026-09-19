@@ -20,13 +20,19 @@ Util.debug = false;
 Util.debug = true;
 --@end-debug@
 
+local toc = select(4, GetBuildInfo())
+Util.is4E = toc > 16000 and toc < 20000
+
 Util.specToClassMap = {};
 Util.classMap = {};
 do
     for classID = 1, GetNumClasses() do
-        Util.classMap[select(2, GetClassInfo(classID))] = classID;
-        for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
-            Util.specToClassMap[(GetSpecializationInfoForClassID(classID, specIndex))] = classID;
+        local _, classFile = GetClassInfo(classID);
+        if classFile then
+            Util.classMap[classFile] = classID;
+            for specIndex = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
+                Util.specToClassMap[(GetSpecializationInfoForClassID(classID, specIndex))] = classID;
+            end
         end
     end
 end
