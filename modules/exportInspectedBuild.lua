@@ -194,7 +194,7 @@ function Module:INSPECT_READY(_, guid)
         end
 
         local talentFrame = Util:GetTalentContainerFrame();
-        if not talentFrame or not talentFrame.SetInspectString then return end
+        if not talentFrame or not talentFrame.SetInspectString or InCombatLockdown() then return end
         talentFrame:SetInspectString(exportString, level);
         if not talentFrame:IsShown() then
             ShowUIPanel(talentFrame);
