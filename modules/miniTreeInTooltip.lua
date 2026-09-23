@@ -460,8 +460,8 @@ local containerMixin = {};
 function containerMixin:Init()
     self.spacing = 20;
     self.dotSize = 12;
-    self.expectedMaxRows = 10;
-    self.expectedMaxCols = 23;
+    self.expectedMaxRows = Util.is4E and 7 or 10;
+    self.expectedMaxCols = Util.is4E and 12 or 23;
 
     self.baseWidth = self.expectedMaxCols * self.spacing;
     self.baseHeight = self.expectedMaxRows * self.spacing;

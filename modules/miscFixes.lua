@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 local ChatEdit_InsertLink = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink;
 local GetSpellLink = C_Spell.GetSpellLink;
 

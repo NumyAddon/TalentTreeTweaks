@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 local ChatFrame_AddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
 local ChatFrame_RemoveMessageEventFilter = ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter or ChatFrame_RemoveMessageEventFilter
 

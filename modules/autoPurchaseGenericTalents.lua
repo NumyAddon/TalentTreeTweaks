@@ -7,6 +7,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 local TOOLTIP_LINK_NAME = 'TalentTreeTweaks_TraitTooltip';
 local OPEN_UI_LINK_NAME = 'TalentTreeTweaks_OpenGenericTraits';
 

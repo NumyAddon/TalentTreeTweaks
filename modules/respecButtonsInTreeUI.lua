@@ -5,11 +5,12 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 --- @class TTT_RespecButtons: NumyConfig_Module, AceHook-3.0, NumyAceEvent-3.0
 local Module = Main:NewModule('RespecButtons', 'AceHook-3.0', 'NumyAceEvent-3.0');
 
 function Module:OnEnable()
-    if Util.is4E then return end
     Util:OnTalentUILoad(function()
         self:SetupHook();
     end);

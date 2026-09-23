@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 --- @class TTT_HeroTalents: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('HeroTalents', 'AceHook-3.0');
 

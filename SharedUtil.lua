@@ -20,13 +20,24 @@ Util.debug = false;
 Util.debug = true;
 --@end-debug@
 
+Util.GetAllClassIDs = C_SpecializationInfo.GetAllClassIDs or function()
+    local classIDs = {}
+    for classID = 1, GetNumClasses() do
+        if GetClassInfo(classID) then
+            table.insert(classIDs, classID);
+        end
+    end
+
+    return classIDs;
+end
+
 local toc = select(4, GetBuildInfo())
 Util.is4E = toc > 16000 and toc < 20000
 
 Util.specToClassMap = {};
 Util.classMap = {};
 do
-    for classID = 1, GetNumClasses() do
+    for _, classID in ipairs(Util.GetAllClassIDs()) do
         local _, classFile = GetClassInfo(classID);
         if classFile then
             Util.classMap[classFile] = classID;

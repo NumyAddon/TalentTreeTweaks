@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 local TRAIT_SYSTEM_ID = 19;
 local TREE_ID = 1056;
 local DO_NOTHING = -1;

@@ -5,6 +5,8 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
+if Util.is4E then return; end
+
 --- @class TTT_HighlightCascadeRepurchable: NumyConfig_Module
 local Module = Main:NewModule('HighlightCascadeRepurchable');
 Module.enabled = false;
