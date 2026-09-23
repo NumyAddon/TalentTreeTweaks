@@ -4,6 +4,8 @@
 #@end-debug@
 ## Title: Talent Tree Tweaks
 ## Author: Numy
+## X-GameType: [Game]
+## X-GameFamily: [Family]
 ## IconTexture: Interface\Addons\TalentTreeTweaks\media\icon
 ## Notes: Various improvements and addition to the Dragonflight talent tree UI
 ## Version: @project-version@
