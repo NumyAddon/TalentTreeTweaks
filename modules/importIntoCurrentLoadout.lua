@@ -5,14 +5,12 @@ local Main = TTT.Main;
 local Util = TTT.Util;
 local L = TTT.L;
 
-if Util.is4E then return; end
-
 --- @class TTT_ImportIntoCurrentLoadout: NumyConfig_Module, AceHook-3.0
 local Module = Main:NewModule('ImportIntoCurrentLoadout', 'AceHook-3.0');
 
 local LOADOUT_SERIALIZATION_VERSION;
 function Module:OnInitialize()
-    LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion and C_Traits.GetLoadoutSerializationVersion() or 1;
+    LOADOUT_SERIALIZATION_VERSION = C_Traits.GetLoadoutSerializationVersion();
 
     StaticPopupDialogs["TALENT_TREE_TWEAKS_LOADOUT_IMPORT_ERROR_DIALOG"] = {
         text = "%s",
@@ -40,11 +38,11 @@ function Module:OnDisable()
 end
 
 function Module:GetDescription()
-    return L['Allows you to import talent loadouts into the currently selected loadout.'];
+    return Util.is4E and L['Allows you to import a talent string.'] or L['Allows you to import talent loadouts into the currently selected loadout.'];
 end
 
 function Module:GetName()
-    return L['Import into current loadout'];
+    return Util.is4E and L['Add Import button'] or L['Import into current loadout'];
 end
 
 --- @param configBuilder NumyConfigBuilder
@@ -69,24 +67,28 @@ function Module:BuildConfig(configBuilder, db)
             end
         end
     );
-    configBuilder:MakeCheckbox(
-        L['Unlocks the import button, even if at max loadouts'],
-        'unlockImportButton',
-        L['When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout'],
-        function()
-            if self.checkbox then
-                self:OnUnlockImportButtonValueChanged();
-            end
-        end
-    );
+--     configBuilder:MakeCheckbox(
+--         L['Unlocks the import button, even if at max loadouts'],
+--         'unlockImportButton',
+--         L['When enabled, the import button will be unlocked even if you have reached the maximum number of loadouts. Since you can still import into your current loadout'],
+--         function()
+--             if self.checkbox then
+--                 self:OnUnlockImportButtonValueChanged();
+--             end
+--         end
+--     );
 end
+if Util.is4E then Module.BuildConfig = nil; end
 
 function Module:SetupHook()
     local dialog = ClassTalentLoadoutImportDialog;
     self:CreateCheckbox(dialog);
     self:CreateAcceptButton(dialog);
-    self.checkbox:SetChecked(self.db.defaultCheckboxState);
+    self.checkbox:SetChecked(Util.is4E and true or self.db.defaultCheckboxState);
     self:OnCheckboxClick(self.checkbox);
+    if Util.is4E then
+        self:CreateImportButton();
+    end
 
     self.disabledCallback = function() return false; end;
     self:OnUnlockImportButtonValueChanged();
@@ -94,29 +96,30 @@ end
 
 function Module:OnUnlockImportButtonValueChanged()
     if true then return; end -- todo: TWW compatibility
-    local dropdown = Util:GetTalentFrame().LoadoutDropDown;
-    for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
-        if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_IMPORT then
-            if not self.oldDisabledCallback then
-                self.oldDisabledCallback = sentinelInfo.disabledCallback;
-            end
-            if self.db.unlockImportButton then
-                sentinelInfo.disabledCallback = self.disabledCallback;
-            elseif sentinelInfo.disabledCallback ~= self.oldDisabledCallback then
-                sentinelInfo.disabledCallback = self.oldDisabledCallback;
-            end
-            break;
-        end
-    end
+--     local dropdown = Util:GetTalentFrame().LoadoutDropDown;
+--     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
+--         if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_IMPORT then
+--             if not self.oldDisabledCallback then
+--                 self.oldDisabledCallback = sentinelInfo.disabledCallback;
+--             end
+--             if self.db.unlockImportButton then
+--                 sentinelInfo.disabledCallback = self.disabledCallback;
+--             elseif sentinelInfo.disabledCallback ~= self.oldDisabledCallback then
+--                 sentinelInfo.disabledCallback = self.oldDisabledCallback;
+--             end
+--             break;
+--         end
+--     end
 end
 
 function Module:OnCheckboxClick(checkbox)
     local dialog = checkbox:GetParent();
-    dialog.NameControl:SetShown(not checkbox:GetChecked());
-    dialog.NameControl:SetText(checkbox:GetChecked() and 'TalentTreeTweaks' or '');
-    self.acceptButton:SetShown(checkbox:GetChecked());
-    dialog.AcceptButton:SetShown(not checkbox:GetChecked());
-    if checkbox:GetChecked() then
+    local checked = checkbox:GetChecked();
+    dialog.NameControl:SetShown(not checked);
+    dialog.NameControl:SetText(checked and 'TalentTreeTweaks' or '');
+    self.acceptButton:SetShown(checked);
+    dialog.AcceptButton:SetShown(not checked);
+    if checked then
         self.acceptButton:SetEnabled(dialog.ImportControl:HasText());
     else
         dialog:UpdateAcceptButtonEnabledState();
@@ -149,6 +152,11 @@ function Module:CreateCheckbox(dialog)
     checkbox.text:SetText(text);
     checkbox:SetHitRectInsets(-10, -checkbox.text:GetStringWidth(), -5, 0);
 
+    if Util.is4E then
+        checkbox:SetChecked(true);
+        checkbox:Hide();
+    end
+
     self.checkbox = checkbox;
 end
 
@@ -172,6 +180,19 @@ function Module:CreateAcceptButton(dialog)
     end);
 
     self.acceptButton = acceptButton;
+end
+
+function Module:CreateImportButton()
+    local talentsTab = Util:GetTalentFrame();
+    local button = CreateFrame('Button', nil, talentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
+    talentsTab.TalentTreeTweaks_ImportButton = button;
+
+    button:SetText(TALENT_FRAME_DROP_DOWN_IMPORT or L['Import']);
+    button:SetSize(80, 22);
+    button:SetPoint('RIGHT', talentsTab.ApplyButton, 'LEFT', -5, 0);
+    button:SetScript('OnClick', function()
+        ClassTalentLoadoutImportDialog:ShowDialog();
+    end);
 end
 
 function Module:GetTreeID()
@@ -246,6 +267,11 @@ function Module:ImportLoadout(importText)
     end
 
     if (specID ~= PlayerUtil.GetCurrentSpecID()) then
+        if TalentViewerLoader and TalentViewerLoader.ShowImportFailedDialog then
+            TalentViewerLoader:ShowImportFailedDialog(importText);
+
+            return false;
+        end
         self:ShowImportError(LOADOUT_ERROR_WRONG_SPEC);
         return false;
     end
