@@ -79,6 +79,7 @@ end
 function Module:OnDisable()
     self:UnhookAll();
     if self.linkButton then self.linkButton:Hide(); end
+    if self.exportButton then self.exportButton:Hide(); end
     self:UnregisterAllEvents();
 end
 
@@ -103,6 +104,7 @@ function Module:BuildConfig(configBuilder, db)
     local defaults = {
         exportOnDropdownRightClick = true,
         showLinkInChatButton = true,
+        showExportButton = true,
         inspectTalentsMenuItem = true,
     };
     configBuilder:SetDefaults(defaults, true);
@@ -122,6 +124,14 @@ function Module:BuildConfig(configBuilder, db)
         L['Adds a button to link the currently shown build in chat.'],
         callback
     );
+    if Util.is4E then
+        configBuilder:MakeCheckbox(
+            string.format(L['Show %s Button'], L['Export']),
+            'showExportButton',
+            L['Adds a button to export the currently shown build.'],
+            callback
+        )
+    end
     configBuilder:MakeCheckbox(
         L['Inspect Talents'],
         'inspectTalentsMenuItem',
@@ -204,13 +214,19 @@ end
 
 function Module:SetupHook()
     local talentsTab = Util:GetTalentFrame();
+    self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
 
     if self.db.showLinkInChatButton then
-        self:SecureHook(talentsTab, 'UpdateInspecting', 'OnUpdateInspecting');
         if not self.linkButton then
-            self.linkButton = self:MakeLinkButton(talentsTab);
+            self.linkButton = self:MakeButton(talentsTab, true);
         end
         self.linkButton:Show();
+    end
+    if Util.is4E and self.db.showExportButton then
+        if not self.exportButton then
+            self.exportButton = self:MakeButton(talentsTab, false);
+        end
+        self.exportButton:Show();
     end
 end
 
@@ -230,17 +246,34 @@ function Module:OnUpdateInspecting(talentsTab)
     self.cachedInspectExportString = talentsTab:GetInspectUnit() and C_Traits.GenerateInspectImportString(talentsTab:GetInspectUnit()) or talentsTab:GetInspectString();
 end
 
-function Module:MakeLinkButton(talentsTab)
+function Module:MakeButton(talentsTab, shouldLink)
     local button = CreateFrame('Button', nil, talentsTab, 'UIPanelButtonNoTooltipTemplate, UIButtonTemplate');
-    talentsTab.TalentTreeTweaks_LinkToChatButton = button;
-    button:SetText(TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat']);
-    button:SetSize(100, 22);
-    button:SetPoint('BOTTOMLEFT', 47, 5);
+    local text, width, offsetX;
+    if shouldLink then
+        text = TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK or L['Post in Chat'];
+        width = 100;
+        offsetX = 47;
+        talentsTab.TalentTreeTweaks_LinkToChatButton = button;
+    else
+        text = L['Export'];
+        width = 80;
+        offsetX = 157;
+        talentsTab.TalentTreeTweaks_ExportButton = button;
+    end
+    button:SetText(text);
+    button:SetSize(width, 22);
+    button:SetPoint('BOTTOMLEFT', offsetX, 5);
     button:SetScript('OnClick', function()
         local specID = self.cachedInspectSpecID or talentsTab:GetSpecID();
         local classID = self.cachedInspectClassID or talentsTab:GetClassID();
         local unitSex = self.cachedInspectUnitSex or Util:GetTalentContainerFrame():GetUnitSex();
         local exportString = self.cachedInspectExportString or Util:GetLoadoutExportString(talentsTab);
+
+        if not shouldLink then
+            Util:CopyText(exportString, L['Talent Loadout String']);
+
+            return;
+        end
 
         local specName = select(2, GetSpecializationInfoByID(specID, unitSex));
         local classInfo = C_CreatureInfo.GetClassInfo(classID);

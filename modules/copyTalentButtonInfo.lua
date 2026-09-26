@@ -30,6 +30,9 @@ function Module:OnEnable()
     Util:ContinueOnAddonLoaded('Blizzard_RemixArtifactUI', function()
         self:SetupHook(RemixArtifactFrame);
     end);
+    Util:ContinueOnAddonLoaded('Blizzard_LegacySystem', function()
+        self:SetupHook(LegacySystemFrame.TreePage.LegacyTreeTraitPanel);
+    end);
     Util:ContinueOnAddonLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
         if not talentsTab then return; end
@@ -55,6 +58,9 @@ function Module:OnDisable()
     end
     if RemixArtifactFrame then
         RemixArtifactFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
+    if LegacySystemFrame then
+        LegacySystemFrame.TreePage.LegacyTreeTraitPanel:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     if TalentViewer then
         TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);

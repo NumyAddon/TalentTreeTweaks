@@ -10,17 +10,25 @@ local Module = Main:NewModule('MiniTreeInTooltip', 'AceHook-3.0');
 
 local LTT = Util.LibTalentTree;
 
--- these numbers have no meaning
-local VISUAL_STYLE_FULL = 1;
-local VISUAL_STYLE_EMPTY = 2;
-local VISUAL_STYLE_HALF = 3;
-local VISUAL_STYLE_HALF_FLIPPED = 8;
-local VISUAL_STYLE_LEFT = 4;
-local VISUAL_STYLE_RIGHT = 5;
-local VISUAL_STYLE_ONE_THIRD = 6;
-local VISUAL_STYLE_TWO_THIRD = 7;
+--- @alias TTT_MiniTree_StyleInfo { col: number, rotation: 'left'|'right'|'flipped'? }
+--- @type table<string, TTT_MiniTree_StyleInfo>
+local VisualStyle = {
+    Full = { col = 10 }, Empty = { col = 11 },
+    Half = { col = 5 }, HalfFlipped = { col = 5, rotation = 'flipped' }, Left = { col = 5, rotation = 'left' }, Right = { col = 5, rotation = 'right' },
+    OneThird = { col = 3 }, TwoThird = { col = 7 },
+    OneQuarter = { col = 2 }, ThreeQuarter = { col = 8 },
+    OneFifth = { col = 1 }, TwoFifth = { col = 4 }, ThreeFifth = { col = 6 }, FourFifth = { col = 9 },
+};
+--- @type table<number, table<number, TTT_MiniTree_StyleInfo>> # [maxRank] = { [currentRank] = styleInfo }
+local VisualStyleRankKey = {
+    [1] = { [0] = VisualStyle.Empty, [1] = VisualStyle.Full, },
+    [2] = { [0] = VisualStyle.Empty, [1] = VisualStyle.Half, [2] = VisualStyle.Full, },
+    [3] = { [0] = VisualStyle.Empty, [1] = VisualStyle.OneThird, [2] = VisualStyle.TwoThird, [3] = VisualStyle.Full, },
+    [4] = { [0] = VisualStyle.Empty, [1] = VisualStyle.OneQuarter, [2] = VisualStyle.Half, [3] = VisualStyle.ThreeQuarter, [4] = VisualStyle.Full, },
+    [5] = { [0] = VisualStyle.Empty, [1] = VisualStyle.OneFifth, [2] = VisualStyle.TwoFifth, [3] = VisualStyle.ThreeFifth, [4] = VisualStyle.FourFifth, [5] = VisualStyle.Full, },
+};
 
-local TEXTURE_FILE = [[interface\addons\talenttreetweaks\media\mini-tree-orbs]];
+local TEXTURE_FILE = [[Interface\Addons\TalentTreeTweaks\media\mini-tree-orbs]];
 
 -- these strings are saved as settings
 local DISPLAY_STYLE_SIMPLE = 'simple';
@@ -235,7 +243,7 @@ function Module:HookCustomSetupCallback(dropdownControl)
 end
 
 function Module:HookInspectTalentsButton()
-    local button = InspectPaperDollItemsFrame.InspectTalents;
+    local button = Util.is4E and InspectPaperDollFrame.InspectTalents or InspectPaperDollItemsFrame.InspectTalents;
     if not button then return; end
     self:SecureHookScript(button, "OnEnter", function()
         if not C_Traits.HasValidInspectData() then return; end
@@ -341,8 +349,8 @@ function Module:AddBuildToTooltip(tooltip, exportString)
     local dotsBySubTree = {};
     local activeSubTreeID;
     local subTrees = LTT:GetSubTreeIDsForSpecID(specID);
-    table.sort(subTrees);
     local subTreeMap = tInvert(subTrees);
+    local topSubTreeID = subTrees[1];
 
     --- @type TTT_Util_LoadoutContent
     for _, nodeSelectionInfo in ipairs(nilOrLoadoutInfo) do
@@ -351,10 +359,11 @@ function Module:AddBuildToTooltip(tooltip, exportString)
             local column, row = LTT:GetNodeGridPosition(nodeID);
             if column and row then
                 local nodeInfo = LTT:GetNodeInfo(nodeID);
-                if nodeInfo.subTreeID and subTreeMap[nodeInfo.subTreeID] then
-                    row = row + (subTreeMap[nodeInfo.subTreeID] - 1) * 5;
+                if nodeInfo.subTreeID then
+                    if not subTreeMap[nodeInfo.subTreeID] then error('wut') end
+                    row = row + (topSubTreeID == nodeInfo.subTreeID and 0 or 1) * 5;
                 end
-                local style = VISUAL_STYLE_EMPTY;
+                local style = VisualStyle.Empty;
                 local rank = 0;
                 local entryID = nodeInfo.entryIDs[nodeSelectionInfo.choiceNodeSelection];
                 local entryInfo = LTT:GetEntryInfo(entryID);
@@ -367,31 +376,25 @@ function Module:AddBuildToTooltip(tooltip, exportString)
                     (nodeSelectionInfo.isNodeSelected and not nodeSelectionInfo.isChoiceNode and not nodeSelectionInfo.isPartiallyRanked)
                     or LTT:IsNodeGrantedForSpec(specID, nodeID)
                 then
-                    style = VISUAL_STYLE_FULL;
+                    style = VisualStyle.Full;
                     rank = nodeInfo.maxRanks;
                 elseif nodeSelectionInfo.isPartiallyRanked then
                     local maxRanks = nodeInfo.maxRanks
                     rank = nodeSelectionInfo.partialRanksPurchased;
-                    if maxRanks == 2 or (maxRanks == 4 and rank == 2) then
-                        style = VISUAL_STYLE_HALF;
-                    elseif (maxRanks == 3 and rank == 1) or (maxRanks == 4 and rank == 1) then
-                        style = VISUAL_STYLE_ONE_THIRD;
-                    elseif (maxRanks == 3 and rank == 2) or (maxRanks == 4 and rank == 3) then
-                        style = VISUAL_STYLE_TWO_THIRD;
-                    end
+                    if rank > maxRanks then rank = maxRanks; end -- can happen with old loadouts
+                    style = VisualStyleRankKey[maxRanks][rank];
                 elseif nodeSelectionInfo.isChoiceNode and nodeSelectionInfo.isNodeSelected then
                     rank = 1;
-                    style = nodeSelectionInfo.choiceNodeSelection == 1 and VISUAL_STYLE_LEFT or VISUAL_STYLE_RIGHT;
+                    style = nodeSelectionInfo.choiceNodeSelection == 1 and VisualStyle.Left or VisualStyle.Right;
                     if nodeInfo.isSubTreeSelection or nodeInfo.type == Enum.TraitNodeType.SubTreeSelection then
                         activeSubTreeID = entryInfo.subTreeID;
                         local subTreeInfo = activeSubTreeID and LTT:GetSubTreeInfo(activeSubTreeID);
                         spellIcon = subTreeInfo and subTreeInfo.iconElementID;
                         isAtlas = true;
-                        local subTreeIndex = subTreeMap[activeSubTreeID];
-                        if subTreeIndex == 1 then
-                            style = VISUAL_STYLE_HALF;
-                        elseif subTreeIndex == 2 then
-                            style = VISUAL_STYLE_HALF_FLIPPED;
+                        if topSubTreeID == activeSubTreeID then
+                            style = VisualStyle.Half;
+                        else
+                            style = VisualStyle.HalfFlipped;
                         end
                     end
                 end
@@ -461,7 +464,7 @@ function containerMixin:Init()
     self.spacing = 20;
     self.dotSize = 12;
     self.expectedMaxRows = Util.is4E and 7 or 10;
-    self.expectedMaxCols = Util.is4E and 12 or 23;
+    self.expectedMaxCols = Util.is4E and (12 + 2) or 23; -- 4E gets some extra padding between the trees
 
     self.baseWidth = self.expectedMaxCols * self.spacing;
     self.baseHeight = self.expectedMaxRows * self.spacing;
@@ -495,42 +498,21 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
         row = 3; -- green
     end
 
-    if diff and visualStyle == VISUAL_STYLE_EMPTY then
-        visualStyle = VISUAL_STYLE_FULL;
+    if diff and visualStyle == VisualStyle.Empty then
+        visualStyle = VisualStyle.Full;
     end
 
-    local col;
-    if visualStyle == VISUAL_STYLE_ONE_THIRD then
-        col = 1;
-    elseif visualStyle == VISUAL_STYLE_HALF then
-        col = 2;
-    elseif visualStyle == VISUAL_STYLE_TWO_THIRD then
-        col = 3;
-    elseif visualStyle == VISUAL_STYLE_FULL then
-        col = 4;
-    elseif visualStyle == VISUAL_STYLE_EMPTY then
-        -- special case
-        col = 5;
-        row = 1;
-    end
-    local factor = 66 / 512 -- texture file is 512x512, each orb is 64x64 + 2px spacing
+    local col = visualStyle.col;
+    -- texture file is 1024x512, each orb is 64x64 + 2px spacing
+    local colFactor = 66 / 1024;
+    local rowFactor = 66 / 512;
 
-    local rotation;
-    if visualStyle == VISUAL_STYLE_LEFT then
-        col = 2;
-        rotation = 'left';
-    elseif visualStyle == VISUAL_STYLE_RIGHT then
-        col = 2;
-        rotation = 'right';
-    elseif visualStyle == VISUAL_STYLE_HALF_FLIPPED then
-        col = 2;
-        rotation = 'flip';
-    end
+    local rotation = visualStyle.rotation;
 
-    local left = (col - 1) * factor;
-    local right = col * factor;
-    local top = (row - 1) * factor;
-    local bottom = row * factor;
+    local left = (col - 1) * colFactor;
+    local right = col * colFactor;
+    local top = (row - 1) * rowFactor;
+    local bottom = row * rowFactor;
 
     if not rotation then
         texture:SetTexCoord(left, right, top, bottom);
@@ -548,7 +530,7 @@ function containerMixin:ApplyTexture(texture, visualStyle, diff)
             right, top, -- top right corner is top right of the image
             left, top -- bottom right corner is top left of the image
         )
-    elseif rotation == 'flip' then
+    elseif rotation == 'flipped' then
         texture:SetTexCoord(
             left, bottom, -- top left corner is bottom left of the image
             left, top, -- bottom left corner is top left of the image
@@ -566,6 +548,14 @@ function containerMixin:MakeDot(column, row, visualStyle, spellIcon, isAtlas, di
         dot.texture:SetAllPoints(dot);
     end
     dot:SetAlpha(1);
+    if Util.is4E then
+        -- add some padding between the trees
+        if column > 8 then
+            column = column + 2;
+        elseif column > 4 then
+            column = column + 1
+        end
+    end
     dot:SetPoint("TOPLEFT", (column - 1) * self.spacing, -((row - 1) * self.spacing));
 
     if Module.db.displayStyle == DISPLAY_STYLE_SPELL_ICON then
@@ -577,14 +567,14 @@ function containerMixin:MakeDot(column, row, visualStyle, spellIcon, isAtlas, di
             dot.texture:SetTexture(spellIcon);
             dot.texture:SetTexCoord(0, 1, 0, 1);
         end
-        dot.texture:SetDesaturated(visualStyle == VISUAL_STYLE_EMPTY);
+        dot.texture:SetDesaturated(visualStyle == VisualStyle.Empty);
     else
         self:ApplyTexture(dot.texture, visualStyle, diff);
         dot.texture:SetDesaturated(false);
     end
     dot:Show();
 
-    dot.isMaxed = visualStyle == VISUAL_STYLE_FULL or visualStyle == VISUAL_STYLE_LEFT or visualStyle == VISUAL_STYLE_RIGHT;
+    dot.isMaxed = visualStyle == VisualStyle.Full or visualStyle == VisualStyle.Left or visualStyle == VisualStyle.Right;
 
     return dot;
 end

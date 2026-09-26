@@ -15,6 +15,8 @@ function Module:OnInitialize()
             self:ShowDebugInfo(self.targetButton);
         end
     end);
+    self:RegisterEvent('PLAYER_REGEN_DISABLED');
+    self:RegisterEvent('PLAYER_REGEN_ENABLED');
 end
 
 function Module:OnEnable()
@@ -32,13 +34,14 @@ function Module:OnEnable()
     Util:ContinueOnAddonLoaded('Blizzard_RemixArtifactUI', function()
         self:SetupHook(RemixArtifactFrame);
     end);
+    Util:ContinueOnAddonLoaded('Blizzard_LegacySystem', function()
+        self:SetupHook(LegacySystemFrame.TreePage.LegacyTreeTraitPanel);
+    end);
     Util:ContinueOnAddonLoaded(TalentViewerLoader and TalentViewerLoader:GetLodAddonName() or 'TalentTreeViewer', function()
         local talentsTab = TalentViewer and TalentViewer.GetTalentFrame and TalentViewer:GetTalentFrame();
         if not talentsTab then return; end
         self:SetupHook(talentsTab);
     end);
-    self:RegisterEvent('PLAYER_REGEN_DISABLED');
-    self:RegisterEvent('PLAYER_REGEN_ENABLED');
     Util:RegisterEventRegistryCallback("TalentDisplay.TooltipCreated", self.OnTalentTooltipCreated, self, 12);
     Util:RegisterEventRegistryCallback("ProfessionSpecs.SpecPathEntered", self.OnTalentTooltipCreated, self, 12);
 end
@@ -52,9 +55,6 @@ function Module:OnDisable()
     if talentFrame then
         talentFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
-    if TalentViewer then
-        TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
-    end
     if ProfessionsFrame and ProfessionsFrame.SpecPage then
         ProfessionsFrame.SpecPage:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
@@ -63,6 +63,12 @@ function Module:OnDisable()
     end
     if RemixArtifactFrame then
         RemixArtifactFrame:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
+    if LegacySystemFrame then
+        LegacySystemFrame.TreePage.LegacyTreeTraitPanel:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
+    if TalentViewer then
+        TalentViewer:GetTalentFrame():UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
     end
     Util:UnregisterEventRegistryCallback("TalentDisplay.TooltipCreated", self);
     Util:UnregisterEventRegistryCallback("ProfessionSpecs.SpecPathEntered", self);

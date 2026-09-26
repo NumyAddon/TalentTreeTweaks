@@ -43,7 +43,7 @@ function Module:BuildConfig(configBuilder, db)
         scale = 1,
     };
     configBuilder:SetDefaults(defaults, true);
-    self.blizzMoveEnabled = not not (_G.BlizzMoveAPI or C_AddOns.GetAddOnEnableState('BlizzMove', UnitName('player')) == 2);
+    self.blizzMoveEnabled = not not (_G.BlizzMoveAPI or C_AddOns.GetAddOnEnableState('BlizzMove', UnitGUID('player')) == 2);
     local function blizzMoveEnabledPredicate() return self.blizzMoveEnabled; end
     local function blizzMoveMissingPredicate() return not self.blizzMoveEnabled; end
 
