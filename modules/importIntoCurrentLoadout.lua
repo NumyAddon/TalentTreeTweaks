@@ -151,6 +151,23 @@ function Module:CreateCheckbox(dialog)
     checkbox.text:SetPoint('LEFT', checkbox, 'RIGHT', 0, 1);
     checkbox.text:SetText(text);
     checkbox:SetHitRectInsets(-10, -checkbox.text:GetStringWidth(), -5, 0);
+    Util:SkinWithEllesmereUI(function(S)
+        S.Checkbox(checkbox);
+        S.White(checkbox.text);
+        -- the skinned box has no transparent padding like the stock art, so the label needs its own gap
+        checkbox.text:SetPoint('LEFT', checkbox, 'RIGHT', 6, 1);
+        checkbox:SetHitRectInsets(-10, -checkbox.text:GetStringWidth() - 6, -5, 0);
+        -- the skinned checkbox fills its whole 24px and runs into the buttons below it, so lift the name
+        -- control (and the checkbox anchored to it) into the spare room below the import text box
+        local nameControl = dialog.NameControl;
+        local points = {};
+        for i = 1, nameControl:GetNumPoints() do
+            local point, relativeTo, relativePoint, x, y = nameControl:GetPoint(i);
+            points[i] = { point, relativeTo, relativePoint, x, y + 18 };
+        end
+        nameControl:ClearAllPoints();
+        for _, p in ipairs(points) do nameControl:SetPoint(unpack(p)); end
+    end);
 
     if Util.is4E then
         checkbox:SetChecked(true);
@@ -178,6 +195,7 @@ function Module:CreateAcceptButton(dialog)
             ClassTalentLoadoutImportDialog:OnCancel();
         end
     end);
+    Util:SkinButtonWithEllesmereUI(acceptButton);
 
     self.acceptButton = acceptButton;
 end
@@ -193,6 +211,7 @@ function Module:CreateImportButton()
     button:SetScript('OnClick', function()
         ClassTalentLoadoutImportDialog:ShowDialog();
     end);
+    Util:SkinButtonWithEllesmereUI(button);
 end
 
 function Module:GetTreeID()

@@ -269,6 +269,51 @@ function Util:CopyText(text, optionalTitleSuffix)
     StaticPopup_Show(self.dialogName, optionalTitleSuffix or '', nil, text);
 end
 
+do
+    -- EllesmereUI's skinning API (SKINNING_API.md in EllesmereUI). The callback fires once, at PLAYER_LOGIN,
+    -- and only if the user has skinning for this addon enabled; frames created before that wait in `pending`.
+    local addonName = ...;
+    local skin;
+    local pending = {};
+    local function register()
+        if not (EllesmereUI and EllesmereUI.RegisterSkin) then return; end ---@diagnostic disable-line: undefined-global
+        EllesmereUI.RegisterSkin(addonName, function(S) ---@diagnostic disable-line: undefined-global
+            skin = S;
+            for _, apply in ipairs(pending) do apply(S); end
+            pending = nil;
+        end);
+        return true;
+    end
+    if not register() then
+        -- EllesmereUI can still load after us, e.g. before a client restart picked up the OptionalDeps;
+        -- by PLAYER_LOGIN every regular addon is loaded, and registering then still gets the callback
+        eventFrame:RegisterEvent("PLAYER_LOGIN");
+        function eventFrame:PLAYER_LOGIN()
+            self:UnregisterEvent("PLAYER_LOGIN");
+            register();
+        end
+    end
+
+    --- Runs `apply` with EllesmereUI's skinning API, if EllesmereUI is installed and skinning is enabled
+    --- @param apply fun(S: table)
+    function Util:SkinWithEllesmereUI(apply)
+        if skin then
+            apply(skin);
+        elseif pending then
+            table.insert(pending, apply);
+        end
+    end
+
+    --- Skins a text button in the EllesmereUI style, if EllesmereUI is installed
+    --- @param button Button
+    function Util:SkinButtonWithEllesmereUI(button)
+        self:SkinWithEllesmereUI(function(S)
+            S.Button(button);
+            S.StateButtonLabel(button);
+        end);
+    end
+end
+
 --- @return PlayerSpellsFrame
 function Util:GetTalentContainerFrame()
     local frameName = 'PlayerSpellsFrame';

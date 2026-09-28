@@ -288,6 +288,7 @@ function Module:MakeButton(talentsTab, shouldLink)
             ChatFrame_OpenChat(chatLink);
         end
     end);
+    Util:SkinButtonWithEllesmereUI(button);
 
     return button;
 end
