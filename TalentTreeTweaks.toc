@@ -1,6 +1,6 @@
 ## Interface: @toc-version-midnight@, @toc-version-retail@, @toc-version-forever@
 #@debug@
-## Interface: 120000
+## Interface: 120000, 16001
 #@end-debug@
 ## Title: Talent Tree Tweaks
 ## Author: Numy
