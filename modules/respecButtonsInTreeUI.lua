@@ -94,7 +94,7 @@ do
     function respecButtonMixin:OnLeave() GameTooltip:Hide() end
     function respecButtonMixin:OnClick()
         local specIndex = self:GetID();
-        if C_SpecializationInfo.GetSpecialization() == specIndex then return end
+        if InCombatLockdown() or C_SpecializationInfo.GetSpecialization() == specIndex then return end
 
         C_SpecializationInfo.SetSpecialization(specIndex)
         Util:GetTalentFrame():SetCommitStarted(0)
